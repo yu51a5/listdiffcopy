@@ -1,10 +1,14 @@
-#import os
-from github import Github
+from github import Github, Repository, ContentFile
 import paramiko
 import io
 
-def get_ssh_client(hostname: str, port: str, username: str, password: str, private_key: str):
-  
+
+###############################################################################
+# this connection works for siteground.com servers
+###############################################################################
+def get_ssh_client(hostname: str, port: str, username: str, password: str,
+                   private_key: str):
+
   # establish connection with targeted server
   ssh_client = paramiko.SSHClient()
 
@@ -19,35 +23,39 @@ def get_ssh_client(hostname: str, port: str, username: str, password: str, priva
   private_key.seek(0)
   key = paramiko.RSAKey.from_private_key(private_key, password)
 
-  
   ssh_client = paramiko.SSHClient()
   # AutoAddPolicy explained in --> https://www.linode.com/docs/guides/use-paramiko-python-to-ssh-into-a-server/
-  ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())  
+  ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
   ssh_client.connect(hostname, port, username, pkey=key)
 
   return ssh_client
 
 
-# filenames and their sha's are needed to be able to update existing files
+###############################################################################
+# filenames and their sha's are needed to be able to update existing files, see
 # https://stackoverflow.com/questions/63435987/python-pygithub-if-file-exists-then-update-else-create
-def get_repo_and_its_filenames_sha(token : str, repo_name : str):
+###############################################################################
+def get_github_repo(token: str, repo_name: str):
 
-  # Github token
+  # Github token, see
   # https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens
   github_object = Github(token)
   github_user = github_object.get_user()
   repo = github_user.get_repo(repo_name)
-    
-  all_files = {}
+  return repo
 
-  contents = repo.get_contents('.')
+
+def get_github_repo_filenames_sha(repo: Repository, dir: str):
+  all_files = {}
+  contents = repo.get_contents(dir)
   while contents:
     content_item = contents.pop(0)
     if content_item.type == "dir":
-      pass # contents.extend(repo.get_contents(content_item.path))
+      print(content_item.name)
+      all_files[content_item.name] = get_github_repo_filenames_sha(repo=repo, dir=content_item.path)
     else:
-      filename = str(content_item).replace('ContentFile(path="','').replace('")','')
+      filename = str(content_item).replace('ContentFile(path="', '').replace('")', '')
       contents_file = repo.get_contents(filename)
-      all_files[filename] = contents_file.sha
-      
-  return repo, all_files
+      all_files[filename[len(dir)+1:]] = contents_file.sha
+
+  return all_files
