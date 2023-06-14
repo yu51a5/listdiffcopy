@@ -1,10 +1,10 @@
 import os
-from helpers import get_ssh_client, get_github_repo, get_github_repo_filenames_sha
+from helpers import get_siteground_ssh_client, get_github_repo, get_github_repo_filenames_sha
 
 repo = get_github_repo(token=os.environ['github_token'], repo_name="wordpress")
 
 # creating a folder using pygithub - see https://stackoverflow.com/questions/60815076/how-to-create-a-new-directory-in-a-repo-using-pygithub
-with get_ssh_client(**{what: os.environ[f'sftp_{what}'] for what in ('hostname', 'port', 'username', 'password', 'private_key')}) as ssh_client:
+with get_siteground_ssh_client(**{what: os.environ[f'sftp_{what}'] for what in ('hostname', 'port', 'username', 'password', 'private_key')}) as ssh_client:
   with ssh_client.open_sftp() as sftp_client:
     for sftp_dir, github_dir in (('www/yu51a5.org/public_html/wp-content/themes/pinboard-child', 'pinboard-child'), ('www/yu51a5.org/backup', 'posts')):
       all_existing_files = get_github_repo_filenames_sha(repo=repo, dir=github_dir)
