@@ -1,21 +1,24 @@
 from github import Github, Repository
 import paramiko
 import io
-import json
 import os
 import requests
 
-###############################################################################
-# get pCloud service
-###############################################################################
-GOOGLE_DRIVE_SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly']
+requests_session = requests.Session()
+pcloud_auth = {what : os.environ[f'pcloud_{what}'] for what in ['username', 'password']}
 
-def get_google_drive_service():
-  service_account_info = json.loads(os.getenv('GDRIVE_AUTH'))
-  creds = service_account.Credentials.from_service_account_info(
-                             service_account_info, scopes=GOOGLE_DRIVE_SCOPES)
-  service = build('drive', 'v3', credentials=creds)
-  return service
+###############################################################################
+# pCloud. Use eapi if the server is in Europe
+###############################################################################
+def get_pCloud_file_stats(full_filename):
+  files = {'01 - Border Reiver.mp3': open('d:\MUSIC\Get Lucky\01 - Border Reiver.mp3', 'rb')}
+  post = requests_session.post('https://eapi.pcloud.com/uploadfile', files=files, data=pcloud_auth)
+  return post.json()
+  
+def upload_to_pCloud(full_filename):
+  files = {'01 - Border Reiver.mp3': open('d:\MUSIC\Get Lucky\01 - Border Reiver.mp3', 'rb')}
+  post = requests_session.post('https://eapi.pcloud.com/uploadfile', files=files, data=pcloud_auth)
+  return post.json()
 
 ###############################################################################
 # get SSHClient client

@@ -6,6 +6,7 @@ repo = get_github_repo(token=os.environ['github_token'], repo_name="wordpress")
 # creating a folder using pygithub - see https://stackoverflow.com/questions/60815076/how-to-create-a-new-directory-in-a-repo-using-pygithub
 with get_siteground_ssh_client(**{what: os.environ[f'sftp_{what}'] for what in ('hostname', 'port', 'username', 'password', 'private_key')}) as ssh_client:
   with ssh_client.open_sftp() as sftp_client:
+    # backing up to GitHub
     for sftp_dir, github_dir in (('www/yu51a5.org/public_html/wp-content/themes/pinboard-child', 'pinboard-child'), ('www/yu51a5.org/backup', 'posts')):
       all_existing_files = get_github_repo_filenames_sha(repo=repo, dir=github_dir)
       for filename in sftp_client.listdir(sftp_dir):
@@ -20,5 +21,8 @@ with get_siteground_ssh_client(**{what: os.environ[f'sftp_{what}'] for what in (
             if current_github_content != sftp_contents: # only update in the new file is diffenent
               print('updated '+ github_filename)
               repo.update_file(github_filename, message="updating "+filename, content=sftp_contents, sha=all_existing_files[filename])
+    # backing up to a file
+    for sftp_dir, file_repo_dir in (('www/yu51a5.org/public_html/wp-content/themes/pinboard-child', 'pinboard-child'), ('www/yu51a5.org/backup', 'posts')):
+
       
 print("all done!")
