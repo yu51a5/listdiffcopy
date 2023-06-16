@@ -3,11 +3,17 @@
 # https://stackoverflow.com/questions/2354633/retrieve-wordpress-root-directory-path
 # ttps://wordpress.stackexchange.com/questions/271997/how-to-run-a-function-when-post-is-edited-or-updated-using-publish-post-action
 
+///////////////////////////////////////////////////////////////////////////////
+// add this code at the end of functions.php, just before ?> 
+///////////////////////////////////////////////////////////////////////////////
+
 function save_a_post_to_database_3($post_ID, $post_after, $post_before) {
   save_a_post_to_database($post_ID);
+  // ----uncomment to save all posts, then comment out, otherwise it will run unnecessarily -----
+  // save_all_post_to_database();
 }
 
-function save_a_post_to_database($post_ID, $post_after, $post_before) {
+function save_a_post_to_database($post_ID) {
   $current_post_status = get_post_status( $post_ID );
   # https://wordpress.org/documentation/article/post-status/
   $dont_save = array("trash", "auto-draft", "inherit");
@@ -29,8 +35,6 @@ function save_a_post_to_database($post_ID, $post_after, $post_before) {
         $usernames = $wp_filesystem->put_contents( $text_file, get_the_content(null, false, $post_ID), 0755 );
     }
   }
-  // ----uncomment to save all posts, then comment out, otherwise it will run unnecessarily -----
-  // save_all_post_to_database();
 }
 
 function save_all_post_to_database() {
@@ -39,7 +43,7 @@ function save_all_post_to_database() {
       'posts_per_page'  => -1
   ) );
   foreach ( $post_IDs as $p_ID) {
-      save_a_post_to_database_( $p_ID );
+      save_a_post_to_database( $p_ID );
   }
 }
 

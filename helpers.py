@@ -5,7 +5,7 @@ import os
 import requests
 
 requests_session = requests.Session()
-pcloud_auth = {what : os.environ[f'pcloud_{what}'] for what in ['username', 'password']}
+#pcloud_auth = {what : os.environ[f'pcloud_{what}'] for what in ['username', 'password']}
 
 ###############################################################################
 # pCloud. Use eapi if the server is in Europe
@@ -22,36 +22,36 @@ def upload_to_pCloud(full_filename):
 
 ###############################################################################
 # get SSHClient client
-# this connection works for siteground.com servers
 ###############################################################################
-def get_siteground_ssh_client(hostname: str, port: str, username: str, password: str,
-                   private_key: str):
-
-  # establish connection with targeted server
-  ssh_client = paramiko.SSHClient()
-
-  # needed to ensure that `\n`s are in the right place
-  ssh_private_key = f"""-----BEGIN OPENSSH PRIVATE KEY-----
-  {private_key}==
-  -----END OPENSSH PRIVATE KEY-----"""
-
-  # https://stackoverflow.com/questions/9963391/how-do-use-paramiko-rsakey-from-private-key
-  private_key = io.StringIO()
-  private_key.write(ssh_private_key)
-  private_key.seek(0)
-  key = paramiko.RSAKey.from_private_key(private_key, password)
+def get_ssh_client(hostname=None, port=None, username=None, password=None, private_key=None):
 
   ssh_client = paramiko.SSHClient()
   # AutoAddPolicy explained in --> https://www.linode.com/docs/guides/use-paramiko-python-to-ssh-into-a-server/
   ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-  ssh_client.connect(hostname=hostname, port=port, username=username, pkey=key)
 
-  return ssh_client
+  ssh_client_params = dict(hostname=hostname, port=port, username=username, password=password)
+  for what in ('hostname', 'port', 'username', 'password'):
+    if not ssh_client_params[what]:
+      ssh_client_params[what] = os.getenv(f'sftp_{what}')
 
-###############################################################################
-def get_another_ssh_client(hostname: str, port: str, username: str, password: str):
-  ssh_client = paramiko.SSHClient()
-  ssh_client.connect(hostname=hostname, port=port, username=username, password=password)
+  not_defined_errors = [what for what in ('hostname', 'port', 'username', 'password') if not ssh_client_params[what]]
+  if not_defined_errors:
+    raise Exception(", ".join(not_defined_errors) + " are not defined")
+
+  if not private_key:
+    private_key = os.getenv("sftp_private_key")
+  if private_key:
+    # https://stackoverflow.com/questions/9963391/how-do-use-paramiko-rsakey-from-private-key
+    # needed to ensure that `\n`s are in the right place
+    private_key__ = io.StringIO()
+    private_key__.write(f"""-----BEGIN OPENSSH PRIVATE KEY-----
+                       {private_key}==
+                       -----END OPENSSH PRIVATE KEY-----""")
+    private_key__.seek(0)
+    ssh_client_params['pkey'] = paramiko.RSAKey.from_private_key(private_key__, ssh_client_params['password'])
+    del ssh_client_params['password']
+
+  ssh_client.connect(**ssh_client_params)
   return ssh_client
   
 ###############################################################################
@@ -67,7 +67,7 @@ def get_github_repo(token: str, repo_name: str):
   repo = github_user.get_repo(repo_name)
   return repo
 
-
+###############################################################################
 def get_github_repo_filenames_sha(repo: Repository, dir: str):
   all_files = {}
   contents = repo.get_contents(dir)
