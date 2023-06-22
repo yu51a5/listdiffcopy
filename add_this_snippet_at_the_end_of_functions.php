@@ -7,34 +7,38 @@
 // add this code at the end of functions.php, just before ?> 
 ///////////////////////////////////////////////////////////////////////////////
 
-function save_a_post_to_database_3($post_ID, $post_after, $post_before) {
+function save_a_post_to_database_U($post_ID, $post_after, $post_before) {
   save_a_post_to_database($post_ID);
   // ----uncomment to save all posts, then comment out, otherwise it will run unnecessarily -----
   // save_all_post_to_database();
 }
 
+function save_a_post_to_database_T( $new_status, $old_status, $post ) {
+  save_a_post_to_database($post->ID);
+}
+
 function save_a_post_to_database($post_ID) {
-  $current_post_status = get_post_status( $post_ID );
   # https://wordpress.org/documentation/article/post-status/
   $dont_save = array("trash", "auto-draft", "inherit");
+  $current_post_status = get_post_status( $post_ID );
+  if (in_array($current_post_status, $dont_save)) 
+    return;
 
-  if (!in_array($current_post_status, $dont_save)) {
-    if ( is_user_logged_in() && WP_Filesystem() ) {
-        global $wp_filesystem;
+  if (!( is_user_logged_in() && WP_Filesystem() )) 
+    return;
 
-        // Set a path for your folder
-        $content_dir   = trailingslashit( dirname(ABSPATH) ) . 'backup';
-        $text_file     = trailingslashit( $content_dir ) .  $post_ID . '.txt'; 
+  // Set a path for your folder
+  $content_dir   = trailingslashit( dirname(ABSPATH) ) . 'backup';
+  $text_file     = trailingslashit( $content_dir ) .  $post_ID . '.txt'; 
 
-        // Create the text file
-        if ( ! $wp_filesystem->is_file( $text_file ) ) {
-            $usernames = $wp_filesystem->put_contents( $text_file, '', 0755 );
-        }
-
-        // Add post contents to the file
-        $usernames = $wp_filesystem->put_contents( $text_file, get_the_content(null, false, $post_ID), 0755 );
-    }
+  // Create the text file
+  global $wp_filesystem;
+  if ( ! $wp_filesystem->is_file( $text_file ) ) {
+      $usernames = $wp_filesystem->put_contents( $text_file, '', 0755 );
   }
+
+  // Add post contents to the file
+  $usernames = $wp_filesystem->put_contents( $text_file, get_the_content(null, false, $post_ID), 0755 );
 }
 
 function save_all_post_to_database() {
@@ -47,6 +51,6 @@ function save_all_post_to_database() {
   }
 }
 
-add_action( 'post_updated', 'save_a_post_to_database_3', 10, 3 );
+add_action( 'post_updated', 'save_a_post_to_database_U', 10, 3 );
 add_action( 'save_post',  'save_a_post_to_database', 10, 1 );
-add_action( 'transition_post_status', 'save_a_post_to_database_3', 10, 3 );
+add_action( 'transition_post_status', 'save_a_post_to_database_T', 10, 3 );
