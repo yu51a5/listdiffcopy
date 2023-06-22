@@ -15,7 +15,6 @@ class StoragePCloud(StorageBase):
   def _post(self, url_addon, param_dict={}):
     url = f'{self.url}{url_addon}?access_token={self.token}&' + '&'.join(f'{key}={value}' for key, value in param_dict.items())
     result = requests_session.post(url).json()
-    print((result['metadata']))
     return result
 
   ###############################################################################
@@ -30,6 +29,19 @@ class StoragePCloud(StorageBase):
   # filenames and their sha's are needed to be able to update existing files, see
   # https://stackoverflow.com/questions/63435987/python-pygithub-if-file-exists-then-update-else-create
   ###############################################################################
+  def __get_filenames_and_directories(self, folderid : int, recursive : bool, path_so_far : str):
+    contents_ = self._post(url_addon='listfolder', param_dict=dict(folderid=folderid))['metadata']['contents']
+    files_, directories_ = {}, {}
+    for c in contents_:
+      full_name = os.path.join(path_so_far, c['name'])
+      if not c['isfolder']:
+        files_[full_name] = c['fileid'] 
+      else:
+        directories_[full_name] = c['folderid'] if not recursive \
+                      else self.__get_filenames_and_directories(folderid=c['folderid'], recursive=True, path_so_far=full_name)
+        
+    return files_, directories_
+    
   def _get_filenames_and_directories(self, directory: str):
     
     head = directory
@@ -39,26 +51,17 @@ class StoragePCloud(StorageBase):
       root_folders = [tail] + root_folders
 
     folderid = 0
-
     path_so_far = ''
     for rf in root_folders:
-      contents_ = self._post(url_addon='listfolder', param_dict=dict(folderid=folderid))['metadata']['contents']
-      paths_next_level = {c['name'] : c['folderid'] for c in contents_ if c['isfolder']}
-      print( paths_next_level )
-      if rf not in paths_next_level:
+      _, directories_ = self.__get_filenames_and_directories(folderid=folderid, recursive=False, path_so_far=path_so_far)
+      if rf not in directories_:
         return [], []
+      folderid = directories_[rf]
       path_so_far = os.path.join(path_so_far, rf)
         
-    contents = self.repo.get_contents(directory)
-    all_files, all_directories = {}, {}
-    while contents:
-      content_item = contents.pop(0)
-      if content_item.type == "dir":
-        all_directories[content_item.name] = _self._get_filenames_and_directories(directory=content_item.path)
-      else:
-        all_files[content_item.name] = content_item.sha
+    files_, directories_ = self.__get_filenames_and_directories(folderid=folderid, recursive=True, path_so_far=directory)
 
-    return all_files, all_directories 
+    return files_, directories_ 
     
 
   
