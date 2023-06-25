@@ -25,10 +25,18 @@ class StorageBase():
   ###############################################################################
   def _delete_directory(self, dirname):
     raise Exception("needs to be overriden")
+
+  ###############################################################################
+  def _create_directory(self, dirname):
+    raise Exception("needs to be overriden")
   
   ###############################################################################
   def compare_stats_not_content(self):
     return True
+
+  ###############################################################################
+  def inexistent_directories_are_empty(self):
+    return False
   
   ###############################################################################
   def delete_file(self, filename):
@@ -39,17 +47,41 @@ class StorageBase():
   def delete_directory(self, dirname):
     self._delete_directory(dirname)
     print('removed directory ' + dirname)
-  
+
   ###############################################################################
-  def get_folder_pairs(self):
-    sftp_storage_folders_tuples = os.environ[f'sftp_{self.name}_folders'].split(';')
-    sftp_storage_folders_pairs = [gsp.split(',') for gsp in sftp_storage_folders_tuples]
-    return sftp_storage_folders_pairs
+  def create_directory(self, dirname):
+    self._create_directory(dirname)
+    print('created directory ' + dirname)
+    
+  ###############################################################################
+  def get_init_path(self):
+    return ''
 
   ###############################################################################
   def get_filenames_and_directories_and_cache(self, root: str):
-    self.cached_filenames_and_directories = self._get_filenames_and_directories(root=root)
-    return self.cached_filenames_and_directories
+
+    head = root
+    root_folders = []
+    while head:
+      head, tail = os.path.split(head)
+      root_folders = [tail] + root_folders
+
+    folderid = 0
+    path_so_far = self.get_init_path()
+    for rf in root_folders:
+      _, directories_ = self._get_filenames_and_directories(folderid=folderid, recursive=False, path_so_far=path_so_far)
+      path_so_far = os.path.join(path_so_far, rf)
+      if path_so_far not in directories_:
+        if self.inexistent_directories_are_empty():
+          self.cached_filenames, self.cached_directories = {}, {}
+          return self.cached_filenames, self.cached_directories
+        self.create_directory(dirname=path_so_far)
+        _, directories_ = self._get_filenames_and_directories(folderid=folderid, recursive=False, path_so_far=os.path.dirname(path_so_far))
+      folderid = directories_[path_so_far]
+      
+    
+    self.cached_filenames, self.cached_directories = self._get_filenames_and_directories(folderid=folderid, recursive=True, path_so_far=root)
+    return self.cached_filenames, self.cached_directories
 
   ###############################################################################
   def clean_cache(self):
@@ -70,4 +102,5 @@ class StorageBase():
     if compare_stats or (another_source.read(another_source_filename) != my_contents):
       another_source.update_file(another_source_filename, content=my_contents)
       print('updated ' + another_source_filename)
-      
+
+    

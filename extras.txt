@@ -1,0 +1,24 @@
+      def create_file_in_another_storage(self, ):
+          
+      # for all files on SFTP server ...
+      for filename in all_sftp_files:
+        storage_filename = storage_dir+'/'+filename
+        sftp_filename = sftp_dir + "/" + filename
+        # ... either create a new, if it's not on github ...
+        if filename not in all_storage_files:
+          with sftp_client.open(sftp_filename) as sftp_file:
+            print(sftp_filename)
+            storage.create_file(storage_filename, content=sftp_file.read())
+          print('created ' + storage_filename)
+        # ... or update an existing file ...
+        elif storage.compare_stats_not_content():
+          if storage.get_stats(storage_filename) != sftp_client.stats(sftp_filename):
+            with sftp_client.open(sftp_filename) as sftp_file:
+              storage.update_file(storage_filename, content=sftp_file.read())       
+              print('updated ' + storage_filename)
+        else:
+          with sftp_client.open(sftp_filename) as sftp_file:
+            sftp_contents = sftp_file.read() 
+            if storage.get_contents(storage_filename) != sftp_contents: # ... but only if the new file is diffenent
+              storage.update_file(storage_filename, content=sftp_contents)
+              print('updated ' + storage_filename)

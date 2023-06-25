@@ -29,7 +29,7 @@ class StoragePCloud(StorageBase):
   # filenames and their sha's are needed to be able to update existing files, see
   # https://stackoverflow.com/questions/63435987/python-pygithub-if-file-exists-then-update-else-create
   ###############################################################################
-  def __get_filenames_and_directories(self, folderid : int, recursive : bool, path_so_far : str):
+  def _get_filenames_and_directories(self, folderid : int, recursive : bool, path_so_far : str):
     contents_ = self._post(url_addon='listfolder', param_dict=dict(folderid=folderid))['metadata']['contents']
     files_, directories_ = {}, {}
     for c in contents_:
@@ -38,32 +38,9 @@ class StoragePCloud(StorageBase):
         files_[full_name] = c['fileid'] 
       else:
         directories_[full_name] = c['folderid'] if not recursive \
-                      else self.__get_filenames_and_directories(folderid=c['folderid'], recursive=True, path_so_far=full_name)
+                      else self._get_filenames_and_directories(folderid=c['folderid'], recursive=True, path_so_far=full_name)
         
     return files_, directories_
-    
-  def _get_filenames_and_directories(self, directory: str):
-    
-    head = directory
-    root_folders = []
-    while head:
-      head, tail = os.path.split(head)
-      root_folders = [tail] + root_folders
-
-    folderid = 0
-    path_so_far = ''
-    for rf in root_folders:
-      _, directories_ = self.__get_filenames_and_directories(folderid=folderid, recursive=False, path_so_far=path_so_far)
-      if rf not in directories_:
-        return [], []
-      folderid = directories_[rf]
-      path_so_far = os.path.join(path_so_far, rf)
-        
-    files_, directories_ = self.__get_filenames_and_directories(folderid=folderid, recursive=True, path_so_far=directory)
-
-    return files_, directories_ 
-    
-
   
 ###############################################################################
   def get_stats(self, filename):

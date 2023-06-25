@@ -27,34 +27,37 @@ class StorageSFTP(StorageBase):
                          {private_key}==
                          -----END OPENSSH PRIVATE KEY-----""")
       private_key__.seek(0)
-      self.ssh_client_params['pkey'] = paramiko.RSAKey.from_private_key(private_key__, ssh_client_params['password'])
+      self.ssh_client_params['pkey'] = paramiko.RSAKey.from_private_key(private_key__, self.ssh_client_params['password'])
       del self.ssh_client_params['password']
 
-    ###############################################################################
-    def __enter__(self):
-      self.ssh_client = paramiko.SSHClient()
-      # AutoAddPolicy explained in --> https://www.linode.com/docs/guides/use-paramiko-python-to-ssh-into-a-server/
-      self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-      self.ssh_client.connect(**self.ssh_client_params)
-      self.sftp_client = self.ssh_client.open_sftp()
-      return self
-
-    ###############################################################################
-    def __exit__(self, type, value, traceback):
-      self.sftp_client.close()
-      self.ssh_client.close()
+  ###############################################################################
+  def __enter__(self):
+    self.ssh_client = paramiko.SSHClient()
+    # AutoAddPolicy explained in --> https://www.linode.com/docs/guides/use-paramiko-python-to-ssh-into-a-server/
+    self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    self.ssh_client.connect(**self.ssh_client_params)
+    self.sftp_client = self.ssh_client.open_sftp()
+    return self
 
   ###############################################################################
-  def _get_filenames_and_directories(self, root: str):  
-    files, directories = [], {}
-    for entry in self.sftp_client.listdir_attr(self):
-      path = os.path.join(self, entry.filename)
+  def __exit__(self, type, value, traceback):
+    self.sftp_client.close()
+    self.ssh_client.close()
+
+  ###############################################################################
+  def _get_filenames_and_directories(self, folderid: int, recursive : bool, path_so_far : str):
+    contents = self.sftp_client.listdir_attr(path_so_far)
+
+    all_files, all_directories = [], {}
+    for entry in contents:
+      path = os.path.join(path_so_far, entry.filename)
       mode = entry.st_mode
       if S_ISDIR(mode):
-        directories[path] = self.get_contents_of_an_sftp_directory(root=path)
+        all_directories[path] = self._get_filenames_and_directories(None, True, path) if recursive else None
       if S_ISREG(mode):
-        files.append(path)
-    return files, directories
+        all_files.append(path)
+      
+    return all_files, all_directories
 
   ###############################################################################
   def _delete_file(self, filename):
@@ -68,7 +71,11 @@ class StorageSFTP(StorageBase):
   def get_stats(self, filename):
     result = self.sftp_client.stat(filename)
     return result
-  
+
+  ###############################################################################
+  def get_init_path(self):
+    return '.'
+    
   ###############################################################################
   def compare_and_update_a_file(self, another_source, another_source_filename, my_filename):
     if another_source.compare_stats_not_content():
@@ -92,8 +99,11 @@ class StorageSFTP(StorageBase):
         return
     with self.sftp_client.open(my_filename) as sftp_file:
       sftp_contents = sftp_file.read() 
-      if another_source.compare_stats_not_content() 
+      if another_source.compare_stats_not_content() \
            or (another_source.get_contents(another_source_filename) != sftp_contents):
         another_source.update_file(another_source_filename, content=sftp_contents)
         print('updated ' + another_source_filename)
-          
+             
+###############################################################################
+  def _create_directory(self, dirname):
+    pass
