@@ -13,30 +13,36 @@ def print_files_directories_recursive(files, directories):
 def files_directories_recursive(files_1, directories_1, storage_1, files_2, directories_2, storage_2, 
                                 current_directory_1, current_directory_2, 
                                 func_both_files_exist=None, func_file_1_not_found_in_2=None, func_directory_1_not_found_in_2=None):
+                                  
+  file_basenames_2 = [os.path.basename(f2) for f2 in files_2]
   for f1 in files_1:
-    if f1 not in files_2:
+    if os.path.basename(f1) not in file_basenames_2:
       if func_file_1_not_found_in_2:
-        func_file_1_not_found_in_2(file_1_with_path=os.path.join(current_directory_1, f1), 
+        print('files_1', files_1)
+        print('files_2', files_2)
+        func_file_1_not_found_in_2(file_1_with_path=f1, 
                                   storage_1=storage_1, 
                                   root_directory_2=current_directory_2, 
                                   storage_2=storage_2)
     else:
       if func_both_files_exist:
-        func_both_files_exist(file_1_with_path=os.path.join(current_directory_1, f1), 
+        func_both_files_exist(file_1_with_path=f1, 
                               storage_1=storage_1, 
-                              file_2_with_path=os.path.join(current_directory_2, f1), 
+                              file_2_with_path=f1, 
                               storage_2=storage_2)
+
+  dir_basenames_2 = [os.path.basename(d2) for d2 in directories_2]                                
   for d1 in directories_1:
-    if d1 not in directories_2:
+    if os.path.basename(d1) not in dir_basenames_2:
       if func_directory_1_not_found_in_2:
-        func_directory_1_not_found_in_2(directory_1_with_path=os.path.join(current_directory_1, d1), 
+        func_directory_1_not_found_in_2(directory_1_with_path=d1, 
                                         storage_1=storage_1, 
                                         root_directory_2=current_directory_2, 
                                         storage_2=storage_2)
     else:
       files_directories_recursive(*directories_1[d1], storage_1, *directories_2[d1], storage_2, 
-                                  current_directory_1=os.path.join(current_directory_1, d1), 
-                                  current_directory_2=os.path.join(current_directory_2, d1),
+                                  current_directory_1=d1, 
+                                  current_directory_2=d1,
                                   func_both_files_exist=func_both_files_exist, 
                                   func_file_not_found=func_file_1_not_found_in_2, 
                                   func_directory_not_found=func_directory_1_not_found_in_2)
@@ -56,39 +62,32 @@ def sync_contents(storage_from__storage_to__folders, StorageFromType, StorageToT
         
         print('\nall_to_files  ')
         print_files_directories_recursive(all_to_files  , all_to_directories)
-
-        continue
   
         def del_file_in_storage_1(file_1_with_path, storage_1, root_directory_2, storage_2):
           storage_1.delete_file(file_1_with_path)
-          print('removed file ' + file_1_with_path)
           
         def del_directory_storage_1(directory_1_with_path, storage_1, root_directory_2, storage_2):
           storage_1.delete_directory(directory_1_with_path)
-          print('removed directory ' + directory_1_with_path)
   
-        if all_to_files is None:
-          storage_to.create_directory(root_to_dir)
-          all_to_files, all_from_directories = [], {}
-        else:
+        if all_to_files or all_to_directories:
           # removing the files in github repo that are no longer on SFTP server
           files_directories_recursive(files_1=all_to_files  , directories_1=  all_to_directories, storage_1=storage_to, 
                                       files_2=all_from_files, directories_2=all_from_directories, storage_2=None, 
                                       current_directory_1=root_to_dir, current_directory_2=root_from_dir,
                                       func_file_1_not_found_in_2=del_file_in_storage_1, 
                                       func_directory_1_not_found_in_2=del_directory_storage_1)
-    
+          
         def create_file_in_storage_2(file_1_with_path, storage_1, root_directory_2, storage_2):
-          result_path = storage_1.create_file_in_another_storage(file_1_with_path, root_directory_2, storage_2)
-          print('created file ' + result_path)
+          storage_2.create_a_file(my_filename=os.path.join(root_directory_2, os.path.basename(file_1_with_path)), 
+                                  another_source=storage_1, 
+                                  another_source_filename=file_1_with_path)
   
         def update_file_in_storage_2(file_1_with_path, storage_1, file_2_with_path, storage_2):
-          result_path = storage_1.update_file_in_another_storage(file_1_with_path, file_2_with_path, storage_2)
-          print('updated file ' + result_path)
+          storage_2.compare_and_update_a_file(my_filename=file_2_with_path, another_source=storage_1, another_source_filename=file_1_with_path)
+         
   
         def create_directory_in_storage_2(directory_1_with_path, storage_1, root_directory_2, storage_2):
-          result_path = storage_2.create_directory(os.path.join(root_directory_2, os.path.basename(directory_1_with_path)))
-          print('created directory ' + result_path)
+          storage_2.create_directory(os.path.join(root_directory_2, os.path.basename(directory_1_with_path)))
   
         # adding missing files
         files_directories_recursive(files_1=all_from_files, directories_1=all_from_directories, storage_1=storage_from, 
