@@ -60,7 +60,7 @@ class StorageSFTP(StorageBase):
 
   ###############################################################################
   def _get_filenames_and_directories(self, folderid: int, recursive: bool,
-                                     path_so_far: str):
+                                                 path_so_far: str):
     contents = self.sftp_client.listdir_attr(path_so_far)
 
     all_files, all_directories = [], {}
@@ -101,12 +101,10 @@ class StorageSFTP(StorageBase):
   ###############################################################################
   def _create_file_given_content(self, filename, content):
     self._update_file_given_content(filename=filename, content=content)
-    print('created file ' + filename)
 
   ###############################################################################
   def _update_file_given_content(self, filename, content):
-    #self.sftp_client.putfo(io.BytesIO(content.encode()), filename)
-    print('updated file ' + filename)
+    self.sftp_client.putfo(io.BytesIO(content.encode()), filename)
   
   ###############################################################################
   def compare_and_update_a_file(self, my_filename, another_source, another_source_filename):
@@ -124,7 +122,7 @@ class StorageSFTP(StorageBase):
         if another_contents != sftp_contents:
           return
 
-    self._update_file_given_content(filename=my_filename, content=another_contents)
+    self.update_file_given_content(filename=my_filename, content=another_contents)
 
 
   ###############################################################################
@@ -137,8 +135,7 @@ class StorageSFTP(StorageBase):
     with self.sftp_client.open(my_filename) as sftp_file:
       sftp_contents = sftp_file.read()
       if compare_stats or (another_source.get_contents(another_source_filename) != sftp_contents):
-        another_source._update_file_given_content(
-          filename=another_source_filename, content=sftp_contents)
+        another_source.update_file_given_content(filename=another_source_filename, content=sftp_contents)
 
   ###############################################################################
   def _create_directory(self, dirname):
@@ -148,5 +145,5 @@ class StorageSFTP(StorageBase):
   def _create_a_file_in_another_source(self, my_filename, another_source, another_source_filename):
     with self.sftp_client.open(my_filename) as sftp_file:
       sftp_contents = sftp_file.read()
-      another_source._create_file_given_content(filename=another_source_filename, content=sftp_contents)
+      another_source.create_file_given_content(filename=another_source_filename, content=sftp_contents)
       

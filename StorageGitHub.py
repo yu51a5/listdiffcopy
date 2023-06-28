@@ -7,11 +7,7 @@ from StorageBase import StorageBase
 class StorageGitHub(StorageBase):
   # For Github token, see
   # https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens
-  def __init__(
-    self,
-    repo_name,
-    token=os.environ['github_token'],
-  ):
+  def __init__(self, repo_name, token=os.environ['github_token']):
     super().__init__(name='github')
     github_object = Github(token)
     github_user = github_object.get_user()
@@ -30,7 +26,7 @@ class StorageGitHub(StorageBase):
   # https://stackoverflow.com/questions/63435987/python-pygithub-if-file-exists-then-update-else-create
   ###############################################################################
   def _get_filenames_and_directories(self, folderid: int, recursive: bool,
-                                     path_so_far: str):
+                                           path_so_far: str):
     contents = self.repo.get_contents(path_so_far)
     if isinstance(contents, ContentFile.ContentFile):
       contents = [contents]
