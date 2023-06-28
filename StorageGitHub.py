@@ -43,25 +43,25 @@ class StorageGitHub(StorageBase):
     return all_files, all_directories
 
   ###############################################################################
-  def get_contents(self, storage_filename):
-    content = self.repo.get_contents(storage_filename).decoded_content
+  def get_contents(self, filename):
+    content = self.repo.get_contents(filename).decoded_content
     return content
 
-  def _delete_file(self, storage_filename):
-    self.repo.delete_file(storage_filename,
-                          "removing " + storage_filename,
-                          sha=self.cached_filenames[storage_filename])
+  def _delete_file(self, filename):
+    self.repo.delete_file(filename,
+                          "removing " + filename,
+                          sha=self.cached_filenames[filename])
 
-  def _create_file_given_content(self, storage_filename, content):
-    self.repo.create_file(storage_filename,
-                          message="creating " + storage_filename,
+  def _create_file_given_content(self, filename, content):
+    self.repo.create_file(filename,
+                          message="creating " + filename,
                           content=content)
 
-  def _update_file_given_content(self, storage_filename, content):
-    self.repo.update_file(storage_filename,
-                          message="updating " + storage_filename,
+  def _update_file_given_content(self, filename, content):
+    self.repo.update_file(filename,
+                          message="updating " + filename,
                           content=content,
-                          sha=self.cached_filenames[storage_filename])
+                          sha=self.cached_filenames[filename])
 
   def _create_directory(self, dirname):
     pass

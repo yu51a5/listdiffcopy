@@ -53,7 +53,8 @@ def sync_contents(storage_from__storage_to__folders, StorageFromType, StorageToT
         print('\nall_to_files  ')
         all_to_files  , all_to_directories   =   storage_to.get_filenames_and_directories_and_cache(root=root_to_dir)
         print('='*50)
-        
+
+        # removing obsolete files ###############################################################################
         def del_file_in_storage_1(file_1_with_path, storage_1, root_directory_2, storage_2):
           storage_1.delete_file(file_1_with_path)
           
@@ -61,28 +62,25 @@ def sync_contents(storage_from__storage_to__folders, StorageFromType, StorageToT
           storage_1.delete_directory(directory_1_with_path)
   
         if all_to_files or all_to_directories:
-          # removing the files in github repo that are no longer on SFTP server
           files_directories_recursive(files_1=all_to_files  , directories_1=  all_to_directories, storage_1=storage_to, 
                                       files_2=all_from_files, directories_2=all_from_directories, storage_2=None, 
                                       current_directory_1=root_to_dir, current_directory_2=root_from_dir,
                                       do_recursion_if_dir_not_found=False,
                                       func_file_1_not_found_in_2=del_file_in_storage_1, 
                                       func_directory_1_not_found_in_2=del_directory_storage_1)
-          
+
+        # adding missing files ###############################################################################
         def create_file_in_storage_2(file_1_with_path, storage_1, root_directory_2, storage_2):
-          file_to_be_created = os.path.join(root_directory_2, os.path.basename(file_1_with_path))
-          storage_2.create_a_file(my_filename=file_to_be_created, 
+          storage_2.create_a_file(my_filename=os.path.join(root_directory_2, os.path.basename(file_1_with_path)), 
                                   another_source=storage_1, 
                                   another_source_filename=file_1_with_path)
         
         def update_file_in_storage_2(file_1_with_path, storage_1, file_2_with_path, storage_2):
           storage_2.compare_and_update_a_file(my_filename=file_2_with_path, another_source=storage_1, another_source_filename=file_1_with_path)
-         
   
         def create_directory_in_storage_2(directory_1_with_path, storage_1, root_directory_2, storage_2):
           storage_2.create_directory(os.path.join(root_directory_2, os.path.basename(directory_1_with_path)))
   
-        # adding missing files
         files_directories_recursive(files_1=all_from_files, directories_1=all_from_directories, storage_1=storage_from, 
                                     files_2=all_to_files  , directories_2=  all_to_directories, storage_2=storage_to, 
                                     current_directory_1=root_from_dir, current_directory_2=root_to_dir,

@@ -130,14 +130,12 @@ class StorageBase():
     another_source._compare_and_update_a_file_in_another_source(my_filename=another_source_filename, 
                                                                 another_source=self, 
                                                                 another_source_filename=my_filename)
-    print('updated file ' + my_filename)
   
   ###############################################################################
   def create_a_file(self, my_filename, another_source, another_source_filename):
     another_source._create_a_file_in_another_source(my_filename=another_source_filename, 
                                                     another_source=self, 
                                                     another_source_filename=my_filename)
-    print('created file ' + my_filename)
 
   ###############################################################################
   def delete_file(self, filename):
