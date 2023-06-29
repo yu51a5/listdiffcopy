@@ -2,9 +2,41 @@ import os
 
 #################################################################################
 class StorageBase():
+
+  __txt_chrs = set([chr(i) for i in range(32, 127)] + list("\n\r\t\b"))
+  
   def __init__(self, name):
-    self.cached_filenames = None
+    self.clean_cache()
     self.name = name
+
+  #################################################################################
+  # source: stackoverflow.com/questions/1446549
+  # 2048 bytes because of https://pypi.org/project/python-magic/
+  def __file_contents_is_text(file_beginning):
+    if isinstance(file_beginning, bytes):
+      try:
+        file_beginning_str = file_beginning.decode()
+      except (UnicodeDecodeError, AttributeError):
+        return False
+    elif isinstance(file_beginning, str):
+      file_beginning_str = file_beginning
+    else:
+      raise Exception(f'Cannot process {type(file_beginning)}')
+
+    #s=open(filename).read(2048)
+    if not file_beginning_str:
+      # Empty files are considered text
+      return True
+    if "\0" in file_beginning_str:
+      # Files with null bytes are likely binary
+      return False
+    # Get the non-text characters (maps a character to itself then
+    # use the 'remove' option to get rid of the text characters.)
+    
+    booleans = [(i in StorageBase.__txt_chrs) for i in file_beginning_str]
+    # If more than 30% non-text characters, then
+    # this is considered a binary file
+    return (sum(booleans)/len(file_beginning_str) >= .7)
 
   ###############################################################################
   def __enter__(self):
@@ -47,12 +79,8 @@ class StorageBase():
     self.__please_override()
 
   ###############################################################################
-  def get_contents(self, filename):
+  def get_contents(self, filename, length=None):
     self.__please_override()
-    
-  ###############################################################################
-  def compare_stats_not_content(self):
-    return True
 
   ###############################################################################
   def inexistent_directories_are_empty(self):
@@ -80,33 +108,39 @@ class StorageBase():
       head, tail = os.path.split(head)
       root_folders = [tail] + root_folders
 
-    folderid = 0
     path_so_far = self.get_init_path()
+    self.cached_filenames, self.cached_directories = {}, {}
+    self.cached_filenames_flat, self.cached_directories_flat = {}, {path_so_far : 0}
     print('root_folders', root_folders)
     for rf in root_folders:
-      _, directories_ = self._get_filenames_and_directories(folderid=folderid, recursive=False, path_so_far=path_so_far)
+      _, directories_ = self._get_filenames_and_directories(recursive=False, path_so_far=path_so_far)
       path_so_far = os.path.join(path_so_far, rf)
       print("JUST path_so_far", path_so_far)
       if path_so_far not in directories_:
         if self.inexistent_directories_are_empty():
-          self.cached_filenames, self.cached_directories = {}, {}
           return self.cached_filenames, self.cached_directories
         self.create_directory(dirname=path_so_far)
         print("CREATED", path_so_far)
-        _, directories_ = self._get_filenames_and_directories(folderid=folderid, recursive=False, path_so_far=os.path.dirname(path_so_far))
-      folderid = directories_[path_so_far]
+        _, directories_ = self._get_filenames_and_directories(recursive=False, path_so_far=os.path.dirname(path_so_far))
     
-    self.cached_filenames, self.cached_directories = self._get_filenames_and_directories(folderid=folderid, recursive=True, path_so_far=root)
+    self.cached_filenames, self.cached_directories = self._get_filenames_and_directories(recursive=True, path_so_far=root)
     StorageBase.__print_files_directories_recursive(files=self.cached_filenames, directories=self.cached_directories)
     return self.cached_filenames, self.cached_directories
 
   ###############################################################################
   def clean_cache(self):
-    self.cached_filenames_and_directories = None
+    self.cached_filenames, self.cached_directories = None, None
+    self.cached_filenames_flat, self.cached_directories_flat = None, None
+
+  ###############################################################################
+  def file_contents_is_text(self, filename):
+    file_beginning = self.get_contents(filename=filename, length=2048)
+    result = StorageBase.__file_contents_is_text(file_beginning=file_beginning)
+    return result
 
   ###############################################################################
   def _file_stats_are_comparable_and_same(self, my_filename, another_source, another_source_filename):
-    compare_stats = another_source.compare_stats_not_content() and self.compare_stats_not_content()
+    compare_stats = not self.file_contents_is_text(my_filename)
     comp_result = compare_stats and (self.get_stats(my_filename) == another_source.get_stats(another_source_filename))
     return compare_stats, comp_result
 
@@ -127,6 +161,7 @@ class StorageBase():
   
   ###############################################################################
   def compare_and_update_a_file(self, my_filename, another_source, another_source_filename):
+    print('my_filename', my_filename, 'another_source_filename', another_source_filename)
     another_source._compare_and_update_a_file_in_another_source(my_filename=another_source_filename, 
                                                                 another_source=self, 
                                                                 another_source_filename=my_filename)

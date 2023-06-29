@@ -17,7 +17,7 @@ def files_directories_recursive(files_1, directories_1, storage_1, files_2, dire
       if func_both_files_exist:
         func_both_files_exist(file_1_with_path=f1, 
                               storage_1=storage_1, 
-                              file_2_with_path=f1, 
+                              file_2_with_path=os.path.join(current_directory_2, os.path.basename(f1)), 
                               storage_2=storage_2)
 
   dir_basenames_2 = [os.path.basename(d2) for d2 in directories_2]                                
@@ -76,6 +76,7 @@ def sync_contents(storage_from__storage_to__folders, StorageFromType, StorageToT
                                   another_source_filename=file_1_with_path)
         
         def update_file_in_storage_2(file_1_with_path, storage_1, file_2_with_path, storage_2):
+          print('file_1_with_path', file_1_with_path, 'file_2_with_path', file_2_with_path)
           storage_2.compare_and_update_a_file(my_filename=file_2_with_path, another_source=storage_1, another_source_filename=file_1_with_path)
   
         def create_directory_in_storage_2(directory_1_with_path, storage_1, root_directory_2, storage_2):

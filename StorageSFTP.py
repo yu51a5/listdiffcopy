@@ -59,8 +59,7 @@ class StorageSFTP(StorageBase):
     self.ssh_client.close()
 
   ###############################################################################
-  def _get_filenames_and_directories(self, folderid: int, recursive: bool,
-                                                 path_so_far: str):
+  def _get_filenames_and_directories(self, recursive: bool, path_so_far: str):
     contents = self.sftp_client.listdir_attr(path_so_far)
 
     all_files, all_directories = [], {}
@@ -93,17 +92,26 @@ class StorageSFTP(StorageBase):
     return '.'
 
   ###############################################################################
-  def get_contents(self, filename):
+  def get_contents(self, filename, length=None):
     with self.sftp_client.open(filename) as sftp_file:
-      sftp_contents = sftp_file.read()
+      sftp_contents = sftp_file.read(size=length)
     return sftp_contents
 
+  ###############################################################################
+  def file_contents_is_text(self, filename):
+    with self.sftp_client.open(filename) as sftp_file:
+      sftp_contents = sftp_file.read(size=2048)
+      result = StorageBase.__file_contents_is_text(file_beginning=sftp_contents)
+      return result
+    
   ###############################################################################
   def _create_file_given_content(self, filename, content):
     self._update_file_given_content(filename=filename, content=content)
 
   ###############################################################################
   def _update_file_given_content(self, filename, content):
+    print('type(content)', type(content))
+    print('type(content.encode())', type(content.encode()))
     self.sftp_client.putfo(io.BytesIO(content.encode()), filename)
   
   ###############################################################################

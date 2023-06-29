@@ -21,4 +21,16 @@
             sftp_contents = sftp_file.read() 
             if storage.get_contents(storage_filename) != sftp_contents: # ... but only if the new file is diffenent
               storage.update_file(storage_filename, content=sftp_contents)
-              print('updated ' + storage_filename)
+              print('updated ' + storage_filename)\
+
+
+
+
+                      kwargs.pop("fd", None)
+        fields = list(kwargs.items())
+        fields.extend(files)
+        m = MultipartEncoder(fields=fields)
+        resp = self.session.post(
+            self.endpoint + method, data=m, headers={"Content-Type": m.content_type}
+        )
+        return resp.json()

@@ -45,30 +45,67 @@ class StoragePCloud(StorageBase):
   # filenames and their sha's are needed to be able to update existing files, see
   # https://stackoverflow.com/questions/63435987/python-pygithub-if-file-exists-then-update-else-create
   ###############################################################################
-  def _get_filenames_and_directories(self, folderid : int, recursive : bool, path_so_far : str):
-    contents_ = self.__post(url_addon='listfolder', param_dict=dict(folderid=folderid))['metadata']['contents']
-    files_, directories_ = {}, {}
+  def _get_filenames_and_directories(self, recursive : bool, path_so_far : str):
+    contents_ = self.__post(url_addon='listfolder', param_dict=dict(folderid=self.cached_directories_flat[path_so_far]))['metadata']['contents']
+    files_, directories_ = [], {}
     for c in contents_:
       full_name = os.path.join(path_so_far, c['name'])
-      if not c['isfolder']:
-        files_[full_name] = c['fileid'] 
+      if c['isfolder']:
+        self.cached_directories_flat[full_name] = c['folderid']
+        directories_[full_name] = None if not recursive \
+                      else self._get_filenames_and_directories(recursive=True, path_so_far=full_name)
       else:
-        directories_[full_name] = c['folderid'] if not recursive \
-                      else self._get_filenames_and_directories(folderid=c['folderid'], recursive=True, path_so_far=full_name)
+        files_.append(full_name)
+        self.cached_filenames_flat[full_name] = c['fileid'] 
         
     return files_, directories_
-  
-###############################################################################
-  def get_contents(self, filename):
-    print('started')
-    c = self.__post(url_addon='file_open', param_dict=dict(path='/'+filename, flags=64))#['metadata']['contents']
-    size_ = self.__post(url_addon='file_size', param_dict=dict(fd=c['fd']))['size']
-    contents_ = self.__post(url_addon='file_read', param_dict=dict(fd=c['fd'], count=size_))
-    self.__post(url_addon='file_close', param_dict=dict(fd=c['fd']))
-    print('get_contents')
-    return contents_
 
 ###############################################################################
+  def wrapper_with_id(self, filename, func, **kwargs):
+    print('started')
+    c = self.__post(url_addon='file_open', param_dict=dict(path='/'+filename, flags=64))#['metadata']['contents']
+    result = func(id=c['fd'], **kwargs)
+    self.__post(url_addon='file_close', param_dict=dict(fd=c['fd']))
+    print('completed wrapper_with_id')
+    return result
+    
+###############################################################################
+  def __get_contents_inner(self, id, length=None):
+    size_ = self.__post(url_addon='file_size', param_dict=dict(fd=id))['size']
+    if length and size_ > length:
+       size_ = length
+    contents_ = self.__post(url_addon='file_read', param_dict=dict(fd=id, count=size_))
+    return contents_
+    
+  def get_contents(self, filename, length=None):
+    contents_ = self.wrapper_with_id(filename=filename, func=self.__get_contents_inner, length=length)
+    return contents_
+
+  ###############################################################################
+  def _delete_file(self, filename):
+    self.__post(url_addon='deletefile', param_dict=dict(fileid=self.cached_filenames_flat[filename]))
+    
+  ###############################################################################
+  def _delete_directory(self, dirname):
+    self.__post(url_addon='deletefolder', param_dict=dict(folderid=self.cached_directories_flat[dirname]))
+
+  ###############################################################################
+  def _create_directory(self, dirname):
+    self.__post(url_addon='createfolder', param_dict=dict(folderid=self.cached_directories_flat[os.path.dirname(dirname)],  
+                                                          name=os.path.basename(dirname)))
+
+  ###############################################################################
+  def _create_file_given_content(self, filename, content):
+    self.__post(url_addon='file_write', param_dict=dict(fileid=self.cached_filenames_flat[filename]))
+    
+  ###############################################################################
+  def _update_file_given_content(self, filename, content):
+    self.__post(url_addon='file_write', param_dict=dict(fileid=self.cached_filenames_flat[filename]))
+
+  ###############################################################################
+  def get_stats(self, filename):
+    result = self.__post(url_addon='stat', param_dict=dict(fileid=self.cached_filenames_flat[filename]))
+    return result
 
 ###############################################################################
 
