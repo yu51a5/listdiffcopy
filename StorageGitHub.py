@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from github import Github, ContentFile
 from StorageBase import StorageBase
 
@@ -39,6 +40,10 @@ class StorageGitHub(StorageBase):
 
   ###############################################################################
   def get_contents(self, filename, length=None):
+    
+    cont_raw = self.repo.get_contents(filename)
+    if not cont_raw.content:
+      return cont_raw.content
     content = self.repo.get_contents(filename).decoded_content # bytes
     if length:
       return content[:length]
@@ -62,5 +67,15 @@ class StorageGitHub(StorageBase):
 
   def _create_directory(self, dirname):
     pass
+  ###############################################################################
+  def get_stats(self, filename):
+    contents = self.repo.get_contents(filename)
+    commits = self.repo.get_commits()
+    for c in commits:
+      for f in c.files:
+        if f.filename == filename:
+          result = {'modified' : c.last_modified, 'size' : contents.size}
+          result['modified'] = datetime.strptime(result['modified'], '%a, %d %b %Y %H:%M:%S GMT')
+          return result
 
   ###############################################################################

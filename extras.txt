@@ -34,3 +34,35 @@
             self.endpoint + method, data=m, headers={"Content-Type": m.content_type}
         )
         return resp.json()
+
+
+  ###############################################################################
+  def compare_and_update_a_file(self, my_filename, another_source, another_source_filename):
+
+    compare_stats, comp_result = self._file_stats_are_comparable_and_same(
+          my_filename=my_filename, another_source=another_source, another_source_filename=another_source_filename)
+    if comp_result:
+        return
+      
+    another_contents = another_source.get_contents(another_source_filename)
+                                  
+    if not compare_stats:
+      with self.sftp_client.open(my_filename) as sftp_file:
+        sftp_contents = sftp_file.read()
+        if another_contents != sftp_contents:
+          return
+
+    self.update_file_given_content(filename=my_filename, content=another_contents)
+
+
+  ###############################################################################
+  def _update_file_in_another_source(self, my_filename, another_source,
+                                     another_source_filename):
+    compare_stats, comp_result = self._file_stats_are_comparable_and_same(
+          my_filename=my_filename, another_source=another_source, another_source_filename=another_source_filename)
+    if comp_result:
+        return
+    with self.sftp_client.open(my_filename) as sftp_file:
+      sftp_contents = sftp_file.read()
+      if compare_stats or (another_source.get_contents(another_source_filename) != sftp_contents):
+        another_source.update_file_given_content(filename=another_source_filename, content=sftp_contents)

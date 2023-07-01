@@ -76,7 +76,6 @@ def sync_contents(storage_from__storage_to__folders, StorageFromType, StorageToT
                                   another_source_filename=file_1_with_path)
         
         def update_file_in_storage_2(file_1_with_path, storage_1, file_2_with_path, storage_2):
-          print('file_1_with_path', file_1_with_path, 'file_2_with_path', file_2_with_path)
           storage_2.compare_and_update_a_file(my_filename=file_2_with_path, another_source=storage_1, another_source_filename=file_1_with_path)
   
         def create_directory_in_storage_2(directory_1_with_path, storage_1, root_directory_2, storage_2):

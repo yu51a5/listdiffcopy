@@ -9,6 +9,9 @@ class StorageBase():
     self.clean_cache()
     self.name = name
 
+  def __log(message, *args):
+    print(message, *args)
+
   #################################################################################
   # source: stackoverflow.com/questions/1446549
   # 2048 bytes because of https://pypi.org/project/python-magic/
@@ -92,11 +95,11 @@ class StorageBase():
 
   ###############################################################################
   def __print_files_directories_recursive(files, directories):
-    print('Files----')
+    StorageBase.__log(message='Files----')
     for f in files:
-      print(f)
+      StorageBase.__log(message=f)
     for d, (fi, dir) in directories.items():
-      print(f'Directory ---- {d}----')
+      StorageBase.__log(message=f'Directory ---- {d}----')
       StorageBase.__print_files_directories_recursive(fi, dir)
 
   ###############################################################################
@@ -111,16 +114,13 @@ class StorageBase():
     path_so_far = self.get_init_path()
     self.cached_filenames, self.cached_directories = {}, {}
     self.cached_filenames_flat, self.cached_directories_flat = {}, {path_so_far : 0}
-    print('root_folders', root_folders)
     for rf in root_folders:
       _, directories_ = self._get_filenames_and_directories(recursive=False, path_so_far=path_so_far)
       path_so_far = os.path.join(path_so_far, rf)
-      print("JUST path_so_far", path_so_far)
       if path_so_far not in directories_:
         if self.inexistent_directories_are_empty():
           return self.cached_filenames, self.cached_directories
         self.create_directory(dirname=path_so_far)
-        print("CREATED", path_so_far)
         _, directories_ = self._get_filenames_and_directories(recursive=False, path_so_far=os.path.dirname(path_so_far))
     
     self.cached_filenames, self.cached_directories = self._get_filenames_and_directories(recursive=True, path_so_far=root)
@@ -139,20 +139,37 @@ class StorageBase():
     return result
 
   ###############################################################################
-  def _file_stats_are_comparable_and_same(self, my_filename, another_source, another_source_filename):
-    compare_stats = not self.file_contents_is_text(my_filename)
-    comp_result = compare_stats and (self.get_stats(my_filename) == another_source.get_stats(another_source_filename))
-    return compare_stats, comp_result
+  def _get_definitely_different_and_textness(self, from_filename, to_source, to_filename):
+    from_stats = self.get_stats(from_filename)
+    to_stats = to_source.get_stats(to_filename)
+
+    if from_stats['size'] != to_stats['size']:
+      self.__log('sizes different')
+      return True, None
+    if from_stats['modified'] > to_stats['modified']:
+      self.__log('sizes not right')
+      return True, None
+    
+    from_is_text = self.file_contents_is_text(from_filename) 
+    
+    return from_is_text != to_source.file_contents_is_text(to_filename), from_is_text
 
   ###############################################################################
   def _compare_and_update_a_file_in_another_source(self, my_filename, another_source, another_source_filename):
-    compare_stats, comp_result = self._file_stats_are_comparable_and_same(my_filename=my_filename, 
-                                                                          another_source=another_source, 
-                                                                          another_source_filename=another_source_filename)
-    if not comp_result:
-      my_contents = self.get_contents(my_filename) 
-      if compare_stats or (another_source.get_contents(another_source_filename) != my_contents):
-        another_source.update_file_given_content(filename=another_source_filename, content=my_contents)
+    definitely_different, textness = self._get_definitely_different_and_textness(from_filename=my_filename, 
+                                                                                 to_source=another_source, 
+                                                                                 to_filename=another_source_filename)
+    if (not definitely_different) and (not textness):
+      print('definitely_different, textness', definitely_different, textness, my_filename)
+      return
+      
+    my_contents = self.get_contents(my_filename) 
+    if not definitely_different: 
+      if another_source.get_contents(another_source_filename) == my_contents:
+        print('same contents', my_filename)
+        return
+        
+    another_source.update_file_given_content(filename=another_source_filename, content=my_contents)
         
   ###############################################################################
   def _create_a_file_in_another_source(self, my_filename, another_source, another_source_filename):
@@ -161,7 +178,6 @@ class StorageBase():
   
   ###############################################################################
   def compare_and_update_a_file(self, my_filename, another_source, another_source_filename):
-    print('my_filename', my_filename, 'another_source_filename', another_source_filename)
     another_source._compare_and_update_a_file_in_another_source(my_filename=another_source_filename, 
                                                                 another_source=self, 
                                                                 another_source_filename=my_filename)
@@ -175,25 +191,25 @@ class StorageBase():
   ###############################################################################
   def delete_file(self, filename):
     self._delete_file(filename)
-    print('removed file ' + filename)
+    StorageBase.__log(message='removed file ' + filename)
     
   ###############################################################################
   def delete_directory(self, dirname):
     self._delete_directory(dirname)
-    print('removed directory ' + dirname)
+    StorageBase.__log(message='removed directory ' + dirname)
 
   ###############################################################################
   def create_file_given_content(self, filename, content):
     self._create_file_given_content(filename=filename, content=content)
-    print('created file ' + filename)
+    StorageBase.__log(message='created file ' + filename)
 
   ###############################################################################
   def update_file_given_content(self, filename, content):
     self._update_file_given_content(filename=filename, content=content)
-    print('updated file ' + filename)
+    StorageBase.__log(message='updated file ' + filename)
   
   ###############################################################################
   def create_directory(self, dirname):
     self._create_directory(dirname)
-    print('created directory ' + dirname)
+    StorageBase.__log(message='created directory ' + dirname)
     

@@ -1,6 +1,11 @@
 import os
 import requests
+from datetime import datetime
+import requests.packages.urllib3.contrib
 from StorageBase import StorageBase
+# installed using pip install urllib3==1.26.15 requests-toolbelt==0.10.1
+# https://stackoverflow.com/questions/76175487
+from requests_toolbelt.multipart.encoder import MultipartEncoder
 
 #################################################################################
 # pCloud
@@ -28,8 +33,10 @@ class StoragePCloud(StorageBase):
 
   ###############################################################################
   def __post(self, url_addon, param_dict={}):
-    url = f'{self.url}{url_addon}?access_token={self.token}&' + '&'.join(f'{key}={str(value).replace(" ", "%20")}' for key, value in param_dict.items())
-    response = self.requests_session.post(url)
+    #url = f'{self.url}{url_addon}?access_token={self.token}&' + '&'.join(f'{key}={str(value).replace(" ", "%20")}' for key, value in param_dict.items())
+    all_params = {'access_token' : self.token}
+    all_params.update(param_dict)
+    response = self.requests_session.post(f'{self.url}{url_addon}', data=all_params)
     content_type = response.headers["content-type"].strip()
 
     if 'application/json' in content_type:
@@ -62,11 +69,9 @@ class StoragePCloud(StorageBase):
 
 ###############################################################################
   def wrapper_with_id(self, filename, func, **kwargs):
-    print('started')
     c = self.__post(url_addon='file_open', param_dict=dict(path='/'+filename, flags=64))#['metadata']['contents']
     result = func(id=c['fd'], **kwargs)
     self.__post(url_addon='file_close', param_dict=dict(fd=c['fd']))
-    print('completed wrapper_with_id')
     return result
     
 ###############################################################################
@@ -96,7 +101,10 @@ class StoragePCloud(StorageBase):
 
   ###############################################################################
   def _create_file_given_content(self, filename, content):
-    self.__post(url_addon='file_write', param_dict=dict(fileid=self.cached_filenames_flat[filename]))
+    result = self.__post(url_addon='uploadfile', param_dict=dict(folderid=self.cached_directories_flat[os.path.dirname(filename)],  
+                                                          filename=os.path.basename(filename)))
+    print(result)
+    self.__post(url_addon='file_write', param_dict=dict(fileid=result["metadata"]["fileid"]))
     
   ###############################################################################
   def _update_file_given_content(self, filename, content):
@@ -104,9 +112,21 @@ class StoragePCloud(StorageBase):
 
   ###############################################################################
   def get_stats(self, filename):
-    result = self.__post(url_addon='stat', param_dict=dict(fileid=self.cached_filenames_flat[filename]))
+    metadata = self.__post(url_addon='stat', param_dict=dict(fileid=self.cached_filenames_flat[filename]))['metadata']
+    result = {k : v for k, v in metadata.items() if k in ('size', 'modified')}
+    result['modified'] = datetime.strptime(result['modified'], '%a, %d %b %Y %H:%M:%S +0000')
     return result
 
-###############################################################################
 
+###############################################################################
+  def __get_contents_inner(self, id, length=None):
+    size_ = self.__post(url_addon='file_size', param_dict=dict(fd=id))['size']
+    if length and size_ > length:
+       size_ = length
+    contents_ = self.__post(url_addon='file_read', param_dict=dict(fd=id, count=size_))
+    return contents_
+    
+  def get_contents(self, filename, length=None):
+    contents_ = self.wrapper_with_id(filename=filename, func=self.__get_contents_inner, length=length)
+    return contents_
     
