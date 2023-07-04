@@ -144,10 +144,10 @@ class StorageBase():
     to_stats = to_source.get_stats(to_filename)
 
     if from_stats['size'] != to_stats['size']:
-      self.__log('sizes different')
+      StorageBase.__log(f"sizes different, file {from_filename}, size_from {from_stats['size']}, size_to {to_stats['size']}")
       return True, None
     if from_stats['modified'] > to_stats['modified']:
-      self.__log('sizes not right')
+      StorageBase.__log('modif dates not right')
       return True, None
     
     from_is_text = self.file_contents_is_text(from_filename) 

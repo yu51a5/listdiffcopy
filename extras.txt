@@ -66,3 +66,18 @@
       sftp_contents = sftp_file.read()
       if compare_stats or (another_source.get_contents(another_source_filename) != sftp_contents):
         another_source.update_file_given_content(filename=another_source_filename, content=sftp_contents)
+
+        ###############################################################################
+  def __write_contents_inner(self, filename, contents):
+
+    files = [("file", (os.path.basename(filename), io.BytesIO(contents)), )]
+    
+    size_ = self.__post(url_addon='file_size', param_dict=dict(fd=id))['size']
+    if length and size_ > length:
+       size_ = length
+    contents_ = self.__post(url_addon='file_read', param_dict=dict(fd=id, count=size_))
+    return contents_
+    
+  def get_contents(self, filename, length=None):
+    contents_ = self.wrapper_with_id(filename=filename, func=self.__get_contents_inner, length=length)
+    return contents_

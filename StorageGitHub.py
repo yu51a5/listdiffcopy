@@ -1,17 +1,29 @@
 import os
 from datetime import datetime
 from github import Github, ContentFile
+import requests
+from requests.structures import CaseInsensitiveDict
+import base64
+
 from StorageBase import StorageBase
 
 #################################################################################
 class StorageGitHub(StorageBase):
-  # For Github token, see
+  # github_token secret structure: OWNER|REPO|TOKEN . For Github token, see
   # https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens
-  def __init__(self, repo_name, token=os.environ['github_token']):
+  def __init__(self, owner=None, repo_name=None, token=None):
     super().__init__(name='github')
-    github_object = Github(token)
+    
+    secret = os.getenv('github_owner_repo_token')
+    secret_components = secret.split('|') if secret else []
+    
+    self.token = secret_components.pop(-1) if secret_components and (not token) else token
+    self.repo_name = secret_components.pop(-1) if secret_components and (not repo_name) else repo_name
+    self.owner = secret_components.pop(-1) if secret_components and (not owner) else owner
+        
+    github_object = Github(self.token)
     github_user = github_object.get_user()
-    self.repo = github_user.get_repo(repo_name)
+    self.repo = github_user.get_repo(self.repo_name)
 
   ###############################################################################
   def inexistent_directories_are_empty(self):
@@ -40,11 +52,26 @@ class StorageGitHub(StorageBase):
 
   ###############################################################################
   def get_contents(self, filename, length=None):
+
+    url = f"https://api.github.com/repos/{self.owner}/{self.repo_name}/contents/{filename}"
+
+    headers = CaseInsensitiveDict()
+    headers["Accept"] = "application/vnd.github.v3.raw"
+    headers["Authorization"] = f"Bearer {self.token}"
+    headers["X-GitHub-Api-Version"] = "2022-11-28"
     
-    cont_raw = self.repo.get_contents(filename)
-    if not cont_raw.content:
-      return cont_raw.content
-    content = self.repo.get_contents(filename).decoded_content # bytes
+    
+    resp = requests.get(url, headers=headers)
+
+    img_data = resp.text.encode()
+    content = base64.b64decode(img_data)
+
+    #content = base64.b64encode(resp.text) #bytes(resp.text, encoding="raw_unicode_escape")
+    
+    #cont_raw = self.repo.get_contents(filename)
+    #if not cont_raw.content:
+    #  return cont_raw.content
+    #content = self.repo.get_contents(filename).decoded_content # bytes
     if length:
       return content[:length]
     return content
