@@ -11,7 +11,7 @@ with cProfile.Profile() as pr:
   #folders_pcloud_github = [['music/nein', 'b']]
 
   #sync_contents(folders_sftp_github, StorageSFTP, StorageGitHub) #, StoragePCloud,)
-  sync_contents([['tiny', 'e']], StorageGitHub, StorageGitHub) 
+  sync_contents([['music/warum', 'a']], StorageGitHub, StorageGitHub) 
   # sync_contents([['tiny', 'e']], StorageGitHub, StoragePCloud) 
   #sync_contents([['', 'music/warum']], StoragePCloud, StorageGitHub) 
 

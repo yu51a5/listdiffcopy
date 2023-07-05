@@ -53,27 +53,26 @@ class StorageGitHub(StorageBase):
   ###############################################################################
   def get_contents(self, filename, length=None):
 
-    url = f"https://api.github.com/repos/{self.owner}/{self.repo_name}/contents/{filename}"
+    if length:
+      return bytes(b'')
 
     headers = CaseInsensitiveDict()
     headers["Accept"] = "application/vnd.github.v3.raw"
     headers["Authorization"] = f"Bearer {self.token}"
     headers["X-GitHub-Api-Version"] = "2022-11-28"
-    
-    
-    resp = requests.get(url, headers=headers)
 
-    img_data = resp.text.encode()
-    content = base64.b64decode(img_data)
-
-    #content = base64.b64encode(resp.text) #bytes(resp.text, encoding="raw_unicode_escape")
+    url = f"https://api.github.com/repos/{self.owner}/{self.repo_name}/contents/{filename}"
+    #url2 = f'https://raw.githubusercontent.com/{self.owner}/{self.repo_name}/main/{filename}'
+    content = requests.get(url, headers=headers).content
+    #content_2 = requests.get(url2, headers=headers).content
+    #contents = [content, content_2]
+    #print("checking contents", contents[0] == contents[1], filename)
     
     #cont_raw = self.repo.get_contents(filename)
     #if not cont_raw.content:
     #  return cont_raw.content
-    #content = self.repo.get_contents(filename).decoded_content # bytes
-    if length:
-      return content[:length]
+    #content_ref = cont_raw.decoded_content # bytes
+  
     return content
 
   def _delete_file(self, filename):
