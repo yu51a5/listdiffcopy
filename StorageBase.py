@@ -15,7 +15,9 @@ class StorageBase():
   #################################################################################
   # source: stackoverflow.com/questions/1446549
   # 2048 bytes because of https://pypi.org/project/python-magic/
-  def __file_contents_is_text(file_beginning):
+  def _file_contents_is_text(file_beginning):
+    if not file_beginning:
+      return None
     if isinstance(file_beginning, bytes):
       try:
         file_beginning_str = file_beginning.decode()
@@ -78,9 +80,31 @@ class StorageBase():
     self.__please_override()
 
   ###############################################################################
-  def get_stats(self, filename):
-    self.__please_override()
+  def get_file_info(self, filename, info_name):
+    return self.__cached_filenames_flat[filename][info_name]
 
+  ###############################################################################
+  def set_file_info(self, filename, param_dict):
+    if filename not in self.__cached_filenames_flat:
+      self.__cached_filenames_flat[filename] = {}
+    self.__cached_filenames_flat[filename].update(param_dict)
+
+  ###############################################################################
+  def fetch_files_info(self):
+    for filename in self.__cached_filenames_flat:
+      info = self._fetch_stats_one_file(filename)
+      self.set_file_info(filename, info)
+
+  ###############################################################################
+  def get_dir_info(self, dirname, info_name):
+    return self.__cached_directories_flat[dirname][info_name]
+
+  ###############################################################################
+  def set_dir_info(self, dirname, param_dict):
+    if dirname not in self.__cached_directories_flat:
+      self.__cached_directories_flat[dirname] = {}
+    self.__cached_directories_flat[dirname].update(param_dict)
+    
   ###############################################################################
   def get_contents(self, filename, length=None):
     self.__please_override()
@@ -102,6 +126,10 @@ class StorageBase():
       StorageBase.__log(message=f'Directory ---- {d}----')
       StorageBase.__print_files_directories_recursive(fi, dir)
 
+  ###############################################################################  
+  def _get_default_root_dir_info(self):
+    return {}
+    
   ###############################################################################
   def get_filenames_and_directories_and_cache(self, root: str):
 
@@ -112,25 +140,25 @@ class StorageBase():
       root_folders = [tail] + root_folders
 
     path_so_far = self.get_init_path()
-    self.cached_filenames, self.cached_directories = {}, {}
-    self.cached_filenames_flat, self.cached_directories_flat = {}, {path_so_far : 0}
+    self.__cached_filenames, self.__cached_directories = {}, {}
+    self.__cached_filenames_flat, self.__cached_directories_flat = {}, self._get_default_root_dir_info()
     for rf in root_folders:
       _, directories_ = self._get_filenames_and_directories(recursive=False, path_so_far=path_so_far)
       path_so_far = os.path.join(path_so_far, rf)
       if path_so_far not in directories_:
         if self.inexistent_directories_are_empty():
-          return self.cached_filenames, self.cached_directories
+          return self.__cached_filenames, self.__cached_directories
         self.create_directory(dirname=path_so_far)
         _, directories_ = self._get_filenames_and_directories(recursive=False, path_so_far=os.path.dirname(path_so_far))
     
-    self.cached_filenames, self.cached_directories = self._get_filenames_and_directories(recursive=True, path_so_far=root)
-    StorageBase.__print_files_directories_recursive(files=self.cached_filenames, directories=self.cached_directories)
-    return self.cached_filenames, self.cached_directories
+    self.__cached_filenames, self.__cached_directories = self._get_filenames_and_directories(recursive=True, path_so_far=root)
+    StorageBase.__print_files_directories_recursive(files=self.__cached_filenames, directories=self.__cached_directories)
+    return self.__cached_filenames, self.__cached_directories
 
   ###############################################################################
   def clean_cache(self):
-    self.cached_filenames, self.cached_directories = None, None
-    self.cached_filenames_flat, self.cached_directories_flat = None, None
+    self.__cached_filenames, self.__cached_directories = None, None
+    self.__cached_filenames_flat, self.__cached_directories_flat = None, None
 
   ###############################################################################
   def file_contents_is_text(self, filename):
@@ -140,13 +168,16 @@ class StorageBase():
 
   ###############################################################################
   def _get_definitely_different_and_textness(self, from_filename, to_source, to_filename):
-    from_stats = self.get_stats(from_filename)
-    to_stats = to_source.get_stats(to_filename)
-
-    if from_stats['size'] != to_stats['size']:
-      StorageBase.__log(f"sizes different, file {from_filename}, size_from {from_stats['size']}, size_to {to_stats['size']}")
+    
+    from_size = self.get_file_info(from_filename, 'size')
+    to_size = to_source.get_file_info(to_filename, 'size')
+    if (from_size is not None) and (to_size is not None) and (from_size != to_size):
+      StorageBase.__log(f"sizes different, file {from_filename}, size_from {from_size}, size_to {to_size}")
       return True, None
-    if from_stats['modified'] > to_stats['modified']:
+      
+    date_from = self.get_file_info(from_filename, 'modified')
+    date_to = to_source.get_file_info(to_filename, 'modified')
+    if (date_from is not None) and (date_to is not None) and (date_from > date_to):
       StorageBase.__log('modif dates not right')
       return True, None
     
@@ -191,11 +222,13 @@ class StorageBase():
   ###############################################################################
   def delete_file(self, filename):
     self._delete_file(filename)
+    del self.__cached_filenames_flat[filename]
     StorageBase.__log(message='removed file ' + filename)
     
   ###############################################################################
   def delete_directory(self, dirname):
     self._delete_directory(dirname)
+    del self.__cached_directories_flat[dirname]
     StorageBase.__log(message='removed directory ' + dirname)
 
   ###############################################################################

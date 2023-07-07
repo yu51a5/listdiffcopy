@@ -1,14 +1,15 @@
 import os
-from datetime import datetime
 from github import Github, ContentFile
 import requests
 from requests.structures import CaseInsensitiveDict
-import base64
 
 from StorageBase import StorageBase
+from settings import fetch_github_modif_timestamps
 
 #################################################################################
 class StorageGitHub(StorageBase):
+  file_size_limit = 100 << 20
+  
   # github_token secret structure: OWNER|REPO|TOKEN . For Github token, see
   # https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens
   def __init__(self, owner=None, repo_name=None, token=None):
@@ -46,7 +47,7 @@ class StorageGitHub(StorageBase):
             True, path_so_far=content_item.path) if recursive else None
       else:
         all_files.append(content_item.path)
-        self.cached_filenames_flat[content_item.path] = content_item.sha
+        self.set_file_info(content_item.path, {'sha' : content_item.sha})
 
     return all_files, all_directories
 
@@ -63,7 +64,9 @@ class StorageGitHub(StorageBase):
 
     url = f"https://api.github.com/repos/{self.owner}/{self.repo_name}/contents/{filename}"
     #url2 = f'https://raw.githubusercontent.com/{self.owner}/{self.repo_name}/main/{filename}'
-    content = requests.get(url, headers=headers).content
+    response = requests.get(url, headers=headers)
+    content = response.content
+    self.set_file_info(filename, {'size' : len(content)})
     #content_2 = requests.get(url2, headers=headers).content
     #contents = [content, content_2]
     #print("checking contents", contents[0] == contents[1], filename)
@@ -78,7 +81,7 @@ class StorageGitHub(StorageBase):
   def _delete_file(self, filename):
     self.repo.delete_file(filename,
                           "removing " + filename,
-                          sha=self.cached_filenames_flat[filename])
+                          sha=self.get_file_info(filename, 'sha'))
 
   def _create_file_given_content(self, filename, content):
     self.repo.create_file(filename,
@@ -89,19 +92,25 @@ class StorageGitHub(StorageBase):
     self.repo.update_file(filename,
                           message="updating " + filename,
                           content=content,
-                          sha=self.cached_filenames_flat[filename])
+                          sha=self.get_file_info(filename, 'sha'))
 
   def _create_directory(self, dirname):
     pass
+    
   ###############################################################################
-  def get_stats(self, filename):
-    contents = self.repo.get_contents(filename)
-    commits = self.repo.get_commits()
-    for c in commits:
-      for f in c.files:
-        if f.filename == filename:
-          result = {'modified' : c.last_modified, 'size' : contents.size}
-          result['modified'] = datetime.strptime(result['modified'], '%a, %d %b %Y %H:%M:%S GMT')
-          return result
+  def file_contents_is_text(self, filename):
+    return True
+  
+  ###############################################################################
+  def _fetch_stats_one_file(self, filename):
+    last_modif_date = None
+    if fetch_github_modif_timestamps:
+      # https://stackoverflow.com/questions/50194241/get-when-the-file-was-last-updated-from-a-github-repository
+      commits = self.repo.get_commits(sha=self.get_file_info(filename, 'sha'))
+      if commits.totalCount:
+        last_modif_date = commits[0].commit.committer.date
+    dict_ = {'modified' : last_modif_date, 'size' : None}
+    return dict_
+    
 
   ###############################################################################

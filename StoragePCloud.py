@@ -36,7 +36,6 @@ class StoragePCloud(StorageBase):
 
   ###############################################################################
   def __post(self, url_addon, param_dict={}, files=None):
-    #url = f'{self.url}{url_addon}?access_token={self.token}&' + '&'.join(f'{key}={str(value).replace(" ", "%20")}' for key, value in param_dict.items())
 
     if files:
       fields = [(str(k), str(v)) for k, v in param_dict.items()] + files
@@ -58,23 +57,36 @@ class StoragePCloud(StorageBase):
       raise Exception(f'Cannot process response which type is {content_type}')
       
     return result
+
+  #############################################################
+  def __post_fileid(self, url_addon, filename, param_dict={}, files=None):
+    param_dict['fileid'] = self.get_file_info(filename, 'id')
+    return self.__post(url_addon=url_addon, param_dict=param_dict, files=files)
+
+  def __post_folderid(self, url_addon, dirname, param_dict={}, files=None):
+    param_dict['folderid'] = self.get_dir_info(dirname, 'id')
+    return self.__post(url_addon=url_addon, param_dict=param_dict, files=files)
     
   ###############################################################################
   # filenames and their sha's are needed to be able to update existing files, see
   # https://stackoverflow.com/questions/63435987/python-pygithub-if-file-exists-then-update-else-create
+  ###############################################################################  
+  def _get_default_root_dir_info(self):
+    return {'' : {'id' : 0}}
+    
   ###############################################################################
   def _get_filenames_and_directories(self, recursive : bool, path_so_far : str):
-    contents_ = self.__post(url_addon='listfolder', param_dict=dict(folderid=self.cached_directories_flat[path_so_far]))['metadata']['contents']
+    contents_ = self.__post_folderid(url_addon='listfolder', dirname=path_so_far)['metadata']['contents']
     files_, directories_ = [], {}
     for c in contents_:
       full_name = os.path.join(path_so_far, c['name'])
       if c['isfolder']:
-        self.cached_directories_flat[full_name] = c['folderid']
+        self.set_dir_info(full_name, {'id' : c['folderid']})
         directories_[full_name] = None if not recursive \
                       else self._get_filenames_and_directories(recursive=True, path_so_far=full_name)
       else:
         files_.append(full_name)
-        self.cached_filenames_flat[full_name] = c['fileid'] 
+        self.set_file_info(full_name, {'id' : c['fileid']})
         
     return files_, directories_
 
@@ -99,18 +111,18 @@ class StoragePCloud(StorageBase):
 
   ###############################################################################
   def _delete_file(self, filename):
-    self.__post(url_addon='deletefile', param_dict=dict(fileid=self.cached_filenames_flat[filename]))
+    self.__post_fileid(url_addon='deletefile', filename=filename)
     
   ###############################################################################
   def _delete_directory(self, dirname):
-    self.__post(url_addon='deletefolder', param_dict=dict(folderid=self.cached_directories_flat[dirname]))
+    self.__post_folderid(url_addon='deletefolderrecursive', dirname=dirname)
 
   ###############################################################################
   def _create_directory(self, dirname):
-    result = self.__post(url_addon='createfolder', 
-                         param_dict={'folderid' : self.cached_directories_flat[os.path.dirname(dirname)],  
-                                                          'name' : os.path.basename(dirname)})
-    self.cached_directories_flat[dirname] = result["metadata"]["folderid"]
+    result = self.__post_folderid(url_addon='createfolder', 
+                                  dirname=os.path.dirname(dirname),
+                                  param_dict={'name' : os.path.basename(dirname)})
+    self.set_dir_info(dirname, {'id' : result["metadata"]["folderid"]})
 
   ###############################################################################
   def _create_file_given_content(self, filename, content):
@@ -118,19 +130,21 @@ class StoragePCloud(StorageBase):
     files = [("file", (os.path.basename(filename), content), )] # io.BytesIO(
     print(sys.getsizeof(content), sys.getsizeof(files[-1][-1][-1]), filename)
     
-    self.__post(url_addon='uploadfile', param_dict=dict(folderid=self.cached_directories_flat[os.path.dirname(filename)],  
-                                                          filename=os.path.basename(filename)), files=files)
+    self.__post_folderid(url_addon='uploadfile', 
+                         dirname=os.path.dirname(filename), 
+                         param_dict={'filename' : os.path.basename(filename)}, 
+                         files=files)
     #print(result)
     #self.__post(url_addon='file_write', param_dict=dict(fileid=result["metadata"]["fileid"]))
     
   ###############################################################################
   def _update_file_given_content(self, filename, content):
-    self.__post(url_addon='file_write', param_dict=dict(fileid=self.cached_filenames_flat[filename]))
+    self.__post_fileid(url_addon='file_write', filename=filename)
 
   ###############################################################################
-  def get_stats(self, filename):
-    metadata = self.__post(url_addon='stat', param_dict=dict(fileid=self.cached_filenames_flat[filename]))['metadata']
-    result = {k : v for k, v in metadata.items() if k in ('size', 'modified')}
-    result['modified'] = datetime.strptime(result['modified'], '%a, %d %b %Y %H:%M:%S +0000')
-    return result
+  def _fetch_stats_one_file(self, filename):
+    metadata = self.__post_fileid(url_addon='stat', filename=filename)['metadata']
+    dict_ = {'size' : metadata['size'],
+             'modified' : datetime.strptime(metadata['modified'], '%a, %d %b %Y %H:%M:%S +0000')}
+    return dict_
     

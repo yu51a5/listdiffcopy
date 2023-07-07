@@ -54,7 +54,7 @@ def sync_contents(storage_from__storage_to__folders, StorageFromType, StorageToT
         all_to_files  , all_to_directories   =   storage_to.get_filenames_and_directories_and_cache(root=root_to_dir)
         print('='*50)
 
-        # removing obsolete files ###############################################################################
+        # removing obsolete files ###########################################################################
         def del_file_in_storage_1(file_1_with_path, storage_1, root_directory_2, storage_2):
           storage_1.delete_file(file_1_with_path)
           
@@ -68,6 +68,10 @@ def sync_contents(storage_from__storage_to__folders, StorageFromType, StorageToT
                                       do_recursion_if_dir_not_found=False,
                                       func_file_1_not_found_in_2=del_file_in_storage_1, 
                                       func_directory_1_not_found_in_2=del_directory_storage_1)
+          
+        # fetch files info ###################################################################################
+        storage_from.fetch_files_info()
+        storage_to.fetch_files_info()
 
         # adding missing files ###############################################################################
         def create_file_in_storage_2(file_1_with_path, storage_1, root_directory_2, storage_2):
@@ -88,6 +92,7 @@ def sync_contents(storage_from__storage_to__folders, StorageFromType, StorageToT
                                     func_file_1_not_found_in_2=create_file_in_storage_2, 
                                     func_directory_1_not_found_in_2=create_directory_in_storage_2,
                                     func_both_files_exist=update_file_in_storage_2)
-                
+        
+        # clean cache ##########################################################################################
         storage_from.clean_cache()  
         storage_to.clean_cache()  

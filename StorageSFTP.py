@@ -83,10 +83,9 @@ class StorageSFTP(StorageBase):
     self.sftp_client.rmdir(dirname)
 
   ###############################################################################
-  def get_stats(self, filename):
+  def _fetch_stats_one_file(self, filename):
     result_raw = self.sftp_client.stat(filename)
     result = {'size' : result_raw.st_size , 'modified' : result_raw.st_mtime}
-    print('sftp', result)
     return result
 
   ###############################################################################
@@ -103,7 +102,7 @@ class StorageSFTP(StorageBase):
   def file_contents_is_text(self, filename):
     with self.sftp_client.open(filename) as sftp_file:
       sftp_contents = sftp_file.read(size=2048)
-      result = StorageBase.__file_contents_is_text(file_beginning=sftp_contents)
+      result = StorageBase._file_contents_is_text(file_beginning=sftp_contents)
       return result
     
   ###############################################################################
