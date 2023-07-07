@@ -93,6 +93,7 @@ class StorageBase():
   def fetch_files_info(self):
     for filename in self.__cached_filenames_flat:
       info = self._fetch_stats_one_file(filename)
+      info['textness'] = self.file_contents_is_text(filename=filename)
       self.set_file_info(filename, info)
 
   ###############################################################################
@@ -163,44 +164,8 @@ class StorageBase():
   ###############################################################################
   def file_contents_is_text(self, filename):
     file_beginning = self.get_contents(filename=filename, length=2048)
-    result = StorageBase.__file_contents_is_text(file_beginning=file_beginning)
+    result = StorageBase._file_contents_is_text(file_beginning=file_beginning)
     return result
-
-  ###############################################################################
-  def _get_definitely_different_and_textness(self, from_filename, to_source, to_filename):
-    
-    from_size = self.get_file_info(from_filename, 'size')
-    to_size = to_source.get_file_info(to_filename, 'size')
-    if (from_size is not None) and (to_size is not None) and (from_size != to_size):
-      StorageBase.__log(f"sizes different, file {from_filename}, size_from {from_size}, size_to {to_size}")
-      return True, None
-      
-    date_from = self.get_file_info(from_filename, 'modified')
-    date_to = to_source.get_file_info(to_filename, 'modified')
-    if (date_from is not None) and (date_to is not None) and (date_from > date_to):
-      StorageBase.__log('modif dates not right')
-      return True, None
-    
-    from_is_text = self.file_contents_is_text(from_filename) 
-    
-    return from_is_text != to_source.file_contents_is_text(to_filename), from_is_text
-
-  ###############################################################################
-  def _compare_and_update_a_file_in_another_source(self, my_filename, another_source, another_source_filename):
-    definitely_different, textness = self._get_definitely_different_and_textness(from_filename=my_filename, 
-                                                                                 to_source=another_source, 
-                                                                                 to_filename=another_source_filename)
-    if (not definitely_different) and (not textness):
-      print('definitely_different, textness', definitely_different, textness, my_filename)
-      return
-      
-    my_contents = self.get_contents(my_filename) 
-    if not definitely_different: 
-      if another_source.get_contents(another_source_filename) == my_contents:
-        print('same contents', my_filename)
-        return
-        
-    another_source.update_file_given_content(filename=another_source_filename, content=my_contents)
         
   ###############################################################################
   def _create_a_file_in_another_source(self, my_filename, another_source, another_source_filename):
@@ -208,11 +173,24 @@ class StorageBase():
     another_source.create_file_given_content(filename=another_source_filename, content=my_contents)
   
   ###############################################################################
-  def compare_and_update_a_file(self, my_filename, another_source, another_source_filename):
-    another_source._compare_and_update_a_file_in_another_source(my_filename=another_source_filename, 
-                                                                another_source=self, 
-                                                                another_source_filename=my_filename)
-  
+  def compare_and_update_a_file(self, to_filename, from_source, from_filename):
+    print("doing comparison")
+    definitely_different = False
+    for info_name in ['size', 'modified', 'textness']:
+      info_from = from_source.get_file_info(from_filename, info_name)
+      info_to = self.get_file_info(to_filename, info_name)
+      if (info_from is not None) and (info_to is not None) and ((info_from > info_to) if info_name == 'modified' else (info_from != info_to)):
+        StorageBase.__log(f'{info_name} not right, definitely different')
+        definitely_different = True
+        break
+      
+    from_contents = from_source.get_contents(from_filename) 
+    if (not definitely_different) and (self.get_contents(to_filename) == from_contents):
+      print('same contents', from_filename)
+      return
+        
+    self.update_file_given_content(filename=to_filename, content=from_contents)
+
   ###############################################################################
   def create_a_file(self, my_filename, another_source, another_source_filename):
     another_source._create_a_file_in_another_source(my_filename=another_source_filename, 

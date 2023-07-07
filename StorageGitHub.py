@@ -99,7 +99,7 @@ class StorageGitHub(StorageBase):
     
   ###############################################################################
   def file_contents_is_text(self, filename):
-    return True
+    return None
   
   ###############################################################################
   def _fetch_stats_one_file(self, filename):
