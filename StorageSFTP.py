@@ -59,16 +59,15 @@ class StorageSFTP(StorageBase):
     self.ssh_client.close()
 
   ###############################################################################
-  def _get_filenames_and_directories(self, recursive: bool, path_so_far: str):
+  def _get_filenames_and_directories(self, path_so_far: str):
     contents = self.sftp_client.listdir_attr(path_so_far)
 
-    all_files, all_directories = [], {}
+    all_files, all_directories = [], []
     for entry in contents:
       path = os.path.join(path_so_far, entry.filename)
       mode = entry.st_mode
       if S_ISDIR(mode):
-        all_directories[path] = self._get_filenames_and_directories(
-          None, True, path) if recursive else None
+        all_directories.append(path)
       if S_ISREG(mode):
         all_files.append(path)
 
@@ -111,8 +110,8 @@ class StorageSFTP(StorageBase):
 
   ###############################################################################
   def _update_file_given_content(self, filename, content):
-    print('type(content)', type(content))
-    print('type(content.encode())', type(content.encode()))
+    #print('type(content)', type(content))
+    #print('type(content.encode())', type(content.encode()))
     self.sftp_client.putfo(io.BytesIO(content.encode()), filename)
 
   ###############################################################################
@@ -120,8 +119,8 @@ class StorageSFTP(StorageBase):
     self.sftp_client.mkdir(dirname)
 
   ###############################################################################
-  def _create_a_file_in_another_source(self, my_filename, another_source, another_source_filename):
+  def _create_a_file_in_another_source(self, my_filename, source, source_filename):
     with self.sftp_client.open(my_filename) as sftp_file:
       sftp_contents = sftp_file.read()
-      another_source.create_file_given_content(filename=another_source_filename, content=sftp_contents)
+      source.create_file_given_content(filename=source_filename, content=sftp_contents)
       

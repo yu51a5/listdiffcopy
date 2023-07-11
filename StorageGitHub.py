@@ -34,17 +34,15 @@ class StorageGitHub(StorageBase):
   # filenames and their sha's are needed to be able to update existing files, see
   # https://stackoverflow.com/questions/63435987/python-pygithub-if-file-exists-then-update-else-create
   ###############################################################################
-  def _get_filenames_and_directories(self, recursive: bool, path_so_far: str):
+  def _get_filenames_and_directories(self, path_so_far: str):
     contents = self.repo.get_contents(path_so_far)
     if isinstance(contents, ContentFile.ContentFile):
       contents = [contents]
 
-    all_files, all_directories = [], {}
+    all_files, all_directories = [], []
     for content_item in contents:
       if content_item.type == "dir":
-        all_directories[
-          content_item.path] = self._get_filenames_and_directories(
-            True, path_so_far=content_item.path) if recursive else None
+        all_directories.append(content_item.path)
       else:
         all_files.append(content_item.path)
         self.set_file_info(content_item.path, {'sha' : content_item.sha})
@@ -77,7 +75,7 @@ class StorageGitHub(StorageBase):
     #content_ref = cont_raw.decoded_content # bytes
   
     return content
-
+  ###############################################################################
   def _delete_file(self, filename):
     self.repo.delete_file(filename,
                           "removing " + filename,
@@ -95,6 +93,9 @@ class StorageGitHub(StorageBase):
                           sha=self.get_file_info(filename, 'sha'))
 
   def _create_directory(self, dirname):
+    pass
+    
+  def _delete_directory(self, dirname):
     pass
     
   ###############################################################################

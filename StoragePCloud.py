@@ -75,15 +75,14 @@ class StoragePCloud(StorageBase):
     return {'' : {'id' : 0}}
     
   ###############################################################################
-  def _get_filenames_and_directories(self, recursive : bool, path_so_far : str):
+  def _get_filenames_and_directories(self, path_so_far : str):
     contents_ = self.__post_folderid(url_addon='listfolder', dirname=path_so_far)['metadata']['contents']
-    files_, directories_ = [], {}
+    files_, directories_ = [], []
     for c in contents_:
       full_name = os.path.join(path_so_far, c['name'])
       if c['isfolder']:
         self.set_dir_info(full_name, {'id' : c['folderid']})
-        directories_[full_name] = None if not recursive \
-                      else self._get_filenames_and_directories(recursive=True, path_so_far=full_name)
+        directories_.append(full_name)
       else:
         files_.append(full_name)
         self.set_file_info(full_name, {'id' : c['fileid']})
@@ -127,15 +126,14 @@ class StoragePCloud(StorageBase):
   ###############################################################################
   def _create_file_given_content(self, filename, content):
 
-    files = [("file", (os.path.basename(filename), content), )] # io.BytesIO(
-    print(sys.getsizeof(content), sys.getsizeof(files[-1][-1][-1]), filename)
+    files = [("file", (os.path.basename(filename), content), )] 
+    # print(sys.getsizeof(content), sys.getsizeof(files[-1][-1][-1]), filename)
     
-    self.__post_folderid(url_addon='uploadfile', 
-                         dirname=os.path.dirname(filename), 
-                         param_dict={'filename' : os.path.basename(filename)}, 
-                         files=files)
-    #print(result)
-    #self.__post(url_addon='file_write', param_dict=dict(fileid=result["metadata"]["fileid"]))
+    result = self.__post_folderid(url_addon='uploadfile', 
+                                   dirname=os.path.dirname(filename), 
+                                   param_dict={'filename' : os.path.basename(filename)}, 
+                                   files=files)
+    self.set_file_info(filename, {'id' : result["fileids"][0]})
     
   ###############################################################################
   def _update_file_given_content(self, filename, content):
@@ -143,7 +141,9 @@ class StoragePCloud(StorageBase):
 
   ###############################################################################
   def _fetch_stats_one_file(self, filename):
-    metadata = self.__post_fileid(url_addon='stat', filename=filename)['metadata']
+    response = self.__post_fileid(url_addon='stat', filename=filename)
+    # print(filename, response)
+    metadata = response['metadata']
     dict_ = {'size' : metadata['size'],
              'modified' : datetime.strptime(metadata['modified'], '%a, %d %b %Y %H:%M:%S +0000')}
     return dict_

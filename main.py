@@ -13,6 +13,7 @@ with cProfile.Profile() as pr:
   #sync_contents(folders_sftp_github, StorageSFTP, StorageGitHub) #, StoragePCloud,)
   #sync_contents([['music/warum', 'a']], StorageGitHub, StorageGitHub) 
   # sync_contents([['tiny', 'e']], StorageGitHub, StoragePCloud) 
+  sync_contents([['music/warum', 'e']], StorageGitHub, StoragePCloud) 
   sync_contents([['music/warum', '']], StorageGitHub, StoragePCloud) 
 
   print("all done!")
