@@ -18,11 +18,11 @@ def files_directories_recursive(storage_from, storage_to, current_directory_from
   for from_filename in files_from:
     to_filename = os.path.join(current_directory_to, os.path.basename(from_filename))
     if to_filename not in files_to:
-      storage_to.create_a_file(my_filename=to_filename, 
-                               source=storage_from, 
-                               source_filename=from_filename)
+      storage_to.create_file(my_filename=to_filename, 
+                             source=storage_from, 
+                             source_filename=from_filename)
     else:
-      storage_to.compare_and_update_a_file(my_filename=to_filename, 
+      storage_to.compare_and_update_file(my_filename=to_filename, 
                                            source=storage_from, 
                                            source_filename=from_filename)
   
@@ -35,6 +35,8 @@ def files_directories_recursive(storage_from, storage_to, current_directory_from
     to_dirname = os.path.join(current_directory_to, os.path.basename(from_dirname))
     if to_dirname not in dirs_to:
       storage_to.create_directory(to_dirname)
+    else:
+      storage_to.log_entering_directory(to_dirname)
     files_directories_recursive(storage_from=storage_from, 
                                 storage_to=storage_to, 
                                 current_directory_from=from_dirname, 

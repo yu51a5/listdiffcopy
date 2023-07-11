@@ -119,7 +119,7 @@ class StorageSFTP(StorageBase):
     self.sftp_client.mkdir(dirname)
 
   ###############################################################################
-  def _create_a_file_in_another_source(self, my_filename, source, source_filename):
+  def _create_file_in_another_source(self, my_filename, source, source_filename):
     with self.sftp_client.open(my_filename) as sftp_file:
       sftp_contents = sftp_file.read()
       source.create_file_given_content(filename=source_filename, content=sftp_contents)

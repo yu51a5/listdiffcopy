@@ -192,12 +192,12 @@ class StorageBase():
     return result
         
   ###############################################################################
-  def _create_a_file_in_another_source(self, my_filename, source, source_filename):
+  def _create_file_in_another_source(self, my_filename, source, source_filename):
     my_contents = self.get_contents(my_filename)
     source.create_file_given_content(filename=source_filename, content=my_contents)
   
   ###############################################################################
-  def compare_and_update_a_file(self, my_filename, source, source_filename):
+  def compare_and_update_file(self, my_filename, source, source_filename):
     # print("doing comparison")
     definitely_different = False
     for info_name in ['size', 'modified', 'textness']:
@@ -209,15 +209,15 @@ class StorageBase():
         break
       
     from_contents = source.get_contents(source_filename) 
+    
     if (not definitely_different) and (self.get_contents(my_filename) == from_contents):
-      # print('same contents', my_filename)
-      return
-        
-    self.update_file_given_content(filename=my_filename, content=from_contents)
+      StorageBase.__log(message='KEEP file ' + my_filename)
+    else:
+      self.update_file_given_content(filename=my_filename, content=from_contents)
 
   ###############################################################################
-  def create_a_file(self, my_filename, source, source_filename):
-    source._create_a_file_in_another_source(my_filename=source_filename, 
+  def create_file(self, my_filename, source, source_filename):
+    source._create_file_in_another_source(my_filename=source_filename, 
                                                     source=self, 
                                                     source_filename=my_filename)
 
@@ -229,7 +229,7 @@ class StorageBase():
   ###############################################################################
   def delete_directory(self, dirname):
     self._delete_directory(dirname)
-    StorageBase.__log(message='DEL dir  ' + dirname)
+    StorageBase.__log(message='DEL  dir   ' + dirname)
 
   ###############################################################################
   def create_file_given_content(self, filename, content):
@@ -244,5 +244,9 @@ class StorageBase():
   ###############################################################################
   def create_directory(self, dirname):
     self._create_directory(dirname)
-    StorageBase.__log(message='NEW dir  ' + dirname)
+    StorageBase.__log(message='NEW dir   ' + dirname)
+    
+###############################################################################    
+  def log_entering_directory(self, dirname):
+    StorageBase.__log(message='KEEP dir   ' + dirname)
     
