@@ -145,6 +145,7 @@ class StoragePCloud(StorageBase):
     # print(filename, response)
     metadata = response['metadata']
     dict_ = {'size' : metadata['size'],
-             'modified' : datetime.strptime(metadata['modified'], '%a, %d %b %Y %H:%M:%S +0000')}
+            # 'modified' : datetime.strptime(metadata['modified'], '%a, %d %b %Y %H:%M:%S +0000')
+            }
     return dict_
     

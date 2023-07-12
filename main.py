@@ -5,6 +5,7 @@ from StorageSFTP import StorageSFTP
 from StorageGitHub import StorageGitHub
 from StoragePCloud import StoragePCloud
 from sync_contents import sync_contents
+from StorageBase import do_dry_run
 
 with cProfile.Profile() as pr:
   #folders_sftp_github = [['www/yu51a5.org/public_html/wp-content/themes/pinboard-child', 'pinboard-child'], ['www/yu51a5.org/backup', 'posts'], ['www/yu51a5.org/public_html/wp-content/themes', 'themes']]
@@ -13,6 +14,7 @@ with cProfile.Profile() as pr:
   #sync_contents(folders_sftp_github, StorageSFTP, StorageGitHub) #, StoragePCloud,)
   #sync_contents([['music/warum', 'a']], StorageGitHub, StorageGitHub) 
   # sync_contents([['tiny', 'e']], StorageGitHub, StoragePCloud) 
+  do_dry_run()
   sync_contents([['music/warum', 'e']], StorageGitHub, StoragePCloud) 
   sync_contents([['music/warum', '']], StorageGitHub, StoragePCloud) 
 

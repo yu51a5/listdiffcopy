@@ -1,6 +1,7 @@
 import os
 
 level = None
+dry_run = False
 
 def reset_level():
   global level
@@ -18,6 +19,14 @@ def unset_level():
   global level
   level = None
 
+def do_dry_run():
+  global dry_run
+  dry_run = True
+
+def is_dry_run():
+  global dry_run
+  return dry_run
+  
 #################################################################################
 class StorageBase():
 
@@ -29,9 +38,13 @@ class StorageBase():
 
   def __log(message):
     global level
+    global dry_run
+    
     prefix = ''
     if level is not None:
       prefix = '|' * level + "___ "
+    if dry_run:
+      prefix += 'would '
     print(prefix, message)
 
   #################################################################################
@@ -201,7 +214,7 @@ class StorageBase():
     extra_messages = []
     
     definitely_different = False
-    for info_name in ['size', 'modified', 'textness']:
+    for info_name in ['size', 'textness']: #, 'modified'
       info_from = source.get_file_info(source_filename, info_name)
       info_to = self.get_file_info(my_filename, info_name)
       if (info_from is not None) and (info_to is not None) and ((info_from > info_to) if info_name == 'modified' else (info_from != info_to)):
@@ -213,7 +226,7 @@ class StorageBase():
     from_contents = source.get_contents(source_filename) 
     extra_message = f'{", ".join(extra_messages)}'
     if (not definitely_different) and (self.get_contents(my_filename) == from_contents):
-      StorageBase.__log(message=f'KEEP file `{my_filename}`: identical contents, {extra_message}')
+      StorageBase.__log(message=f'keep file `{my_filename}`: identical contents, {extra_message}')
     else:
       self.update_file_given_content(filename=my_filename, content=from_contents, extra_message=': '+extra_message)
 
@@ -225,30 +238,40 @@ class StorageBase():
 
   ###############################################################################
   def delete_file(self, filename):
-    self._delete_file(filename)
+    global dry_run
+    if not dry_run:
+      self._delete_file(filename)
     StorageBase.__log(message='DEL file `' + filename + '`')
     
   ###############################################################################
   def delete_directory(self, dirname):
-    self._delete_directory(dirname)
+    global dry_run
+    if not dry_run:
+      self._delete_directory(dirname)
     StorageBase.__log(message='DEL  dir  `' + dirname + '`')
 
   ###############################################################################
   def create_file_given_content(self, filename, content):
-    self._create_file_given_content(filename=filename, content=content)
+    global dry_run
+    if not dry_run:
+      self._create_file_given_content(filename=filename, content=content)
     StorageBase.__log(message='NEW file `' + filename+ '`')
 
   ###############################################################################
   def update_file_given_content(self, filename, content, extra_message):
-    self._update_file_given_content(filename=filename, content=content)
+    global dry_run
+    if not dry_run:
+      self._update_file_given_content(filename=filename, content=content)
     StorageBase.__log(message=f'UPD file `{filename}`{extra_message}')
   
   ###############################################################################
   def create_directory(self, dirname):
-    self._create_directory(dirname)
+    global dry_run
+    if not dry_run:
+      self._create_directory(dirname)
     StorageBase.__log(message='NEW dir   `' + dirname + '`')
     
 ###############################################################################    
   def log_entering_directory(self, dirname):
-    StorageBase.__log(message='KEEP dir  `' + dirname + '`')
+    StorageBase.__log(message='keep dir  `' + dirname + '`')
     

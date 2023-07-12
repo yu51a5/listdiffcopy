@@ -105,7 +105,7 @@ class StorageGitHub(StorageBase):
   ###############################################################################
   def _fetch_stats_one_file(self, filename):
     last_modif_date = None
-    if fetch_github_modif_timestamps:
+    if False: #fetch_github_modif_timestamps:
       # https://stackoverflow.com/questions/50194241/get-when-the-file-was-last-updated-from-a-github-repository
       #sha=self.get_file_info(filename, 'sha')
       commits = self.repo.get_commits(path=filename) # sha=sha)
@@ -117,7 +117,8 @@ class StorageGitHub(StorageBase):
         #commits2 = self.repo.get_commits(path=filename)
         #contents = self.repo.get_contents(filename)
         #print(f"total count 2 is {commits2.totalCount}, filename is {filename}, sha is {sha}, {sha==contents.sha}")
-    dict_ = {'modified' : last_modif_date, 'size' : None}
+    dict_ = {#'modified' : last_modif_date, 
+             'size' : None}
     return dict_
     
 

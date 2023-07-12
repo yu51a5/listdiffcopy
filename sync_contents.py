@@ -1,6 +1,6 @@
 import os
 
-from StorageBase import reset_level, increment_level, decrement_level, unset_level
+from StorageBase import reset_level, increment_level, decrement_level, unset_level, is_dry_run
 from settings import skip_if_source_directory_doesnt_exist
 
 ###############################################################################
@@ -49,11 +49,11 @@ def sync_contents(storage_from__storage_to__folders, StorageFromType, StorageToT
   with StorageFromType(**kwargs_from) as storage_from:
     with StorageToType(**kwargs_to) as storage_to: 
       for root_from_dir, root_to_dir in storage_from__storage_to__folders:
-        print(f'Moving from {type(storage_from).__name__}, folder {root_from_dir}, to {type(storage_to).__name__}, folder {root_to_dir}')
+        print(('Comparing' if is_dry_run() else 'Moving from') + f' {type(storage_from).__name__}, folder `{root_from_dir}`, to {type(storage_to).__name__}, folder `{root_to_dir}`')
         reset_level()
         dir_from_exists = storage_from.check_directory_exists(path=root_from_dir, create_if_doesnt_exist=False)
         if skip_if_source_directory_doesnt_exist and (not dir_from_exists):
-          print(f"Skipping because there is no folder {dir_from_exists} in  {type(storage_from).__name__}")
+          print(f"Skipping because there is no folder `{dir_from_exists}` in  {type(storage_from).__name__}")
           continue
         dir_to_exists = storage_to.check_directory_exists(path=root_to_dir, create_if_doesnt_exist=True)
         if dir_to_exists != "created":
