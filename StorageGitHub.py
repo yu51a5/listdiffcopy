@@ -107,9 +107,16 @@ class StorageGitHub(StorageBase):
     last_modif_date = None
     if fetch_github_modif_timestamps:
       # https://stackoverflow.com/questions/50194241/get-when-the-file-was-last-updated-from-a-github-repository
-      commits = self.repo.get_commits(sha=self.get_file_info(filename, 'sha'))
+      #sha=self.get_file_info(filename, 'sha')
+      commits = self.repo.get_commits(path=filename) # sha=sha)
       if commits.totalCount:
         last_modif_date = commits[0].commit.committer.date
+      else:
+        pass
+        #print(f"total count is 0, filename is {filename}, sha is {sha}")
+        #commits2 = self.repo.get_commits(path=filename)
+        #contents = self.repo.get_contents(filename)
+        #print(f"total count 2 is {commits2.totalCount}, filename is {filename}, sha is {sha}, {sha==contents.sha}")
     dict_ = {'modified' : last_modif_date, 'size' : None}
     return dict_
     

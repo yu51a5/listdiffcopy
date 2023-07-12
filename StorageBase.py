@@ -149,6 +149,7 @@ class StorageBase():
   def check_directory_exists(self, path, create_if_doesnt_exist=False):
     root_folders = StorageBase.split_path_into_folders_filename(path=path)
     path_so_far = self.get_init_path()  
+    result = True
     for rf in root_folders:
       _, directories_ = self._get_filenames_and_directories(path_so_far=path_so_far)
       path_so_far = os.path.join(path_so_far, rf)
@@ -156,7 +157,8 @@ class StorageBase():
         if not create_if_doesnt_exist:
           return False
         self.create_directory(dirname=path_so_far)
-    return True
+        result = "created"
+    return result
 
   ###############################################################################
   def check_file_exists(self, path, create_if_doesnt_exist=False):  
@@ -169,17 +171,14 @@ class StorageBase():
   
   ###############################################################################
   def get_filenames_and_directories(self, root: str):
-    dir_exists = self.check_directory_exists(path=root, create_if_doesnt_exist=(not self.inexistent_directories_are_empty()))
-    if dir_exists:
-      files_, directories_ = self._get_filenames_and_directories(path_so_far=root)
-      for filename in files_:
-        info = self._fetch_stats_one_file(filename)
-        info['textness'] = self.file_contents_is_text(filename=filename)
-        self.set_file_info(filename, info)
-      files_.sort()
-      directories_.sort()
-      return files_, directories_
-    return [], []
+    files_, directories_ = self._get_filenames_and_directories(path_so_far=root)
+    for filename in files_:
+      info = self._fetch_stats_one_file(filename)
+      info['textness'] = self.file_contents_is_text(filename=filename)
+      self.set_file_info(filename, info)
+    files_.sort()
+    directories_.sort()
+    return files_, directories_
 
   ###############################################################################
   def clean_cache(self):
@@ -214,7 +213,7 @@ class StorageBase():
     from_contents = source.get_contents(source_filename) 
     extra_message = f'{", ".join(extra_messages)}'
     if (not definitely_different) and (self.get_contents(my_filename) == from_contents):
-      StorageBase.__log(message=f'KEEP file {my_filename}: identical contents, {extra_message}')
+      StorageBase.__log(message=f'KEEP file `{my_filename}`: identical contents, {extra_message}')
     else:
       self.update_file_given_content(filename=my_filename, content=from_contents, extra_message=': '+extra_message)
 
@@ -227,29 +226,29 @@ class StorageBase():
   ###############################################################################
   def delete_file(self, filename):
     self._delete_file(filename)
-    StorageBase.__log(message='DEL file ' + filename)
+    StorageBase.__log(message='DEL file `' + filename + '`')
     
   ###############################################################################
   def delete_directory(self, dirname):
     self._delete_directory(dirname)
-    StorageBase.__log(message='DEL  dir   ' + dirname)
+    StorageBase.__log(message='DEL  dir  `' + dirname + '`')
 
   ###############################################################################
   def create_file_given_content(self, filename, content):
     self._create_file_given_content(filename=filename, content=content)
-    StorageBase.__log(message='NEW file ' + filename)
+    StorageBase.__log(message='NEW file `' + filename+ '`')
 
   ###############################################################################
   def update_file_given_content(self, filename, content, extra_message):
     self._update_file_given_content(filename=filename, content=content)
-    StorageBase.__log(message=f'UPD file {filename}{extra_message}')
+    StorageBase.__log(message=f'UPD file `{filename}`{extra_message}')
   
   ###############################################################################
   def create_directory(self, dirname):
     self._create_directory(dirname)
-    StorageBase.__log(message='NEW dir   ' + dirname)
+    StorageBase.__log(message='NEW dir   `' + dirname + '`')
     
 ###############################################################################    
   def log_entering_directory(self, dirname):
-    StorageBase.__log(message='KEEP dir   ' + dirname)
+    StorageBase.__log(message='KEEP dir  `' + dirname + '`')
     

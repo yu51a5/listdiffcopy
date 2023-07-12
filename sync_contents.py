@@ -1,13 +1,16 @@
 import os
 
 from StorageBase import reset_level, increment_level, decrement_level, unset_level
+from settings import skip_if_source_directory_doesnt_exist
 
 ###############################################################################
 def files_directories_recursive(storage_from, storage_to, current_directory_from, current_directory_to):
                                
   files_from, dirs_from = storage_from.get_filenames_and_directories(current_directory_from)
   files_to  , dirs_to   = storage_to.get_filenames_and_directories(current_directory_to)      
-                                  
+
+  increment_level()
+  
   for to_filename in files_to:
     from_filename = os.path.join(current_directory_from, os.path.basename(to_filename))
     if from_filename not in files_from:
@@ -24,8 +27,6 @@ def files_directories_recursive(storage_from, storage_to, current_directory_from
                                            source=storage_from, 
                                            source_filename=from_filename)
 
-  increment_level()
-  
   for to_dirname in dirs_to:
     from_dirname = os.path.join(current_directory_from, os.path.basename(to_dirname))
     if from_dirname not in dirs_from:
@@ -48,8 +49,15 @@ def sync_contents(storage_from__storage_to__folders, StorageFromType, StorageToT
   with StorageFromType(**kwargs_from) as storage_from:
     with StorageToType(**kwargs_to) as storage_to: 
       for root_from_dir, root_to_dir in storage_from__storage_to__folders:
-        print(f'Moving from {type(storage_from).__name__}, folder {root_from_dir} -> {type(storage_to).__name__}, folder {root_to_dir}')
+        print(f'Moving from {type(storage_from).__name__}, folder {root_from_dir}, to {type(storage_to).__name__}, folder {root_to_dir}')
         reset_level()
+        dir_from_exists = storage_from.check_directory_exists(path=root_from_dir, create_if_doesnt_exist=False)
+        if skip_if_source_directory_doesnt_exist and (not dir_from_exists):
+          print(f"Skipping because there is no folder {dir_from_exists} in  {type(storage_from).__name__}")
+          continue
+        dir_to_exists = storage_to.check_directory_exists(path=root_to_dir, create_if_doesnt_exist=True)
+        if dir_to_exists != "created":
+          storage_to.log_entering_directory(root_to_dir)
         files_directories_recursive(storage_from=storage_from, 
                                     storage_to=storage_to, 
                                     current_directory_from=root_from_dir, 
