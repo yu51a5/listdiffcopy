@@ -4,9 +4,7 @@ from StorageBase import reset_level, increment_level, decrement_level, unset_lev
 
 ###############################################################################
 def files_directories_recursive(storage_from, storage_to, current_directory_from, current_directory_to):
-
-  increment_level()
-                                  
+                               
   files_from, dirs_from = storage_from.get_filenames_and_directories(current_directory_from)
   files_to  , dirs_to   = storage_to.get_filenames_and_directories(current_directory_to)      
                                   
@@ -25,6 +23,8 @@ def files_directories_recursive(storage_from, storage_to, current_directory_from
       storage_to.compare_and_update_file(my_filename=to_filename, 
                                            source=storage_from, 
                                            source_filename=from_filename)
+
+  increment_level()
   
   for to_dirname in dirs_to:
     from_dirname = os.path.join(current_directory_from, os.path.basename(to_dirname))
@@ -48,6 +48,7 @@ def sync_contents(storage_from__storage_to__folders, StorageFromType, StorageToT
   with StorageFromType(**kwargs_from) as storage_from:
     with StorageToType(**kwargs_to) as storage_to: 
       for root_from_dir, root_to_dir in storage_from__storage_to__folders:
+        print(f'Moving from {type(storage_from).__name__}, folder {root_from_dir} -> {type(storage_to).__name__}, folder {root_to_dir}')
         reset_level()
         files_directories_recursive(storage_from=storage_from, 
                                     storage_to=storage_to, 

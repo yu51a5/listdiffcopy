@@ -198,22 +198,25 @@ class StorageBase():
   
   ###############################################################################
   def compare_and_update_file(self, my_filename, source, source_filename):
-    # print("doing comparison")
+    
+    extra_messages = []
+    
     definitely_different = False
     for info_name in ['size', 'modified', 'textness']:
       info_from = source.get_file_info(source_filename, info_name)
       info_to = self.get_file_info(my_filename, info_name)
       if (info_from is not None) and (info_to is not None) and ((info_from > info_to) if info_name == 'modified' else (info_from != info_to)):
-        # print(f'{info_name} not right, definitely different')
         definitely_different = True
-        break
+        extra_messages.append(f'{info_name}: {info_from if info_from is not None else "???"} -> {info_to if info_to is not None else "???"}')
+      else:
+        extra_messages.append(f'{info_name}: {info_from if info_from is not None else "???"} vs. {info_to if info_to is not None else "???"}')
       
     from_contents = source.get_contents(source_filename) 
-    
+    extra_message = f'{", ".join(extra_messages)}'
     if (not definitely_different) and (self.get_contents(my_filename) == from_contents):
-      StorageBase.__log(message='KEEP file ' + my_filename)
+      StorageBase.__log(message=f'KEEP file {my_filename}: identical contents, {extra_message}')
     else:
-      self.update_file_given_content(filename=my_filename, content=from_contents)
+      self.update_file_given_content(filename=my_filename, content=from_contents, extra_message=': '+extra_message)
 
   ###############################################################################
   def create_file(self, my_filename, source, source_filename):
@@ -237,9 +240,9 @@ class StorageBase():
     StorageBase.__log(message='NEW file ' + filename)
 
   ###############################################################################
-  def update_file_given_content(self, filename, content):
+  def update_file_given_content(self, filename, content, extra_message):
     self._update_file_given_content(filename=filename, content=content)
-    StorageBase.__log(message='UPD file ' + filename)
+    StorageBase.__log(message=f'UPD file {filename}{extra_message}')
   
   ###############################################################################
   def create_directory(self, dirname):
