@@ -14,7 +14,7 @@ class StorageSFTP(StorageBase):
                username=None,
                password=None,
                private_key=None):
-    super().__init__(name='SFTP')
+    super().__init__()
     self.ssh_client_params = dict(hostname=hostname,
                                   port=port,
                                   username=username,

@@ -13,7 +13,7 @@ class StorageGitHub(StorageBase):
   # github_token secret structure: OWNER|REPO|TOKEN . For Github token, see
   # https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens
   def __init__(self, owner=None, repo_name=None, token=None):
-    super().__init__(name='github')
+    super().__init__()
     
     secret = os.getenv('github_owner_repo_token')
     secret_components = secret.split('|') if secret else []

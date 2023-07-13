@@ -21,7 +21,7 @@ class StoragePCloud(StorageBase):
   # Use eapi if the server is in Europe
   # For Pcloud token, see
   def __init__(self, is_eapi=pcloud_urls_are_eapi, token=None):
-    super().__init__(name='pCloud')
+    super().__init__()
     self.token = os.environ['pcloud_token'] if token is None else token
     self.url = StoragePCloud.base_url[is_eapi]
 

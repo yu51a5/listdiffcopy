@@ -32,9 +32,8 @@ class StorageBase():
 
   __txt_chrs = set([chr(i) for i in range(32, 127)] + list("\n\r\t\b"))
   
-  def __init__(self, name):
+  def __init__(self):
     self.clean_cache()
-    self.name = name
 
   def __log(message):
     global level
@@ -42,9 +41,9 @@ class StorageBase():
     
     prefix = ''
     if level is not None:
-      prefix = '|' * level + "___ "
+      prefix = '|' * level + "___"
     if dry_run:
-      prefix += 'would '
+      prefix += ' would'
     print(prefix, message)
 
   #################################################################################
