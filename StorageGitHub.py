@@ -35,17 +35,23 @@ class StorageGitHub(StorageBase):
   # https://stackoverflow.com/questions/63435987/python-pygithub-if-file-exists-then-update-else-create
   ###############################################################################
   def _get_filenames_and_directories(self, path_so_far: str):
-    contents = self.repo.get_contents(path_so_far)
-    if isinstance(contents, ContentFile.ContentFile):
-      contents = [contents]
-
+    
     all_files, all_directories = [], []
-    for content_item in contents:
-      if content_item.type == "dir":
-        all_directories.append(content_item.path)
-      else:
-        all_files.append(content_item.path)
-        self.set_file_info(content_item.path, {'sha' : content_item.sha})
+    
+    exists = self.check_directory_exists(path=path_so_far, create_if_doesnt_exist=False)
+
+    if exists:
+    
+      contents = self.repo.get_contents(path_so_far)
+      if isinstance(contents, ContentFile.ContentFile):
+        contents = [contents]
+  
+      for content_item in contents:
+        if content_item.type == "dir":
+          all_directories.append(content_item.path)
+        else:
+          all_files.append(content_item.path)
+          self.set_file_info(content_item.path, {'sha' : content_item.sha})
 
     return all_files, all_directories
 

@@ -4,7 +4,7 @@ from StorageBase import reset_level, increment_level, decrement_level, unset_lev
 from settings import skip_if_source_directory_doesnt_exist
 
 ###############################################################################
-def files_directories_recursive(storage_from, storage_to, current_directory_from, current_directory_to):
+def _sync_files_directories_recursive(storage_from, storage_to, current_directory_from, current_directory_to):
                                
   files_from, dirs_from = storage_from.get_filenames_and_directories(current_directory_from)
   files_to  , dirs_to   = storage_to.get_filenames_and_directories(current_directory_to)      
@@ -45,24 +45,50 @@ def files_directories_recursive(storage_from, storage_to, current_directory_from
   decrement_level()
 
 ###############################################################################
-def sync_contents(storage_from__storage_to__folders, StorageFromType, StorageToType, kwargs_from={}, kwargs_to={}):
+def sync_contents(StorageFromType, dir_from, StorageToType, dir_to, kwargs_from={}, kwargs_to={}):
   with StorageFromType(**kwargs_from) as storage_from:
     with StorageToType(**kwargs_to) as storage_to: 
-      for root_from_dir, root_to_dir in storage_from__storage_to__folders:
-        print(('Comparing' if is_dry_run() else 'Moving from') + f' {type(storage_from).__name__}, folder `{root_from_dir}`, to {type(storage_to).__name__}, folder `{root_to_dir}`')
+      print(('Comparing' if is_dry_run() else 'Synchronizing from') + f' {type(storage_from).__name__}, folder `{dir_from}`, to {type(storage_to).__name__}, folder `{dir_to}`')
+      
+      dir_from_exists = storage_from.check_directory_exists(path=dir_from, create_if_doesnt_exist=False)
+      if skip_if_source_directory_doesnt_exist and (not dir_from_exists):
+        print(f"Skipping because there is no folder `{dir_from}` in  {type(storage_from).__name__}")
+      else:
         reset_level()
-        dir_from_exists = storage_from.check_directory_exists(path=root_from_dir, create_if_doesnt_exist=False)
-        if skip_if_source_directory_doesnt_exist and (not dir_from_exists):
-          print(f"Skipping because there is no folder `{dir_from_exists}` in  {type(storage_from).__name__}")
-          continue
-        dir_to_exists = storage_to.check_directory_exists(path=root_to_dir, create_if_doesnt_exist=True)
+        dir_to_exists = storage_to.check_directory_exists(path=dir_to, create_if_doesnt_exist=True)
         if dir_to_exists != "created":
-          storage_to.log_entering_directory(root_to_dir)
-        files_directories_recursive(storage_from=storage_from, 
-                                    storage_to=storage_to, 
-                                    current_directory_from=root_from_dir, 
-                                    current_directory_to=root_to_dir) 
-        storage_from.clean_cache()
-        storage_to.clean_cache()
-        
-  unset_level()
+          storage_to.log_entering_directory(dir_to)
+        _sync_files_directories_recursive(storage_from=storage_from, 
+                                          storage_to=storage_to, 
+                                          current_directory_from=dir_from, 
+                                          current_directory_to=dir_to) 
+        unset_level()
+
+###############################################################################
+def _list_files_directories_recursive(storage, dir_to_list):
+  files_, dirs_ = storage.get_filenames_and_directories(dir_to_list)      
+
+  increment_level()
+  
+  for file_ in files_:
+    storage.list_file(file_)
+
+  for dir_ in dirs_:
+    storage.list_directory(dir_)
+    _list_files_directories_recursive(storage=storage, dir_to_list=dir_)
+    
+  decrement_level()
+  
+###############################################################################
+def list_contents(StorageType, dir_to_list, kwargs={}):
+  with StorageType(**kwargs) as storage:
+    print(f'Listing folder `{dir_to_list}`, {type(storage).__name__} ' + '*'*8)
+    reset_level()
+    dir_exists = storage.check_directory_exists(path=dir_to_list, create_if_doesnt_exist=False)
+    if not dir_exists:
+      print(f"Skipping because there is no folder `{dir_to_list}` in {type(storage).__name__}")
+    else:
+      storage.list_directory(dir_to_list)
+      _list_files_directories_recursive(storage=storage, dir_to_list=dir_to_list) 
+    unset_level()
+  

@@ -33,7 +33,7 @@ class StorageBase():
   __txt_chrs = set([chr(i) for i in range(32, 127)] + list("\n\r\t\b"))
   
   def __init__(self):
-    self.clean_cache()
+    self.__cached_filenames_flat, self.__cached_directories_flat = {}, self._get_default_root_dir_info()
 
   def __log(message):
     global level
@@ -183,6 +183,9 @@ class StorageBase():
   
   ###############################################################################
   def get_filenames_and_directories(self, root: str):
+    global dry_run
+    if dry_run and (not self.check_file_exists(root)):
+      return [], []
     files_, directories_ = self._get_filenames_and_directories(path_so_far=root)
     for filename in files_:
       info = self._fetch_stats_one_file(filename)
@@ -191,10 +194,6 @@ class StorageBase():
     files_.sort()
     directories_.sort()
     return files_, directories_
-
-  ###############################################################################
-  def clean_cache(self):
-    self.__cached_filenames_flat, self.__cached_directories_flat = {}, self._get_default_root_dir_info()
 
   ###############################################################################
   def file_contents_is_text(self, filename):
@@ -225,7 +224,7 @@ class StorageBase():
     from_contents = source.get_contents(source_filename) 
     extra_message = f'{", ".join(extra_messages)}'
     if (not definitely_different) and (self.get_contents(my_filename) == from_contents):
-      StorageBase.__log(message=f'keep file `{my_filename}`: identical contents, {extra_message}')
+      StorageBase.__log(message=f'keep __ file `{my_filename}`: identical contents, {extra_message}')
     else:
       self.update_file_given_content(filename=my_filename, content=from_contents, extra_message=': '+extra_message)
 
@@ -240,37 +239,47 @@ class StorageBase():
     global dry_run
     if not dry_run:
       self._delete_file(filename)
-    StorageBase.__log(message='DEL file `' + filename + '`')
+    StorageBase.__log(message='DELETED file `' + filename + '`')
     
   ###############################################################################
   def delete_directory(self, dirname):
     global dry_run
     if not dry_run:
       self._delete_directory(dirname)
-    StorageBase.__log(message='DEL  dir  `' + dirname + '`')
+    StorageBase.__log(message='DELETED dir `' + dirname + '`')
 
   ###############################################################################
   def create_file_given_content(self, filename, content):
     global dry_run
     if not dry_run:
       self._create_file_given_content(filename=filename, content=content)
-    StorageBase.__log(message='NEW file `' + filename+ '`')
+    StorageBase.__log(message='CREATED file `' + filename+ '`')
 
   ###############################################################################
   def update_file_given_content(self, filename, content, extra_message):
     global dry_run
     if not dry_run:
       self._update_file_given_content(filename=filename, content=content)
-    StorageBase.__log(message=f'UPD file `{filename}`{extra_message}')
+    StorageBase.__log(message=f'UPDATED file `{filename}`{extra_message}')
   
   ###############################################################################
   def create_directory(self, dirname):
     global dry_run
     if not dry_run:
-      self._create_directory(dirname)
-    StorageBase.__log(message='NEW dir   `' + dirname + '`')
+      info = self._create_directory(dirname)
+      if info is None:
+        info = {}
+      self.set_dir_info(dirname, info)
+    StorageBase.__log(message='CREATED dir `' + dirname + '`')
     
 ###############################################################################    
   def log_entering_directory(self, dirname):
-    StorageBase.__log(message='keep dir  `' + dirname + '`')
-    
+    StorageBase.__log(message='kept __ dir `' + dirname + '`')
+
+###############################################################################    
+  def list_directory(self, dirname):
+    StorageBase.__log(message='dir  `' + dirname + '`')
+
+###############################################################################    
+  def list_file(self, filename):
+    StorageBase.__log(message='file `' + filename + '`')

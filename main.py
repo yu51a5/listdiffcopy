@@ -4,7 +4,7 @@ import pstats
 from StorageSFTP import StorageSFTP
 from StorageGitHub import StorageGitHub
 from StoragePCloud import StoragePCloud
-from sync_contents import sync_contents
+from sync_contents import sync_contents, list_contents
 from StorageBase import do_dry_run
 
 with cProfile.Profile() as pr:
@@ -14,10 +14,17 @@ with cProfile.Profile() as pr:
   #sync_contents(folders_sftp_github, StorageSFTP, StorageGitHub) #, StoragePCloud,)
   #sync_contents([['music/warum', 'a']], StorageGitHub, StorageGitHub) 
   # sync_contents([['tiny', 'e']], StorageGitHub, StoragePCloud) 
-  # do_dry_run()
-  sync_contents([['music/warum', 'e']], StorageGitHub, StoragePCloud) 
-  sync_contents([['music/warum', '']], StorageGitHub, StoragePCloud) 
+  #do_dry_run()
+  #sync_contents([['music/warum', 'e']], StorageGitHub, StoragePCloud) 
+  #sync_contents([['', 'music/warum']], StoragePCloud, StorageGitHub) 
+  #
 
+ 
+  #sync_contents(StorageSFTP, 'www/yu51a5.org/backup', StoragePCloud, 'sf') 
+  #sync_contents(StorageSFTP, 'www/yu51a5.org/backup', StorageGitHub, 'w1/w3')  
+  #sync_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/themes/pinboard-child', StorageGitHub, 'pinboard-child')  
+  sync_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/uploads/persia_greece', StoragePCloud, 'persia_greece')  
+  # list_contents(StorageGitHub, 'w1')
   print("all done!")
   
   #stats = pstats.Stats(pr).sort_stats('tottime')

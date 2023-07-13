@@ -121,7 +121,7 @@ class StoragePCloud(StorageBase):
     result = self.__post_folderid(url_addon='createfolder', 
                                   dirname=os.path.dirname(dirname),
                                   param_dict={'name' : os.path.basename(dirname)})
-    self.set_dir_info(dirname, {'id' : result["metadata"]["folderid"]})
+    return {'id' : result["metadata"]["folderid"]}
 
   ###############################################################################
   def _create_file_given_content(self, filename, content):
