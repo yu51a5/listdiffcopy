@@ -41,6 +41,7 @@ class StorageBase():
     global dry_run
     
     prefix = ''
+    # boxy symbols https://www.ncbi.nlm.nih.gov/staff/beck/charents/unicode/2500-257F.html
     if level is not None:
       prefix = '│' * (level - 1) + ('┌' if 'dir' in message0 else '├─') + "─── "
     if dry_run:
@@ -161,7 +162,9 @@ class StorageBase():
   ###############################################################################
   def check_directory_exists(self, path, create_if_doesnt_exist=False):
     root_folders = StorageBase.split_path_into_folders_filename(path=path)
-    path_so_far = self.get_init_path()  
+    if (len(root_folders) > 1) and (not root_folders[-1]):
+      root_folders.pop(-1)
+    path_so_far = self.get_init_path() 
     result = True
     for rf in root_folders:
       _, directories_ = self._get_filenames_and_directories(path_so_far=path_so_far)

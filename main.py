@@ -20,7 +20,7 @@ with cProfile.Profile() as pr:
   #
 
   #list_contents(StorageSFTP, 'www/yu51a5.org/backup')
-  list_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/uploads/persia_greece')
+  list_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/uploads/')
   #list_contents(StoragePCloud, 'sf')
   #sync_contents(StorageSFTP, 'www/yu51a5.org/backup', StoragePCloud, 'sf') 
   #sync_contents(StorageSFTP, 'www/yu51a5.org/backup', StorageGitHub, 'w1/w3')  
