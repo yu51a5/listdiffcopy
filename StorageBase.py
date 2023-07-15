@@ -1,4 +1,5 @@
 import os
+from settings import only_print_basename
 
 level = None
 dry_run = False
@@ -35,16 +36,16 @@ class StorageBase():
   def __init__(self):
     self.__cached_filenames_flat, self.__cached_directories_flat = {}, self._get_default_root_dir_info()
 
-  def __log(message):
+  def __log(message0, name, message1=''):
     global level
     global dry_run
     
     prefix = ''
     if level is not None:
-      prefix = '|' * level + "___"
+      prefix = '│' * (level - 1) + ('┌' if 'dir' in message0 else '├─') + "─── "
     if dry_run:
-      prefix += ' would'
-    print(prefix, message)
+      prefix += 'would '
+    print(prefix + message0 + '`' + (os.path.basename(name) if (only_print_basename and (level != 0)) else name) + '`' + message1)
 
   #################################################################################
   # source: stackoverflow.com/questions/1446549
@@ -189,10 +190,10 @@ class StorageBase():
     files_, directories_ = self._get_filenames_and_directories(path_so_far=root)
     for filename in files_:
       info = self._fetch_stats_one_file(filename)
-      info['textness'] = self.file_contents_is_text(filename=filename)
+      #info['textness'] = self.file_contents_is_text(filename=filename)
       self.set_file_info(filename, info)
-    files_.sort()
-    directories_.sort()
+    files_.sort(key=lambda x: x.lower())
+    directories_.sort(key=lambda x: x.lower())
     return files_, directories_
 
   ###############################################################################
@@ -212,7 +213,7 @@ class StorageBase():
     extra_messages = []
     
     definitely_different = False
-    for info_name in ['size', 'textness']: #, 'modified'
+    for info_name in ['size']: #, 'modified', 'textness'
       info_from = source.get_file_info(source_filename, info_name)
       info_to = self.get_file_info(my_filename, info_name)
       if (info_from is not None) and (info_to is not None) and ((info_from > info_to) if info_name == 'modified' else (info_from != info_to)):
@@ -224,7 +225,7 @@ class StorageBase():
     from_contents = source.get_contents(source_filename) 
     extra_message = f'{", ".join(extra_messages)}'
     if (not definitely_different) and (self.get_contents(my_filename) == from_contents):
-      StorageBase.__log(message=f'keep __ file `{my_filename}`: identical contents, {extra_message}')
+      StorageBase.__log('keep __ file ', my_filename, f': identical contents, {extra_message}')
     else:
       self.update_file_given_content(filename=my_filename, content=from_contents, extra_message=': '+extra_message)
 
@@ -239,28 +240,28 @@ class StorageBase():
     global dry_run
     if not dry_run:
       self._delete_file(filename)
-    StorageBase.__log(message='DELETED file `' + filename + '`')
+    StorageBase.__log('DELETED file ', filename)
     
   ###############################################################################
   def delete_directory(self, dirname):
     global dry_run
     if not dry_run:
       self._delete_directory(dirname)
-    StorageBase.__log(message='DELETED dir `' + dirname + '`')
+    StorageBase.__log('DELETED dir ', dirname)
 
   ###############################################################################
   def create_file_given_content(self, filename, content):
     global dry_run
     if not dry_run:
       self._create_file_given_content(filename=filename, content=content)
-    StorageBase.__log(message='CREATED file `' + filename+ '`')
+    StorageBase.__log('CREATED file ', filename)
 
   ###############################################################################
   def update_file_given_content(self, filename, content, extra_message):
     global dry_run
     if not dry_run:
       self._update_file_given_content(filename=filename, content=content)
-    StorageBase.__log(message=f'UPDATED file `{filename}`{extra_message}')
+    StorageBase.__log('UPDATED file ', filename, extra_message)
   
   ###############################################################################
   def create_directory(self, dirname):
@@ -270,16 +271,17 @@ class StorageBase():
       if info is None:
         info = {}
       self.set_dir_info(dirname, info)
-    StorageBase.__log(message='CREATED dir `' + dirname + '`')
+    StorageBase.__log('CREATED dir ', dirname)
     
 ###############################################################################    
   def log_entering_directory(self, dirname):
-    StorageBase.__log(message='kept __ dir `' + dirname + '`')
+    StorageBase.__log('kept __ dir ', dirname)
 
 ###############################################################################    
   def list_directory(self, dirname):
-    StorageBase.__log(message='dir  `' + dirname + '`')
+    StorageBase.__log('dir  ', dirname)
 
 ###############################################################################    
   def list_file(self, filename):
-    StorageBase.__log(message='file `' + filename + '`')
+    StorageBase.__log('file ', filename)
+    

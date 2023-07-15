@@ -2,8 +2,10 @@ import io
 import os
 import paramiko
 from stat import S_ISDIR, S_ISREG
-from StorageBase import StorageBase
+from datetime import datetime
 
+from StorageBase import StorageBase
+from settings import wp_images_extensions, default_ignore_wp_scaled_images
 
 #################################################################################
 class StorageSFTP(StorageBase):
@@ -13,8 +15,10 @@ class StorageSFTP(StorageBase):
                port=None,
                username=None,
                password=None,
-               private_key=None):
+               private_key=None,
+               ignore_wp_scaled_images=default_ignore_wp_scaled_images):
     super().__init__()
+    self.ignore_wp_scaled_images = ignore_wp_scaled_images
     self.ssh_client_params = dict(hostname=hostname,
                                   port=port,
                                   username=username,
@@ -60,8 +64,9 @@ class StorageSFTP(StorageBase):
 
   ###############################################################################
   def _get_filenames_and_directories(self, path_so_far: str):
+    
     contents = self.sftp_client.listdir_attr(path_so_far)
-
+    
     all_files, all_directories = [], []
     for entry in contents:
       path = os.path.join(path_so_far, entry.filename)
@@ -70,9 +75,43 @@ class StorageSFTP(StorageBase):
         all_directories.append(path)
       if S_ISREG(mode):
         all_files.append(path)
-
+    
     return all_files, all_directories
 
+  ###############################################################################
+  def get_filenames_and_directories(self, root:str):
+    all_files, all_directories = super().get_filenames_and_directories(root=root)
+    
+    if self.ignore_wp_scaled_images:
+      qty_files = len(all_files)
+      i = 0
+      while i < qty_files:
+        this_file_name = all_files[i]
+        i += 1 # as if it's already the next iteration
+        pos = {c : this_file_name.rfind(c) for c in ('.', 'x', '-')}
+        if min(pos.values()) < 0:
+          continue
+        if not ((pos['-'] + 4) <= (pos['x'] + 2) <= pos['.']):
+          continue
+        maybe_numbers = this_file_name[pos['-'] + 1:pos['x']] + this_file_name[pos['x'] + 1:pos['.']]
+        not_numbers = [c for c in maybe_numbers if not ('0' <= c <= '9')]
+        if not_numbers:
+          continue
+        extension = (this_file_name[pos['.']+1:]).lower() 
+        if extension not in wp_images_extensions:
+          continue
+        presumed_original = this_file_name[:pos['-']] + this_file_name[pos['.']:]
+        for j in range(i, qty_files):
+          if all_files[j] == presumed_original:
+            qty_files -= 1
+            i -= 1 #rolling back
+            all_files.pop(i)
+            break
+          if all_files[j] > presumed_original:
+            break
+
+    return all_files, all_directories
+    
   ###############################################################################
   def _delete_file(self, filename):
     self.sftp_client.remove(filename)

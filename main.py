@@ -19,12 +19,14 @@ with cProfile.Profile() as pr:
   #sync_contents([['', 'music/warum']], StoragePCloud, StorageGitHub) 
   #
 
- 
+  #list_contents(StorageSFTP, 'www/yu51a5.org/backup')
+  list_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/uploads/persia_greece')
+  #list_contents(StoragePCloud, 'sf')
   #sync_contents(StorageSFTP, 'www/yu51a5.org/backup', StoragePCloud, 'sf') 
   #sync_contents(StorageSFTP, 'www/yu51a5.org/backup', StorageGitHub, 'w1/w3')  
   #sync_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/themes/pinboard-child', StorageGitHub, 'pinboard-child')  
-  sync_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/uploads/persia_greece', StoragePCloud, 'persia_greece')  
-  # list_contents(StorageGitHub, 'w1')
+  #sync_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/uploads/persia_greece', StoragePCloud, 'persia_greece')  
+  #list_contents(StorageGitHub, 'w1')
   print("all done!")
   
   #stats = pstats.Stats(pr).sort_stats('tottime')
