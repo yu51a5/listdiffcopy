@@ -184,6 +184,10 @@ class StorageBase():
       files_, _ = self._get_filenames_and_directories(path_so_far=dirname)
       return (path in files_)
     return False
+    
+  ###############################################################################
+  def _filter_out_files(self, files_):
+    return files_
   
   ###############################################################################
   def get_filenames_and_directories(self, root: str):
@@ -191,12 +195,17 @@ class StorageBase():
     if dry_run and (not self.check_file_exists(root)):
       return [], []
     files_, directories_ = self._get_filenames_and_directories(path_so_far=root)
+    
+    files_.sort(key=lambda x: x.lower())
+    directories_.sort(key=lambda x: x.lower())
+
+    files_ = self._filter_out_files(files_)
+    
     for filename in files_:
       info = self._fetch_stats_one_file(filename)
       #info['textness'] = self.file_contents_is_text(filename=filename)
       self.set_file_info(filename, info)
-    files_.sort(key=lambda x: x.lower())
-    directories_.sort(key=lambda x: x.lower())
+
     return files_, directories_
 
   ###############################################################################
