@@ -7,8 +7,8 @@ from settings import skip_if_source_directory_doesnt_exist
 def _sync_files_directories_recursive(storage_from, storage_to, current_directory_from, current_directory_to):
                                
   files_from, dirs_from = storage_from.get_filenames_and_directories(current_directory_from)
-  files_to  , dirs_to   = storage_to.get_filenames_and_directories(current_directory_to)      
-
+  files_to  , dirs_to   = storage_to.get_filenames_and_directories(current_directory_to)
+  
   increment_level()
   
   for to_filename in files_to:
@@ -38,10 +38,10 @@ def _sync_files_directories_recursive(storage_from, storage_to, current_director
       storage_to.create_directory(to_dirname)
     else:
       storage_to.log_entering_directory(to_dirname)
-    files_directories_recursive(storage_from=storage_from, 
-                                storage_to=storage_to, 
-                                current_directory_from=from_dirname, 
-                                current_directory_to=to_dirname)
+    _sync_files_directories_recursive(storage_from=storage_from, 
+                                      storage_to=storage_to, 
+                                      current_directory_from=from_dirname, 
+                                      current_directory_to=to_dirname)
   decrement_level()
 
 ###############################################################################

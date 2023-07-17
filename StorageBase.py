@@ -1,8 +1,10 @@
 import os
 from settings import only_print_basename
+from datetime import datetime
 
 level = None
 dry_run = False
+text_to_log = []
 
 def reset_level():
   global level
@@ -39,14 +41,17 @@ class StorageBase():
   def __log(message0, name, message1=''):
     global level
     global dry_run
+    global text_to_log
     
     prefix = ''
     # boxy symbols https://www.ncbi.nlm.nih.gov/staff/beck/charents/unicode/2500-257F.html
     if level is not None:
       prefix = '│' * (level - 1) + ('┌' if 'dir' in message0 else '├─') + "─── "
     if dry_run:
-      prefix += 'would '
-    print(prefix + message0 + '`' + (os.path.basename(name) if (only_print_basename and (level != 0)) else name) + '`' + message1)
+      prefix += 'would have '
+    string_ = prefix + message0 + '`' + (os.path.basename(name) if (only_print_basename and (level != 0)) else name) + '`' + message1
+    text_to_log.append(string_)
+    print(string_)
 
   #################################################################################
   # source: stackoverflow.com/questions/1446549
@@ -192,20 +197,24 @@ class StorageBase():
   ###############################################################################
   def get_filenames_and_directories(self, root: str):
     global dry_run
-    if dry_run and (not self.check_file_exists(root)):
+    if dry_run and (not self.check_directory_exists(root)):
       return [], []
     files_, directories_ = self._get_filenames_and_directories(path_so_far=root)
+    print('got names', root, datetime.now())
     
     files_.sort(key=lambda x: x.lower())
     directories_.sort(key=lambda x: x.lower())
 
     files_ = self._filter_out_files(files_)
+    print('got _filter_out_files', root, datetime.now())
     
     for filename in files_:
       info = self._fetch_stats_one_file(filename)
       #info['textness'] = self.file_contents_is_text(filename=filename)
       self.set_file_info(filename, info)
 
+    print('got _fetch_stats_one_file', root, datetime.now())
+    
     return files_, directories_
 
   ###############################################################################
@@ -243,9 +252,13 @@ class StorageBase():
 
   ###############################################################################
   def create_file(self, my_filename, source, source_filename):
-    source._create_file_in_another_source(my_filename=source_filename, 
+    global dry_run
+    if not dry_run:
+      source._create_file_in_another_source(my_filename=source_filename, 
                                                     source=self, 
                                                     source_filename=my_filename)
+    else:
+      StorageBase.__log('CREATED file ', my_filename)
 
   ###############################################################################
   def delete_file(self, filename):
@@ -266,6 +279,8 @@ class StorageBase():
     global dry_run
     if not dry_run:
       self._create_file_given_content(filename=filename, content=content)
+    else:
+      raise Exception('stp')
     StorageBase.__log('CREATED file ', filename)
 
   ###############################################################################

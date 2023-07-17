@@ -66,7 +66,7 @@ class StorageSFTP(StorageBase):
   def _get_filenames_and_directories(self, path_so_far: str):
     
     contents = self.sftp_client.listdir_attr(path_so_far)
-    
+
     all_files, all_directories = [], []
     for entry in contents:
       path = os.path.join(path_so_far, entry.filename)
@@ -75,7 +75,7 @@ class StorageSFTP(StorageBase):
         all_directories.append(path)
       if S_ISREG(mode):
         all_files.append(path)
-    
+
     return all_files, all_directories
 
   ###############################################################################
@@ -163,5 +163,7 @@ class StorageSFTP(StorageBase):
   def _create_file_in_another_source(self, my_filename, source, source_filename):
     with self.sftp_client.open(my_filename) as sftp_file:
       sftp_contents = sftp_file.read()
+      print('cr2', my_filename)
+      return
       source.create_file_given_content(filename=source_filename, content=sftp_contents)
       
