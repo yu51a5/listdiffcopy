@@ -1,35 +1,8 @@
 import os
-from settings import only_print_basename
-from datetime import datetime
 
-level = None
-dry_run = False
-text_to_log = []
+from dry_run import is_dry_run
+from logging_printing import log_print
 
-def reset_level():
-  global level
-  level = 0
-  
-def increment_level():
-  global level
-  level += 1
-  
-def decrement_level():
-  global level
-  level -= 1
-
-def unset_level():
-  global level
-  level = None
-
-def do_dry_run():
-  global dry_run
-  dry_run = True
-
-def is_dry_run():
-  global dry_run
-  return dry_run
-  
 #################################################################################
 class StorageBase():
 
@@ -37,21 +10,6 @@ class StorageBase():
   
   def __init__(self):
     self.__cached_filenames_flat, self.__cached_directories_flat = {}, self._get_default_root_dir_info()
-
-  def __log(message0, name, message1=''):
-    global level
-    global dry_run
-    global text_to_log
-    
-    prefix = ''
-    # boxy symbols https://www.ncbi.nlm.nih.gov/staff/beck/charents/unicode/2500-257F.html
-    if level is not None:
-      prefix = '│' * (level - 1) + ('┌' if 'dir' in message0 else '├─') + "─── "
-    if dry_run:
-      prefix += 'would have '
-    string_ = prefix + message0 + '`' + (os.path.basename(name) if (only_print_basename and (level != 0)) else name) + '`' + message1
-    text_to_log.append(string_)
-    print(string_)
 
   #################################################################################
   # source: stackoverflow.com/questions/1446549
@@ -174,17 +132,31 @@ class StorageBase():
     for rf in root_folders:
       _, directories_ = self._get_filenames_and_directories(path_so_far=path_so_far)
       path_so_far = os.path.join(path_so_far, rf)
-      if path_so_far not in directories_:
-        if not create_if_doesnt_exist:
-          return False
-        self.create_directory(dirname=path_so_far)
+      
+      if path_so_far in directories_:
+        continue 
+        
+      if create_if_doesnt_exist:
         result = "created"
+        if is_dry_run():
+          return result
+        info = self._create_directory(dirname)
+        if info is None:
+          info = {}
+        self.set_dir_info(dirname, info)
+        continue
+        
+      if create_if_doesnt_exist is None:
+        log_entering_directory(dir_to_list, f"Skipping because {type(self).__name__} does not contain")
+      
+      return False
+      
     return result
 
   ###############################################################################
-  def check_file_exists(self, path, create_if_doesnt_exist=False):  
+  def check_file_exists(self, path):  
     dirname, filename = os.path.split(path)
-    dir_exists = self.check_directory_exists(path=dirname, create_if_doesnt_exist=False)
+    dir_exists = self.check_directory_exists(path=dirname)
     if dir_exists:
       files_, _ = self._get_filenames_and_directories(path_so_far=dirname)
       return (path in files_)
@@ -196,24 +168,23 @@ class StorageBase():
   
   ###############################################################################
   def get_filenames_and_directories(self, root: str):
-    global dry_run
-    if dry_run and (not self.check_directory_exists(root)):
+    if is_dry_run() and (not self.check_directory_exists(root)):
       return [], []
     files_, directories_ = self._get_filenames_and_directories(path_so_far=root)
-    print('got names', root, datetime.now())
+    #print('got names', root, datetime.now())
     
     files_.sort(key=lambda x: x.lower())
     directories_.sort(key=lambda x: x.lower())
 
     files_ = self._filter_out_files(files_)
-    print('got _filter_out_files', root, datetime.now())
+    #print('got _filter_out_files', root, datetime.now())
     
     for filename in files_:
       info = self._fetch_stats_one_file(filename)
       #info['textness'] = self.file_contents_is_text(filename=filename)
       self.set_file_info(filename, info)
 
-    print('got _fetch_stats_one_file', root, datetime.now())
+    #print('got _fetch_stats_one_file', root, datetime.now())
     
     return files_, directories_
 
@@ -246,69 +217,46 @@ class StorageBase():
     from_contents = source.get_contents(source_filename) 
     extra_message = f'{", ".join(extra_messages)}'
     if (not definitely_different) and (self.get_contents(my_filename) == from_contents):
-      StorageBase.__log('keep __ file ', my_filename, f': identical contents, {extra_message}')
+      log_print('keep __ file ', my_filename, f': identical contents, {extra_message}')
     else:
       self.update_file_given_content(filename=my_filename, content=from_contents, extra_message=': '+extra_message)
 
   ###############################################################################
   def create_file(self, my_filename, source, source_filename):
-    global dry_run
-    if not dry_run:
+    if not is_dry_run():
       source._create_file_in_another_source(my_filename=source_filename, 
                                                     source=self, 
                                                     source_filename=my_filename)
     else:
-      StorageBase.__log('CREATED file ', my_filename)
+      log_print('CREATED file ', my_filename)
 
   ###############################################################################
   def delete_file(self, filename):
-    global dry_run
-    if not dry_run:
+    if not is_dry_run():
       self._delete_file(filename)
-    StorageBase.__log('DELETED file ', filename)
+    log_print('DELETED file ', filename)
     
   ###############################################################################
   def delete_directory(self, dirname):
-    global dry_run
-    if not dry_run:
+    if not is_dry_run():
       self._delete_directory(dirname)
-    StorageBase.__log('DELETED dir ', dirname)
+    log_print('DELETED dir ', dirname)
 
   ###############################################################################
   def create_file_given_content(self, filename, content):
-    global dry_run
-    if not dry_run:
+    if not is_dry_run():
       self._create_file_given_content(filename=filename, content=content)
     else:
       raise Exception('stp')
-    StorageBase.__log('CREATED file ', filename)
+    log_print('CREATED file ', filename)
 
   ###############################################################################
   def update_file_given_content(self, filename, content, extra_message):
-    global dry_run
-    if not dry_run:
+    if not is_dry_run():
       self._update_file_given_content(filename=filename, content=content)
-    StorageBase.__log('UPDATED file ', filename, extra_message)
+    log_print('UPDATED file ', filename, extra_message)
   
-  ###############################################################################
-  def create_directory(self, dirname):
-    global dry_run
-    if not dry_run:
-      info = self._create_directory(dirname)
-      if info is None:
-        info = {}
-      self.set_dir_info(dirname, info)
-    StorageBase.__log('CREATED dir ', dirname)
-    
-###############################################################################    
-  def log_entering_directory(self, dirname):
-    StorageBase.__log('kept __ dir ', dirname)
-
-###############################################################################    
-  def list_directory(self, dirname):
-    StorageBase.__log('dir  ', dirname)
-
 ###############################################################################    
   def list_file(self, filename):
-    StorageBase.__log('file ', filename)
+    log_print('file ', filename)
     

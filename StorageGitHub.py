@@ -38,7 +38,7 @@ class StorageGitHub(StorageBase):
     
     all_files, all_directories = [], []
     
-    exists = self.check_directory_exists(path=path_so_far, create_if_doesnt_exist=False)
+    exists = self.check_directory_exists(path=path_so_far)
 
     if exists:
     

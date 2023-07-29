@@ -151,8 +151,6 @@ class StorageSFTP(StorageBase):
 
   ###############################################################################
   def _update_file_given_content(self, filename, content):
-    #print('type(content)', type(content))
-    #print('type(content.encode())', type(content.encode()))
     self.sftp_client.putfo(io.BytesIO(content.encode()), filename)
 
   ###############################################################################
