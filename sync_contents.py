@@ -1,14 +1,87 @@
 import os
 
-from logging_printing import reset_level, log_entering_directory, log_exiting_directory
-from dry_run import is_dry_run
+from Logger import Logger, log_enter_level, log_exit_level
+
+###############################################################################
+def _compare_files_directories_recursive(storage_from, storage_to, root_dir_from, root_dir_to, common_dir_appendix):
+
+  log_enter_level(f'Comparing {common_dir_appendix} in {storage_from.str(root_dir_from)} against {storage_to.str(root_dir_to)}')
+                               
+  files_from, dirs_from = storage_from.get_filenames_and_directories(os.path.join(root_dir_from, common_dir_appendix))
+  files_to  , dirs_to   = storage_to.get_filenames_and_directories(os.path.join(root_dir_to, common_dir_appendix))
+
+  if_from = -len(files_from)
+  if_to = -len(files_to)
+
+  message2_to = f'; there is no equivalent in {storage_to.str(os.path.join(root_dir_to, common_dir_appendix))}'
+  message2_from = f'; there is no equivalent in {storage_from.str(os.path.join(root_dir_from, common_dir_appendix))}'
+
+  while (if_from < 0) or (if_to < 0):
+    if if_from < 0:
+      file_from = files_from[if_from]
+      basename_from = os.path.basename(file_from)
+    if if_to < 0:
+      file_to   = files_to[  if_to]
+      basename_to   = os.path.basename(file_to)
+    if (if_to == 0) or (basename_from < basename_to):
+      storage_from.list_file(file_from, message2=message2_to)
+      if_from += 1
+    if (if_from == 0) or (basename_to < basename_from):
+      storage_to.list_file(file_to, message2=message2_from)
+      if_to += 1  
+    if (basename_from == basename_to):
+      if_from += 1
+      if_to += 1
+      files_are_identical, extra_message, _ = storage_from.compare_files(my_filename=file_from, 
+                                                                           source=storage_to, 
+                                                                           source_filename=file_to)
+      log_print(f'files {os.path.join(common_dir_appendix, basename_from)} are {"identical" if files_are_identical else "different"}, {extra_message}')
+
+  id_from = -len(dirs_from)
+  id_to = -len(dirs_to)
+
+  while (id_from < 0) or (id_to < 0):
+    if id_from < 0:
+      dir_from = dirs_from[id_from]
+      basename_from = os.path.basename(dir_from)
+    if id_to < 0:
+      dir_to   = dirs_to[  id_to]
+      basename_to   = os.path.basename(dir_to)
+    if (id_to == 0) or (basename_from < basename_to):
+      _list_files_directories_recursive(storage=storage_from, dir_to_list=dir_from, message2=message2_to) 
+      id_from += 1
+    if (id_from == 0) or (basename_to < basename_from):
+      _list_files_directories_recursive(storage=storage_to, dir_to_list=dir_to, message2=message2_from) 
+      id_to += 1  
+    if (basename_from == basename_to):
+      id_from += 1
+      id_to += 1
+      _compare_files_directories_recursive(storage_from, storage_to, 
+                                           root_dir_from=root_dir_from, 
+                                           root_dir_to=root_dir_to, 
+                                           common_dir_appendix=os.path.join(common_dir_appendix, basename_from)))
+
+  log_exit_level()
+
+  
+###############################################################################
+def compare_contents(StorageFromType, dir_from, StorageToType, dir_to, kwargs_from={}, kwargs_to={}):
+  with StorageFromType(**kwargs_from) as storage_from:
+    with StorageToType(**kwargs_to) as storage_to: 
+      with Logger(f'Comparing {storage_from.str(dir_from)}, to {storage_to.str(dir_to)}',
+                  ((storage_from, dir_from), (storage_to, dir_to))) as logger:
+        if logger.dir_exists():
+          _compare_files_directories_recursive(storage_from=storage_from, 
+                                            storage_to=storage_to, 
+                                            root_dir_from=dir_from, 
+                                            root_dir_to=dir_to)
 
 ###############################################################################
 def _sync_files_directories_recursive(storage_from, storage_to, current_directory_from, directory_to_root):
 
   to_dirname = os.path.join(directory_to_root, os.path.basename(current_directory_from))
   dir_to_exists = storage_to.check_directory_exists(path=to_dirname, create_if_doesnt_exist=True)
-  log_entering_directory(to_dirname, 'kept __' if (dir_to_exists != "created") else 'CREATED')
+  log_enter_level(f"{'kept __' if (dir_to_exists != 'created') else 'CREATED'} {storage2.str(to_dirname)}")
                                
   files_from, dirs_from = storage_from.get_filenames_and_directories(current_directory_from)
   files_to  , dirs_to   = storage_to.get_filenames_and_directories(to_dirname)
@@ -40,25 +113,24 @@ def _sync_files_directories_recursive(storage_from, storage_to, current_director
                                       current_directory_from=from_dirname, 
                                       directory_to_root=to_dirname)
   
-  log_exiting_directory()
+  log_exit_level()
 
 ###############################################################################
 def sync_contents(StorageFromType, dir_from, StorageToType, dir_to, kwargs_from={}, kwargs_to={}):
   with StorageFromType(**kwargs_from) as storage_from:
     with StorageToType(**kwargs_to) as storage_to: 
-      print(('Comparing' if is_dry_run() else 'Synchronizing from') + f' {type(storage_from).__name__}, folder `{dir_from}`, to {type(storage_to).__name__}, folder `{dir_to}`')
-      reset_level()
-      dir_from_exists = storage_from.check_directory_exists(path=dir_from, create_if_doesnt_exist=None)
-      if dir_from_exists:
-        _sync_files_directories_recursive(storage_from=storage_from, 
-                                          storage_to=storage_to, 
-                                          current_directory_from=dir_from, 
-                                          directory_to_root=dir_to)
+      with Logger(f'Synchronizing {storage_from.str(dir_from)} with {storage_to.str(dir_to)}',
+                  ((storage_from, dir_from),)) as logger:
+        if logger.dir_exists():
+          _sync_files_directories_recursive(storage_from=storage_from, 
+                                            storage_to=storage_to, 
+                                            current_directory_from=dir_from, 
+                                            directory_to_root=dir_to)
 
 ###############################################################################
-def _list_files_directories_recursive(storage, dir_to_list):
+def _list_files_directories_recursive(storage, dir_to_list, message2=''):
 
-  log_entering_directory(dir_to_list)
+  log_enter_level(f'list {storage.str(dir_to_list)}' + message2)
   
   files_, dirs_ = storage.get_filenames_and_directories(dir_to_list)
   
@@ -68,14 +140,13 @@ def _list_files_directories_recursive(storage, dir_to_list):
   for dir_ in dirs_:
     _list_files_directories_recursive(storage=storage, dir_to_list=dir_)
     
-  log_exiting_directory()
+  log_exit_level()
   
 ###############################################################################
 def list_contents(StorageType, dir_to_list, kwargs={}):
   with StorageType(**kwargs) as storage:
-    print(f'Listing folder `{dir_to_list}`, {type(storage).__name__} ' + '*'*8)
-    reset_level()
-    dir_exists = storage.check_directory_exists(path=dir_to_list, create_if_doesnt_exist=None)
-    if dir_exists:
-      _list_files_directories_recursive(storage=storage, dir_to_list=dir_to_list) 
+    with Logger(f'Listing {storage_from.str(dir_from)} ' + '*'*8,
+                  ((storage, dir_to_list),)) as logger:
+      if logger.dir_exists():
+        _list_files_directories_recursive(storage=storage, dir_to_list=dir_to_list) 
   

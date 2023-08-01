@@ -5,7 +5,6 @@ from StorageSFTP import StorageSFTP
 from StorageGitHub import StorageGitHub
 from StoragePCloud import StoragePCloud
 from sync_contents import sync_contents, list_contents
-from dry_run import do_dry_run
 from logging_printing import create_logging_object
 
 # with cProfile.Profile() as pr:
@@ -16,15 +15,14 @@ with create_logging_object() as ll:
   #sync_contents(folders_sftp_github, StorageSFTP, StorageGitHub) #, StoragePCloud,)
   #sync_contents([['music/warum', 'a']], StorageGitHub, StorageGitHub) 
   # sync_contents([['tiny', 'e']], StorageGitHub, StoragePCloud) 
-  do_dry_run()
   #sync_contents([['music/warum', 'e']], StorageGitHub, StoragePCloud) 
   #sync_contents([['', 'music/warum']], StoragePCloud, StorageGitHub) 
   #
 
   list_contents(StorageSFTP, 'www/yu51a5.org/backup')
   #list_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/uploads/')
-  sync_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/uploads', StoragePCloud, 'wp_uploads')
-  sync_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/uploads', StorageGitHub, 'dont')
+  #sync_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/uploads', StoragePCloud, 'wp_uploads')
+  #sync_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/uploads', StorageGitHub, 'dont')
   #list_contents(StoragePCloud, 'sf')
   #sync_contents(StorageSFTP, 'www/yu51a5.org/backup', StoragePCloud, 'sf') 
   #sync_contents(StorageSFTP, 'www/yu51a5.org/backup', StorageGitHub, 'w1/w3')  

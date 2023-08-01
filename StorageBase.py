@@ -1,15 +1,20 @@
 import os
 
-from dry_run import is_dry_run
-from logging_printing import log_print
+from Logger import log_print
 
 #################################################################################
 class StorageBase():
 
   __txt_chrs = set([chr(i) for i in range(32, 127)] + list("\n\r\t\b"))
-  
+
+  #################################################################################
   def __init__(self):
     self.__cached_filenames_flat, self.__cached_directories_flat = {}, self._get_default_root_dir_info()
+
+  #################################################################################
+  def str(dir_name):
+    result = f'{type(storage_from).__name__}(`{dir_name}`)'
+    return result
 
   #################################################################################
   # source: stackoverflow.com/questions/1446549
@@ -138,16 +143,11 @@ class StorageBase():
         
       if create_if_doesnt_exist:
         result = "created"
-        if is_dry_run():
-          return result
         info = self._create_directory(dirname)
         if info is None:
           info = {}
         self.set_dir_info(dirname, info)
         continue
-        
-      if create_if_doesnt_exist is None:
-        log_entering_directory(dir_to_list, f"Skipping because {type(self).__name__} does not contain")
       
       return False
       
@@ -168,23 +168,17 @@ class StorageBase():
   
   ###############################################################################
   def get_filenames_and_directories(self, root: str):
-    if is_dry_run() and (not self.check_directory_exists(root)):
-      return [], []
     files_, directories_ = self._get_filenames_and_directories(path_so_far=root)
-    #print('got names', root, datetime.now())
     
     files_.sort(key=lambda x: x.lower())
     directories_.sort(key=lambda x: x.lower())
 
     files_ = self._filter_out_files(files_)
-    #print('got _filter_out_files', root, datetime.now())
     
     for filename in files_:
       info = self._fetch_stats_one_file(filename)
       #info['textness'] = self.file_contents_is_text(filename=filename)
       self.set_file_info(filename, info)
-
-    #print('got _fetch_stats_one_file', root, datetime.now())
     
     return files_, directories_
 
@@ -200,7 +194,7 @@ class StorageBase():
     source.create_file_given_content(filename=source_filename, content=my_contents)
   
   ###############################################################################
-  def compare_and_update_file(self, my_filename, source, source_filename):
+  def files_are_identical(self, my_filename, source, source_filename):
     
     extra_messages = []
     
@@ -214,49 +208,54 @@ class StorageBase():
       else:
         extra_messages.append(f'{info_name}: {info_from if info_from is not None else "???"} vs. {info_to if info_to is not None else "???"}')
       
-    from_contents = source.get_contents(source_filename) 
     extra_message = f'{", ".join(extra_messages)}'
-    if (not definitely_different) and (self.get_contents(my_filename) == from_contents):
+    if definitely_different:
+      return False, extra_message, None
+
+    from_contents = source.get_contents(source_filename) 
+    files_are_identical_ = self.get_contents(my_filename) == from_contents
+
+    return files_are_identical_, extra_message, from_contents
+
+  ###############################################################################
+  def compare_and_update_file(self, my_filename, source, source_filename):
+    files_are_identical, extra_message, from_contents = self.compare_files(my_filename=my_filename, 
+                                                                           source=source, 
+                                                                           source_filename=source_filename)
+   if files_are_identical:
       log_print('keep __ file ', my_filename, f': identical contents, {extra_message}')
     else:
+      if from_contents is None:
+        from_contents = source.get_contents(source_filename) 
       self.update_file_given_content(filename=my_filename, content=from_contents, extra_message=': '+extra_message)
 
   ###############################################################################
   def create_file(self, my_filename, source, source_filename):
-    if not is_dry_run():
-      source._create_file_in_another_source(my_filename=source_filename, 
+    source._create_file_in_another_source(my_filename=source_filename, 
                                                     source=self, 
                                                     source_filename=my_filename)
-    else:
-      log_print('CREATED file ', my_filename)
 
   ###############################################################################
   def delete_file(self, filename):
-    if not is_dry_run():
-      self._delete_file(filename)
+    self._delete_file(filename)
     log_print('DELETED file ', filename)
     
   ###############################################################################
   def delete_directory(self, dirname):
-    if not is_dry_run():
-      self._delete_directory(dirname)
+    self._delete_directory(dirname)
     log_print('DELETED dir ', dirname)
 
   ###############################################################################
   def create_file_given_content(self, filename, content):
-    if not is_dry_run():
-      self._create_file_given_content(filename=filename, content=content)
-    else:
-      raise Exception('stp')
+    self._create_file_given_content(filename=filename, content=content)
     log_print('CREATED file ', filename)
 
   ###############################################################################
   def update_file_given_content(self, filename, content, extra_message):
-    if not is_dry_run():
-      self._update_file_given_content(filename=filename, content=content)
+    self._update_file_given_content(filename=filename, content=content)
     log_print('UPDATED file ', filename, extra_message)
   
 ###############################################################################    
-  def list_file(self, filename):
-    log_print('file ', filename)
+  def list_file(self, filename, message2=''):
+    log_print(f'file `{filename}`' + message2)
     
