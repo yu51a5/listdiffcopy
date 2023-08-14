@@ -140,12 +140,11 @@ class StoragePCloud(StorageBase):
     self.__post_fileid(url_addon='file_write', filename=filename)
 
   ###############################################################################
-  def _fetch_stats_one_file(self, filename):
+  def _fetch_file_size(self, filename):
     response = self.__post_fileid(url_addon='stat', filename=filename)
     # print(filename, response)
     metadata = response['metadata']
-    dict_ = {'size' : metadata['size'],
-            # 'modified' : datetime.strptime(metadata['modified'], '%a, %d %b %Y %H:%M:%S +0000')
-            }
-    return dict_
+    result = metadata['size']
+    # 'modified' : datetime.strptime(metadata['modified'], '%a, %d %b %Y %H:%M:%S +0000')
+    return  result
     

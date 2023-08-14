@@ -1,4 +1,5 @@
 import os
+import math
 
 from Logger import log_print, add_sizes
 
@@ -167,7 +168,7 @@ class StorageBase():
     return files_
   
   ###############################################################################
-  def get_filenames_and_directories(self, root: str):
+  def get_filenames_and_directories(self, root, enforce_size_fetching=False):
     files_, directories_ = self._get_filenames_and_directories(path_so_far=root)
     
     files_.sort(key=lambda x: x.lower())
@@ -175,13 +176,14 @@ class StorageBase():
 
     files_ = self._filter_out_files(files_)
 
-    total_size = 0
-    
-    for filename in files_:
-      info = self._fetch_stats_one_file(filename)
-      #info['textness'] = self.file_contents_is_text(filename=filename)
-      self.set_file_info(filename, info)
-      total_size = add_sizes(total_size, info['size'])
+    if enforce_size_fetching:
+      total_size = 0
+      for filename in files_:
+        file_size = self._fetch_file_size(filename)
+        #self.set_file_info(filename, {'size' : file_size})
+        total_size = add_sizes(total_size, file_size)
+    else:
+      total_size = math.nan
     
     return files_, directories_, total_size
 

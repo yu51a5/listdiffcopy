@@ -2,9 +2,10 @@ import os
 from github import Github, ContentFile
 import requests
 from requests.structures import CaseInsensitiveDict
+import math
 
 from StorageBase import StorageBase
-from settings import fetch_github_modif_timestamps
+#from settings import fetch_github_modif_timestamps
 
 #################################################################################
 class StorageGitHub(StorageBase):
@@ -25,6 +26,11 @@ class StorageGitHub(StorageBase):
     github_object = Github(self.token)
     github_user = github_object.get_user()
     self.repo = github_user.get_repo(self.repo_name)
+
+    self.headers = CaseInsensitiveDict()
+    self.headers["Accept"] = "application/vnd.github.v3.raw"
+    self.headers["Authorization"] = f"Bearer {self.token}"
+    self.headers["X-GitHub-Api-Version"] = "2022-11-28"
 
   ###############################################################################
   def inexistent_directories_are_empty(self):
@@ -61,15 +67,11 @@ class StorageGitHub(StorageBase):
     if length:
       return bytes(b'')
 
-    headers = CaseInsensitiveDict()
-    headers["Accept"] = "application/vnd.github.v3.raw"
-    headers["Authorization"] = f"Bearer {self.token}"
-    headers["X-GitHub-Api-Version"] = "2022-11-28"
-
     url = f"https://api.github.com/repos/{self.owner}/{self.repo_name}/contents/{filename}"
     #url2 = f'https://raw.githubusercontent.com/{self.owner}/{self.repo_name}/main/{filename}'
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=self.headers)
     content = response.content
+
     self.set_file_info(filename, {'size' : len(content)})
     #content_2 = requests.get(url2, headers=headers).content
     #contents = [content, content_2]
@@ -109,7 +111,7 @@ class StorageGitHub(StorageBase):
     return None
   
   ###############################################################################
-  def _fetch_stats_one_file(self, filename):
+  def _fetch_file_size(self, filename):
     last_modif_date = None
     if False: #fetch_github_modif_timestamps:
       # https://stackoverflow.com/questions/50194241/get-when-the-file-was-last-updated-from-a-github-repository
@@ -123,9 +125,9 @@ class StorageGitHub(StorageBase):
         #commits2 = self.repo.get_commits(path=filename)
         #contents = self.repo.get_contents(filename)
         #print(f"total count 2 is {commits2.totalCount}, filename is {filename}, sha is {sha}, {sha==contents.sha}")
-    dict_ = {#'modified' : last_modif_date, 
-             'size' : None}
-    return dict_
+    self.get_contents(filename=filename)
+    result = self.get_file_info(filename, 'size')
+    return result
     
 
   ###############################################################################

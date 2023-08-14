@@ -1,14 +1,28 @@
 import os
 from datetime import datetime
+import math
 
 from settings import only_print_basename, log_file
 
 #################################################################################
-def add_sizes(size_so_far, addition):
-  if (size_so_far is None) or (addition is None):
-    return size_so_far
-  return size_so_far + addition
+def add_sizes(size_so_far, what_to_add):
+  if (size_so_far is None) or (what_to_add is None):
+    return None
+  if math.isnan(size_so_far) or math.isnan(what_to_add):
+    return math.nan
+  return size_so_far + what_to_add
 
+def add_sizes_quantities(result_so_far, what_to_add):
+  if isinstance(result_so_far[0], list):
+    for r, w in zip(result_so_far, what_to_add):
+      add_sizes_quantities(result_so_far=r, what_to_add=w)
+  else:
+    result_so_far[0] = add_sizes(result_so_far[0], what_to_add[0])
+    result_so_far[1] += what_to_add[1]
+    result_so_far[2] += what_to_add[2]
+  return result_so_far
+
+#################################################################################
 def creates_multi_index(index_1, index_2):
   index_1_expanded = [i1  for i1 in index_1 for _ in index_2]
   index_2_expanded = index_2 * len(index_1)
