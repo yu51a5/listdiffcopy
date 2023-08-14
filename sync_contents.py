@@ -1,14 +1,14 @@
 import os
 
-from Logger import Logger, log_enter_level, log_exit_level
+from Logger import Logger, log_enter_level, log_exit_level, log_print, add_volumes
 
 ###############################################################################
 def _compare_files_directories_recursive(storage_from, storage_to, root_dir_from, root_dir_to, common_dir_appendix):
 
   log_enter_level(f'Comparing {common_dir_appendix} in {storage_from.str(root_dir_from)} against {storage_to.str(root_dir_to)}')
                                
-  files_from, dirs_from = storage_from.get_filenames_and_directories(os.path.join(root_dir_from, common_dir_appendix))
-  files_to  , dirs_to   = storage_to.get_filenames_and_directories(os.path.join(root_dir_to, common_dir_appendix))
+  files_from, dirs_from, _ = storage_from.get_filenames_and_directories(os.path.join(root_dir_from, common_dir_appendix))
+  files_to  , dirs_to  , _ = storage_to.get_filenames_and_directories(os.path.join(root_dir_to, common_dir_appendix))
 
   if_from = -len(files_from)
   if_to = -len(files_to)
@@ -35,7 +35,10 @@ def _compare_files_directories_recursive(storage_from, storage_to, root_dir_from
       files_are_identical, extra_message, _ = storage_from.compare_files(my_filename=file_from, 
                                                                            source=storage_to, 
                                                                            source_filename=file_to)
-      log_print(f'files {os.path.join(common_dir_appendix, basename_from)} are {"identical" if files_are_identical else "different"}, {extra_message}')
+      log_print('file', os.path.join(common_dir_appendix, basename_from), "is", 
+                ("identical to" if files_are_identical else "different from"), 
+                os.path.join(common_dir_appendix, basename_to), 
+                extra_message)
 
   id_from = -len(dirs_from)
   id_to = -len(dirs_to)
@@ -59,7 +62,7 @@ def _compare_files_directories_recursive(storage_from, storage_to, root_dir_from
       _compare_files_directories_recursive(storage_from, storage_to, 
                                            root_dir_from=root_dir_from, 
                                            root_dir_to=root_dir_to, 
-                                           common_dir_appendix=os.path.join(common_dir_appendix, basename_from)))
+                                           common_dir_appendix=os.path.join(common_dir_appendix, basename_from))
 
   log_exit_level()
 
@@ -83,8 +86,8 @@ def _sync_files_directories_recursive(storage_from, storage_to, current_director
   dir_to_exists = storage_to.check_directory_exists(path=to_dirname, create_if_doesnt_exist=True)
   log_enter_level(f"{'kept __' if (dir_to_exists != 'created') else 'CREATED'} {storage2.str(to_dirname)}")
                                
-  files_from, dirs_from = storage_from.get_filenames_and_directories(current_directory_from)
-  files_to  , dirs_to   = storage_to.get_filenames_and_directories(to_dirname)
+  files_from, dirs_from, _ = storage_from.get_filenames_and_directories(current_directory_from)
+  files_to  , dirs_to  , _ = storage_to.get_filenames_and_directories(to_dirname)
   
   for to_filename in files_to:
     from_filename = os.path.join(current_directory_from, os.path.basename(to_filename))
@@ -130,22 +133,33 @@ def sync_contents(StorageFromType, dir_from, StorageToType, dir_to, kwargs_from=
 ###############################################################################
 def _list_files_directories_recursive(storage, dir_to_list, message2=''):
 
-  log_enter_level(f'list {storage.str(dir_to_list)}' + message2)
+  log_enter_level(dirname=dir_to_list, message_to_print='list', message2=message2)
   
-  files_, dirs_ = storage.get_filenames_and_directories(dir_to_list)
+  files_, dirs_, total_volume_first_level = storage.get_filenames_and_directories(dir_to_list)
+  total_files_qty, total_volume, total_dirs_qty = len(files_), total_volume_first_level, len(dirs_)
   
   for file_ in files_:
     storage.list_file(file_)
 
   for dir_ in dirs_:
-    _list_files_directories_recursive(storage=storage, dir_to_list=dir_)
+    d_files_qty, d_files_volume, d_dirs_qty = _list_files_directories_recursive(storage=storage, dir_to_list=dir_)
+    total_files_qty += d_files_qty
+    total_volume = add_volumes(total_volume, d_files_volume)
+    total_dirs_qty += d_dirs_qty
     
-  log_exit_level()
+  log_exit_level(files_qty=len(files_), 
+                 dirs_qty=len(dirs_), 
+                 total_files_qty=total_files_qty,
+                 total_volume=total_volume,
+                 total_volume_first_level=total_volume_first_level, 
+                 total_dirs_qty=total_dirs_qty)
+
+  return total_files_qty, total_volume, total_dirs_qty
   
 ###############################################################################
 def list_contents(StorageType, dir_to_list, kwargs={}):
   with StorageType(**kwargs) as storage:
-    with Logger(f'Listing {storage_from.str(dir_from)} ' + '*'*8,
+    with Logger(f'Listing {storage.str(dir_to_list)} ' + '*'*8,
                   ((storage, dir_to_list),)) as logger:
       if logger.dir_exists():
         _list_files_directories_recursive(storage=storage, dir_to_list=dir_to_list) 

@@ -1,6 +1,6 @@
 import os
 
-from Logger import log_print
+from Logger import log_print, add_volumes
 
 #################################################################################
 class StorageBase():
@@ -12,8 +12,8 @@ class StorageBase():
     self.__cached_filenames_flat, self.__cached_directories_flat = {}, self._get_default_root_dir_info()
 
   #################################################################################
-  def str(dir_name):
-    result = f'{type(storage_from).__name__}(`{dir_name}`)'
+  def str(self, dir_name):
+    result = f'{type(self).__name__}(`{dir_name}`)'
     return result
 
   #################################################################################
@@ -143,10 +143,10 @@ class StorageBase():
         
       if create_if_doesnt_exist:
         result = "created"
-        info = self._create_directory(dirname)
+        info = self._create_directory(path_so_far)
         if info is None:
           info = {}
-        self.set_dir_info(dirname, info)
+        self.set_dir_info(path_so_far, info)
         continue
       
       return False
@@ -174,13 +174,16 @@ class StorageBase():
     directories_.sort(key=lambda x: x.lower())
 
     files_ = self._filter_out_files(files_)
+
+    total_volume = 0
     
     for filename in files_:
       info = self._fetch_stats_one_file(filename)
       #info['textness'] = self.file_contents_is_text(filename=filename)
       self.set_file_info(filename, info)
+      total_volume = add_volumes(total_volume, info['size'])
     
-    return files_, directories_
+    return files_, directories_, total_volume
 
   ###############################################################################
   def file_contents_is_text(self, filename):
@@ -222,7 +225,7 @@ class StorageBase():
     files_are_identical, extra_message, from_contents = self.compare_files(my_filename=my_filename, 
                                                                            source=source, 
                                                                            source_filename=source_filename)
-   if files_are_identical:
+    if files_are_identical:
       log_print('keep __ file ', my_filename, f': identical contents, {extra_message}')
     else:
       if from_contents is None:
@@ -257,5 +260,5 @@ class StorageBase():
   
 ###############################################################################    
   def list_file(self, filename, message2=''):
-    log_print(f'file `{filename}`' + message2)
+    log_print('file', filename, message2)
     

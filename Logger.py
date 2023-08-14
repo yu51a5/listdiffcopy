@@ -3,6 +3,15 @@ from datetime import datetime
 
 from settings import only_print_basename, log_file
 
+#################################################################################
+
+def add_volumes(size_so_far, addition):
+  if (size_so_far is None) or (addition is None):
+    return size_so_far
+  return size_so_far + addition
+
+#################################################################################
+
 singleton_logger = None
 
 #################################################################################
@@ -17,7 +26,7 @@ class Logger():
     global singleton_logger
     if singleton_logger is not None:
       raise Exception("logger already exists")
-    singleton_logger = None
+    singleton_logger = self
 
     self.log_print_basic(title)
 
@@ -25,7 +34,7 @@ class Logger():
 
     for storage, dir_to_check in storages_dirs_that_must_exist:
       if not storage.check_directory_exists(dir_to_check):
-        self.log_print_basic(f"Skipping because {storage.str(sdir_to_check)} does not exist")
+        self.log_print_basic(f"Skipping because {storage.str(dir_to_check)} does not exist")
         self.__dirs_dont_exist = True
     
   ###############################################################################
@@ -50,15 +59,15 @@ class Logger():
     self.log_print(message_to_print + ' dir ', dirname, message2, 'at', now_)
 
   ###############################################################################
-  def log_exit_level(self):
+  def log_exit_level(self, **kwargs):
     now_ = datetime.now()
     time_elapsed = now_ - self.level_start_times_dirnames[-1][0]
-    self.log_print('exited dir ', self.level_start_times_dirnames[-1][1], 'at', now_, 'time elapsed:', time_elapsed)
+    self.log_print('exited dir ', self.level_start_times_dirnames[-1][1], 'at', now_, 'time elapsed:', time_elapsed, kwargs)
     self.level_start_times_dirnames.pop(-1)
 
   ###############################################################################
   def log_print_basic(self, message):
-    self.log_object.write(message + '`\n')
+    self.log_object.write(message + '\n')
     print(message)
 
   ###############################################################################
@@ -70,18 +79,33 @@ class Logger():
     if 'dir' in message0:
       prefix = prefix.replace('─', '═')
       prefix = ('╚' if 'exit' in message0.lower() else ('╠' if 'DELETED' in message0 else '╔')) + prefix[1:]
+    if message0 == 'exited dir ':
+      prefix = prefix[:-2] + '╦ ' 
+      dir_details = args[-1]
+      args_to_use = args[:-1]
+    else:
+      dir_details = None
+      args_to_use = args
     # boxy symbols https://www.ncbi.nlm.nih.gov/staff/beck/charents/unicode/2500-257F.html
 
-    string_ = '║' * (level - 1) + prefix + message0 + '`' + (os.path.basename(name) if (only_print_basename and (level != 1)) else name) + '` ' + ' '.join([str(a) for a in args if a])
+    string_ = '║' * (level - 1) + prefix + message0 + '`' + (os.path.basename(name) if (only_print_basename and (level != 1)) else name) + '` ' + ' '.join([str(a) for a in args_to_use if a])
     
     self.log_print_basic(string_)
+
+    if dir_details:
+      prefix_dir_details = '║' * (level - 1) + ' ' * (len(prefix) - 2) + '╠═'
+      for i, (key, value) in enumerate(dir_details.items()):
+        if i == (len(dir_details) - 1):
+          prefix_dir_details = prefix_dir_details[:-2] + '╚═'
+        string_ = prefix_dir_details + f' {key} : {value}'
+        self.log_print_basic(string_)
     
 ###############################################################################
 def log_print(message0, name, *args):
   global singleton_logger 
   if singleton_logger is None:
     raise Exception("logger does not exist")
-  singleton_logger.log_print(message0=message0, name=name, *args)
+  singleton_logger.log_print(message0, name, *args)
   
 ###############################################################################
 def log_enter_level(*args, **kwargs):

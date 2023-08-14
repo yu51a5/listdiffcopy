@@ -5,10 +5,10 @@ from StorageSFTP import StorageSFTP
 from StorageGitHub import StorageGitHub
 from StoragePCloud import StoragePCloud
 from sync_contents import sync_contents, list_contents
-from logging_printing import create_logging_object
+#from Logger import create_logging_object
 
 # with cProfile.Profile() as pr:
-with create_logging_object() as ll:
+#with create_logging_object() as ll:
   #folders_sftp_github = [['www/yu51a5.org/public_html/wp-content/themes/pinboard-child', 'pinboard-child'], ['www/yu51a5.org/backup', 'posts'], ['www/yu51a5.org/public_html/wp-content/themes', 'themes']]
   #folders_pcloud_github = [['music/nein', 'b']]
 
@@ -19,8 +19,9 @@ with create_logging_object() as ll:
   #sync_contents([['', 'music/warum']], StoragePCloud, StorageGitHub) 
   #
 
-  list_contents(StorageSFTP, 'www/yu51a5.org/backup')
-  #list_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/uploads/')
+# list_contents(StorageSFTP, 'www/yu51a5.org/backup')
+# list_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/uploads/')
+list_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/themes/')
   #sync_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/uploads', StoragePCloud, 'wp_uploads')
   #sync_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/uploads', StorageGitHub, 'dont')
   #list_contents(StoragePCloud, 'sf')
@@ -29,7 +30,7 @@ with create_logging_object() as ll:
   #sync_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/themes/pinboard-child', StorageGitHub, 'pinboard-child')  
   #sync_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/uploads/persia_greece', StoragePCloud, 'persia_greece')  
   #list_contents(StorageGitHub, 'w1')
-  print("all done!")
+print("all done!")
   
   #stats = pstats.Stats(pr).sort_stats('tottime')
   # stats.print_stats()
