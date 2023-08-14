@@ -1,6 +1,6 @@
 import os
 
-from Logger import log_print, add_volumes
+from Logger import log_print, add_sizes
 
 #################################################################################
 class StorageBase():
@@ -175,15 +175,15 @@ class StorageBase():
 
     files_ = self._filter_out_files(files_)
 
-    total_volume = 0
+    total_size = 0
     
     for filename in files_:
       info = self._fetch_stats_one_file(filename)
       #info['textness'] = self.file_contents_is_text(filename=filename)
       self.set_file_info(filename, info)
-      total_volume = add_volumes(total_volume, info['size'])
+      total_size = add_sizes(total_size, info['size'])
     
-    return files_, directories_, total_volume
+    return files_, directories_, total_size
 
   ###############################################################################
   def file_contents_is_text(self, filename):

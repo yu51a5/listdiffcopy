@@ -1,6 +1,6 @@
 import os
 
-from Logger import Logger, log_enter_level, log_exit_level, log_print, add_volumes
+from Logger import Logger, log_enter_level, log_exit_level, log_print, add_sizes
 
 ###############################################################################
 def _compare_files_directories_recursive(storage_from, storage_to, root_dir_from, root_dir_to, common_dir_appendix):
@@ -135,26 +135,24 @@ def _list_files_directories_recursive(storage, dir_to_list, message2=''):
 
   log_enter_level(dirname=dir_to_list, message_to_print='list', message2=message2)
   
-  files_, dirs_, total_volume_first_level = storage.get_filenames_and_directories(dir_to_list)
-  total_files_qty, total_volume, total_dirs_qty = len(files_), total_volume_first_level, len(dirs_)
+  files_, dirs_, total_size_first_level = storage.get_filenames_and_directories(dir_to_list)
+  total_files_qty, total_size, total_dirs_qty = len(files_), total_size_first_level, len(dirs_)
   
   for file_ in files_:
     storage.list_file(file_)
 
   for dir_ in dirs_:
-    d_files_qty, d_files_volume, d_dirs_qty = _list_files_directories_recursive(storage=storage, dir_to_list=dir_)
+    d_files_size, d_files_qty, d_dirs_qty = _list_files_directories_recursive(storage=storage, dir_to_list=dir_)
     total_files_qty += d_files_qty
-    total_volume = add_volumes(total_volume, d_files_volume)
+    total_size = add_sizes(total_size, d_files_size)
     total_dirs_qty += d_dirs_qty
-    
-  log_exit_level(files_qty=len(files_), 
-                 dirs_qty=len(dirs_), 
-                 total_files_qty=total_files_qty,
-                 total_volume=total_volume,
-                 total_volume_first_level=total_volume_first_level, 
-                 total_dirs_qty=total_dirs_qty)
 
-  return total_files_qty, total_volume, total_dirs_qty
+  table_stats = [[total_size,             total_files_qty, total_dirs_qty], 
+                 [total_size_first_level, len(files_),     len(dirs_)]]
+    
+  log_exit_level(table_stats)
+
+  return table_stats[0]
   
 ###############################################################################
 def list_contents(StorageType, dir_to_list, kwargs={}):
