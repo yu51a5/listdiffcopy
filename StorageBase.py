@@ -176,16 +176,18 @@ class StorageBase():
 
     files_ = self._filter_out_files(files_)
 
-    if enforce_size_fetching:
-      total_size = 0
-      for filename in files_:
-        file_size = self._fetch_file_size(filename)
-        #self.set_file_info(filename, {'size' : file_size})
-        total_size = add_sizes(total_size, file_size)
-    else:
-      total_size = math.nan
+    if not enforce_size_fetching:
+      return files_, directories_, math.nan
+
+    files_sizes = [[f, None] for f in files_]
+    total_size = 0
+    for i, filename in enumerate(files_):
+      file_size = self._fetch_file_size(filename)
+      files_sizes[i][1] = file_size
+      #self.set_file_info(filename, {'size' : file_size})
+      total_size = add_sizes(total_size, file_size)
     
-    return files_, directories_, total_size
+    return files_sizes, directories_, total_size
 
   ###############################################################################
   def file_contents_is_text(self, filename):

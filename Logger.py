@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 import math
 
-from settings import only_print_basename, log_file
+from settings import log_file
 
 #################################################################################
 def add_sizes(size_so_far, what_to_add):
@@ -90,6 +90,18 @@ class Logger():
     print(message)
 
   ###############################################################################
+  def log_print_df(self, df, extra_prefix, last_chars_last_prefix=''):
+    if df.index.empty:
+      return
+    df_str = df.to_string().split('\n')
+    level = len(self.level_start_times_dirnames)
+    prefix = '║' * (level - 1) + extra_prefix
+    for i, df_str_ in enumerate(df_str):
+        if i == (len(df_str) - 1) and last_chars_last_prefix:
+          prefix = prefix[:-len(last_chars_last_prefix)] + last_chars_last_prefix
+        self.log_print_basic(prefix + df_str_)
+
+  ###############################################################################
   def log_print(self, message0, name, *args):
 
     level = len(self.level_start_times_dirnames)
@@ -107,19 +119,13 @@ class Logger():
       args_to_use = args
     # boxy symbols https://www.ncbi.nlm.nih.gov/staff/beck/charents/unicode/2500-257F.html
 
-    string_ = '║' * (level - 1) + prefix + message0 + '`' + (os.path.basename(name) if (only_print_basename and (level != 1)) else name) + '` ' + ' '.join([str(a) for a in args_to_use if a])
+    string_ = '║' * (level - 1) + prefix + message0 + '`' + name + '` ' + ' '.join([str(a) for a in args_to_use if a])
     
     self.log_print_basic(string_)
 
     if dir_details_df is not None:
-      dir_details_str = dir_details_df.to_string().split('\n')
-      prefix_dir_details = '║' * (level - 1) + ' ' * (len(prefix) - 2) + '╠═'
-      for i, dir_details_str_ in enumerate(dir_details_str):
-        if i == (len(dir_details_str) - 1):
-          prefix_dir_details = prefix_dir_details[:-2] + '╚═'
-        string_ = prefix_dir_details + dir_details_str_
-        self.log_print_basic(string_)
-    
+      self.log_print_df(df=dir_details_df, extra_prefix=' ' * (len(prefix) - 2) + '╠═ ', last_chars_last_prefix='╚═ ')
+
 ###############################################################################
 def log_print(message0, name, *args):
   global singleton_logger 
@@ -140,4 +146,10 @@ def log_exit_level(*args, **kwargs):
   if singleton_logger is None:
     raise Exception("logger does not exist")
   singleton_logger.log_exit_level(*args, **kwargs)
-        
+  
+###############################################################################
+def log_print_df(*args, **kwargs):
+  global singleton_logger 
+  if singleton_logger is None:
+    raise Exception("logger does not exist")
+  singleton_logger.log_print_df(*args, **kwargs)

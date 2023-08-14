@@ -21,8 +21,8 @@ from sync_contents import sync_contents, list_contents
 # list_contents(StorageSFTP, 'www/yu51a5.org/backup')
 # list_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/uploads/')
 
-#list_contents(StoragePCloud, '')
-#list_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/themes/')
+list_contents(StoragePCloud, '')
+list_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/themes/')
 list_contents(StorageGitHub, 'w1')
 
   #sync_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/uploads', StoragePCloud, 'wp_uploads')
