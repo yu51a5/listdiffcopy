@@ -1,15 +1,19 @@
 import os
 from datetime import datetime
-import pandas as pd
 
 from settings import only_print_basename, log_file
 
 #################################################################################
-
 def add_sizes(size_so_far, addition):
   if (size_so_far is None) or (addition is None):
     return size_so_far
   return size_so_far + addition
+
+def creates_multi_index(index_1, index_2):
+  index_1_expanded = [i1  for i1 in index_1 for _ in index_2]
+  index_2_expanded = index_2 * len(index_1)
+  result = list(map(list, zip(index_1_expanded, index_2_expanded)))
+  return result
 
 #################################################################################
 
@@ -60,12 +64,9 @@ class Logger():
     self.log_print(message_to_print + ' dir ', dirname, message2, 'at', now_)
 
   ###############################################################################
-  def log_exit_level(self, dir_details):
+  def log_exit_level(self, dir_details_df):
     now_ = datetime.now()
     time_elapsed = now_ - self.level_start_times_dirnames[-1][0]
-    dir_details_df = pd.DataFrame(dir_details,
-                                  index=["Total", "First level"], 
-                                  columns=["Size", "Files qty", "Dirs qty"])
     self.log_print('exited dir ', self.level_start_times_dirnames[-1][1], 'at', now_, 'time elapsed:', time_elapsed, dir_details_df)
     self.level_start_times_dirnames.pop(-1)
 

@@ -1,6 +1,12 @@
 import os
+import pandas as pd
 
-from Logger import Logger, log_enter_level, log_exit_level, log_print, add_sizes
+from Logger import Logger, log_enter_level, log_exit_level, log_print, add_sizes, creates_multi_index
+
+columns_df = pd.MultiIndex.from_tuples([["Files",  "Size"],  ["Files", "How Many"], ["Directories", "How Many"]])
+index_listing_df = ["First level", "Total"]
+index_sync_df = pd.MultiIndex.from_tuples(creates_multi_index(["Created", "Updated", "Deleted"], index_listing_df))
+index_comp_df = pd.MultiIndex.from_tuples(creates_multi_index(["Both", "Left Only", "Right Only"], index_listing_df))
 
 ###############################################################################
 def _compare_files_directories_recursive(storage_from, storage_to, root_dir_from, root_dir_to, common_dir_appendix):
@@ -64,7 +70,7 @@ def _compare_files_directories_recursive(storage_from, storage_to, root_dir_from
                                            root_dir_to=root_dir_to, 
                                            common_dir_appendix=os.path.join(common_dir_appendix, basename_from))
 
-  log_exit_level()
+  log_exit_level(dir_details_df=pd.DataFrame(table_stats, index=index_comp_df, columns=columns_df))
 
   
 ###############################################################################
@@ -116,7 +122,7 @@ def _sync_files_directories_recursive(storage_from, storage_to, current_director
                                       current_directory_from=from_dirname, 
                                       directory_to_root=to_dirname)
   
-  log_exit_level()
+  log_exit_level(dir_details_df=pd.DataFrame(table_stats, index=index_sync_df, columns=columns_df))
 
 ###############################################################################
 def sync_contents(StorageFromType, dir_from, StorageToType, dir_to, kwargs_from={}, kwargs_to={}):
@@ -143,16 +149,16 @@ def _list_files_directories_recursive(storage, dir_to_list, message2=''):
 
   for dir_ in dirs_:
     d_files_size, d_files_qty, d_dirs_qty = _list_files_directories_recursive(storage=storage, dir_to_list=dir_)
-    total_files_qty += d_files_qty
     total_size = add_sizes(total_size, d_files_size)
+    total_files_qty += d_files_qty
     total_dirs_qty += d_dirs_qty
 
-  table_stats = [[total_size,             total_files_qty, total_dirs_qty], 
-                 [total_size_first_level, len(files_),     len(dirs_)]]
+  table_stats = [[total_size_first_level, len(files_),     len(dirs_)],
+                 [total_size,             total_files_qty, total_dirs_qty],]
     
-  log_exit_level(table_stats)
+  log_exit_level(dir_details_df=pd.DataFrame(table_stats, index=index_listing_df, columns=columns_df))
 
-  return table_stats[0]
+  return table_stats[1]
   
 ###############################################################################
 def list_contents(StorageType, dir_to_list, kwargs={}):
