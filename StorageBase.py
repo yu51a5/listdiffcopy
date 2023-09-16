@@ -1,8 +1,6 @@
 import os
 import math
 
-from Logger import log_print, add_sizes
-
 #################################################################################
 class StorageBase():
 
@@ -127,6 +125,13 @@ class StorageBase():
       path, tail = os.path.split(path)
       result = [tail] + result   
     return result
+
+  ###############################################################################
+  def create_directory_in_existing_folder(self, path):
+    info = self._create_directory(path)
+    if info is None:
+      info = {}
+    self.set_dir_info(path, info)
     
   ###############################################################################
   def check_directory_exists(self, path, create_if_doesnt_exist=False):
@@ -144,10 +149,7 @@ class StorageBase():
         
       if create_if_doesnt_exist:
         result = "created"
-        info = self._create_directory(path_so_far)
-        if info is None:
-          info = {}
-        self.set_dir_info(path_so_far, info)
+        self.create_directory_in_existing_folder(path_so_far)
         continue
       
       return False
@@ -179,15 +181,15 @@ class StorageBase():
     if not enforce_size_fetching:
       return files_, directories_, math.nan
 
-    files_sizes = [[f, None] for f in files_]
+    #files_sizes = [[f, math.nan] for f in files_]
     total_size = 0
     for i, filename in enumerate(files_):
       file_size = self._fetch_file_size(filename)
-      files_sizes[i][1] = file_size
-      #self.set_file_info(filename, {'size' : file_size})
-      total_size = add_sizes(total_size, file_size)
+      #files_sizes[i][1] = file_size
+      self.set_file_info(filename, {'size' : file_size})
+      total_size += file_size
     
-    return files_sizes, directories_, total_size
+    return files_, directories_, total_size
 
   ###############################################################################
   def file_contents_is_text(self, filename):
@@ -199,11 +201,10 @@ class StorageBase():
   def _create_file_in_another_source(self, my_filename, source, source_filename):
     my_contents = self.get_contents(my_filename)
     source.create_file_given_content(filename=source_filename, content=my_contents)
+    return len(my_contents)
   
   ###############################################################################
-  def files_are_identical(self, my_filename, source, source_filename):
-    
-    extra_messages = []
+  def check_if_files_are_identical(self, my_filename, source, source_filename):
     
     definitely_different = False
     for info_name in ['size']: #, 'modified', 'textness'
@@ -211,58 +212,33 @@ class StorageBase():
       info_to = self.get_file_info(my_filename, info_name)
       if (info_from is not None) and (info_to is not None) and ((info_from > info_to) if info_name == 'modified' else (info_from != info_to)):
         definitely_different = True
-        extra_messages.append(f'{info_name}: {info_from if info_from is not None else "???"} -> {info_to if info_to is not None else "???"}')
-      else:
-        extra_messages.append(f'{info_name}: {info_from if info_from is not None else "???"} vs. {info_to if info_to is not None else "???"}')
       
-    extra_message = f'{", ".join(extra_messages)}'
     if definitely_different:
-      return False, extra_message, None
+      return False, None
 
     from_contents = source.get_contents(source_filename) 
     files_are_identical_ = self.get_contents(my_filename) == from_contents
 
-    return files_are_identical_, extra_message, from_contents
-
-  ###############################################################################
-  def compare_and_update_file(self, my_filename, source, source_filename):
-    files_are_identical, extra_message, from_contents = self.compare_files(my_filename=my_filename, 
-                                                                           source=source, 
-                                                                           source_filename=source_filename)
-    if files_are_identical:
-      log_print('keep __ file ', my_filename, f': identical contents, {extra_message}')
-    else:
-      if from_contents is None:
-        from_contents = source.get_contents(source_filename) 
-      self.update_file_given_content(filename=my_filename, content=from_contents, extra_message=': '+extra_message)
+    return files_are_identical_, from_contents
 
   ###############################################################################
   def create_file(self, my_filename, source, source_filename):
-    source._create_file_in_another_source(my_filename=source_filename, 
+    size_contents = source._create_file_in_another_source(my_filename=source_filename, 
                                                     source=self, 
                                                     source_filename=my_filename)
+    return size_contents
 
   ###############################################################################
   def delete_file(self, filename):
     self._delete_file(filename)
-    log_print('DELETED file ', filename)
+    #log_print('DELETED file ', filename)
     
   ###############################################################################
   def delete_directory(self, dirname):
     self._delete_directory(dirname)
-    log_print('DELETED dir ', dirname)
+    #log_print('DELETED dir ', dirname)
 
   ###############################################################################
   def create_file_given_content(self, filename, content):
     self._create_file_given_content(filename=filename, content=content)
-    log_print('CREATED file ', filename)
-
-  ###############################################################################
-  def update_file_given_content(self, filename, content, extra_message):
-    self._update_file_given_content(filename=filename, content=content)
-    log_print('UPDATED file ', filename, extra_message)
-  
-###############################################################################    
-  def list_file(self, filename, message2=''):
-    log_print('file', filename, message2)
-    
+    #log_print('CREATED file ', filename)

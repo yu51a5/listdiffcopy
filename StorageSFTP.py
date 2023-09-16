@@ -160,7 +160,6 @@ class StorageSFTP(StorageBase):
   def _create_file_in_another_source(self, my_filename, source, source_filename):
     with self.sftp_client.open(my_filename) as sftp_file:
       sftp_contents = sftp_file.read()
-      print('cr2', my_filename)
-      return
-      source.create_file_given_content(filename=source_filename, content=sftp_contents)
+      source._create_file_given_content(filename=source_filename, content=sftp_contents)
+      return len(sftp_contents)
       
