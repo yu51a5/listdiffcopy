@@ -2,7 +2,6 @@ import io
 import os
 import paramiko
 from stat import S_ISDIR, S_ISREG
-from datetime import datetime
 
 from StorageBase import StorageBase
 from settings import wp_images_extensions, default_ignore_wp_scaled_images
@@ -162,4 +161,12 @@ class StorageSFTP(StorageBase):
       sftp_contents = sftp_file.read()
       source._create_file_given_content(filename=source_filename, content=sftp_contents)
       return len(sftp_contents)
+
+  ###############################################################################
+  def _rename_file(self, path_to_existing_file, path_to_new_file):
+    self.sftp_client.rename(path_to_existing_file, path_to_new_file)
+    
+  ###############################################################################
+  def _rename_directory(self, path_to_existing_dir, path_to_new_dir):
+    self.sftp_client.rename(path_to_existing_dir, path_to_new_dir)
       

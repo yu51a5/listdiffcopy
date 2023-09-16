@@ -105,7 +105,7 @@ class SomeAction2(SomeAction):
           subdir_info_total = self._action_files_directories_recursive(common_dir_appendix=os.path.join(common_dir_appendix, basename_from))
           dir_info_total += subdir_info_total
         else:
-          subdir_list_total = self._list_files_directories_recursive(storage=self.storage_from, dir_to_list=dir_from, message2=f"Exists in {_dir_from} but not in {_dir_to}") 
+          subdir_list_total, _, _ = self._list_files_directories_recursive(storage=self.storage_from, dir_to_list=dir_from, message2=f"Exists in {_dir_from} but not in {_dir_to}") 
           dir_info_total[0] += subdir_list_total
         id_from += 1
       if (id_from == 0) or (basename_to < basename_from):
@@ -114,7 +114,7 @@ class SomeAction2(SomeAction):
           self.storage_to._delete_directory(dir_to)
           dir_info_first_level[1] += np.array([math.nan] * 3)
         else:
-          subdir_list_total = self._list_files_directories_recursive(storage=self.storage_to, dir_to_list=dir_to, message2=f"Exists in {_dir_to} but not in {_dir_from}")
+          subdir_list_total, _, _ = self._list_files_directories_recursive(storage=self.storage_to, dir_to_list=dir_to, message2=f"Exists in {_dir_to} but not in {_dir_from}")
           dir_info_total[1] += subdir_list_total
         id_to += 1  
       if (basename_from == basename_to):

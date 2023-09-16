@@ -147,4 +147,21 @@ class StoragePCloud(StorageBase):
     result = metadata['size']
     # 'modified' : datetime.strptime(metadata['modified'], '%a, %d %b %Y %H:%M:%S +0000')
     return  result
+
+
+  ###############################################################################
+  # using https://docs.pcloud.com/methods/file/renamefile.html
+  def _rename_file(self, path_to_existing_file, path_to_new_file):
+    result = self.__post_fileid(url_addon='renamefile', 
+                                filename=path_to_existing_file, 
+                                param_dict={'topath': path_to_new_file})['metadata']
+    return result
     
+  ###############################################################################
+  def _rename_directory(self, path_to_existing_dir, path_to_new_dir):
+    result = self.__post_folderid(url_addon='renamefolder', 
+                                  dirname=path_to_existing_dir,
+                                  param_dict={'topath': path_to_new_dir})['metadata']
+    return result
+    
+  ###############################################################################

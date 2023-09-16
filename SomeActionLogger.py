@@ -1,6 +1,5 @@
-import os
 from datetime import datetime
-import math
+import pandas as pd
 
 from settings import log_file
 
@@ -72,7 +71,7 @@ class Logger():
     if 'dir' in message0:
       prefix = prefix.replace('─', '═')
       prefix = ('╚' if 'exit' in message0.lower() else ('╠' if 'DELETED' in message0 else '╔')) + prefix[1:]
-    if message0 == 'exited dir ':
+    if message0.lower().startswith('exited'):
       prefix = prefix[:-2] + '╦ ' 
       dir_details_df = args[-1]
       args_to_use = args[:-1]
@@ -80,7 +79,6 @@ class Logger():
       dir_details_df = None
       args_to_use = args
     # boxy symbols https://www.ncbi.nlm.nih.gov/staff/beck/charents/unicode/2500-257F.html
-
     string_ = '║' * (level - 1) + prefix + message0 + '`' + name + '` ' + ' '.join([str(a) for a in args_to_use if a])
     
     self.log_print_basic(string_)

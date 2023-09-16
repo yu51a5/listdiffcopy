@@ -81,7 +81,15 @@ class StorageBase():
   ###############################################################################
   def _update_file_given_content(self, filename, content):
     self.__please_override()
-
+    
+  ###############################################################################
+  def _rename_file(self, path_to_existing_file, path_to_new_file):
+    self.__please_override()
+    
+  ###############################################################################
+  def _rename_directory(self, path_to_existing_dir, path_to_new_dir):
+    self.__please_override()
+    
   ###############################################################################
   def get_file_info(self, filename, info_name):
     return self.__cached_filenames_flat[filename][info_name]
@@ -164,7 +172,23 @@ class StorageBase():
       files_, _ = self._get_filenames_and_directories(path_so_far=dirname)
       return (path in files_)
     return False
+
+  ###############################################################################
+  def rename_file(self, path_to_existing_file, path_to_new_file):
+    if self.check_file_exists(path=path_to_existing_file):
+      return self._rename_file(path_to_existing_file=path_to_existing_file, 
+                               path_to_new_file=path_to_new_file)
+    else:
+      raise Exception(f"{self.str(path_to_existing_file)} does not exist")
     
+  ###############################################################################
+  def rename_directory(self, path_to_existing_dir, path_to_new_dir):
+    if self.check_directory_exists(path=path_to_existing_dir):
+      return self._rename_directory(path_to_existing_dir=path_to_existing_dir, 
+                                    path_to_new_dir=path_to_new_dir)
+    else:
+      raise Exception(f"{self.str(path_to_existing_dir)} does not exist")
+      
   ###############################################################################
   def _filter_out_files(self, files_):
     return files_

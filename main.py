@@ -5,7 +5,7 @@ from StorageSFTP import StorageSFTP
 from StorageGitHub import StorageGitHub
 from StoragePCloud import StoragePCloud
 
-from SomeAction import list_contents
+from SomeAction import list_directory
 from SomeAction2 import synchronize
 
 # with cProfile.Profile() as pr:
@@ -27,7 +27,8 @@ from SomeAction2 import synchronize
 #list_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/themes/')
 #list_contents(StorageGitHub, 'w1')
 
-#list_contents(StorageGitHub, 'a')
+_, _, dirs = list_directory(StorageGitHub, 'a')
+print(dirs)
 synchronize(StorageGitHub, 'a', StoragePCloud, 'aa')
 
   #sync_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/uploads', StoragePCloud, 'wp_uploads')

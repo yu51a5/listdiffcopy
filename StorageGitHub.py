@@ -2,10 +2,8 @@ import os
 from github import Github, ContentFile
 import requests
 from requests.structures import CaseInsensitiveDict
-import math
 
 from StorageBase import StorageBase
-#from settings import fetch_github_modif_timestamps
 
 #################################################################################
 class StorageGitHub(StorageBase):
@@ -112,13 +110,13 @@ class StorageGitHub(StorageBase):
   
   ###############################################################################
   def _fetch_file_size(self, filename):
-    last_modif_date = None
+    #last_modif_date = None
     if False: #fetch_github_modif_timestamps:
       # https://stackoverflow.com/questions/50194241/get-when-the-file-was-last-updated-from-a-github-repository
       #sha=self.get_file_info(filename, 'sha')
       commits = self.repo.get_commits(path=filename) # sha=sha)
       if commits.totalCount:
-        last_modif_date = commits[0].commit.committer.date
+        pass # last_modif_date = commits[0].commit.committer.date
       else:
         pass
         #print(f"total count is 0, filename is {filename}, sha is {sha}")
@@ -128,6 +126,15 @@ class StorageGitHub(StorageBase):
     self.get_contents(filename=filename)
     result = self.get_file_info(filename, 'size')
     return result
-    
 
+  
+  ###############################################################################
+  # using https://medium.com/@obodley/renaming-a-file-using-the-git-api-fed1e6f04188
+  def _rename_file(self, path_to_existing_file, path_to_new_file):
+    self.__please_override()
+    
+  ###############################################################################
+  def _rename_directory(self, path_to_existing_dir, path_to_new_dir):
+    self.__please_override()
+    
   ###############################################################################
