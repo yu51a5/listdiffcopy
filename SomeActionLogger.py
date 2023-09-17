@@ -7,11 +7,11 @@ from settings import log_file
 class Logger():
 
   ###############################################################################
-  def __init__(self, title, storages_dirs_that_must_exist, log_filename=log_file):
+  def __init__(self, title, storages_dirs_that_must_exist=(), log_filename=log_file):
     self.log_object = open(log_filename, "w")
     self.level_start_times_dirnames = []
-
-    self.log_print_basic(title)
+    stars = '*' * (len(title) + 6)
+    self.log_print_basic('\n'.join(['', stars, '** ' + title + ' **', stars, '']))
 
     self.__dirs_dont_exist = False
 

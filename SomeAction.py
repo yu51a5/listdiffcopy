@@ -82,12 +82,17 @@ def rename_file(StorageType, path_to_existing_file, path_to_new_file, kwargs={})
                                path_to_new_file=path_to_new_file)
         
 ###############################################################################
-def delete_directory(StorageType, dir_name, enforce_size_fetching=True, kwargs={}):
+def delete_directory(StorageType, dir_name, kwargs={}):
   with StorageType(**kwargs) as storage:
     with SomeAction(title=f'Deleting {storage.str(dir_name)}',
                     storages_dirs_that_must_exist=((storage, dir_name),)) as sa:
       if sa.dir_exists():
         storage.delete_directory(dir_name)
-        
+
+###############################################################################
+def delete_file(StorageType, filename, kwargs={}):
+  with StorageType(**kwargs) as storage:
+    with SomeAction(title=f'Deleting {storage.str(filename)}') as sa:
+      storage.delete_file(filename)
 
     

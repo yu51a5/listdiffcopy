@@ -254,12 +254,14 @@ class StorageBase():
 
   ###############################################################################
   def delete_file(self, filename):
-    self._delete_file(filename)
+    if self.check_file_exists(filename):
+      self._delete_file(filename)
     #log_print('DELETED file ', filename)
     
   ###############################################################################
   def delete_directory(self, dirname):
-    self._delete_directory(dirname)
+    if self.check_directory_exists(dirname):
+      self._delete_directory(dirname)
     #log_print('DELETED dir ', dirname)
 
   ###############################################################################
