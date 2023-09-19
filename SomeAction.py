@@ -84,15 +84,22 @@ def rename_file(StorageType, path_to_existing_file, path_to_new_file, kwargs={})
 ###############################################################################
 def delete_directory(StorageType, dir_name, kwargs={}):
   with StorageType(**kwargs) as storage:
-    with SomeAction(title=f'Deleting {storage.str(dir_name)}',
-                    storages_dirs_that_must_exist=((storage, dir_name),)) as sa:
-      if sa.dir_exists():
-        storage.delete_directory(dir_name)
+    with SomeAction(title=f'Deleting {storage.str(dir_name)}') as _:
+      storage.delete_directory(dir_name)
 
 ###############################################################################
 def delete_file(StorageType, filename, kwargs={}):
   with StorageType(**kwargs) as storage:
-    with SomeAction(title=f'Deleting {storage.str(filename)}') as sa:
+    with SomeAction(title=f'Deleting {storage.str(filename)}') as _:
       storage.delete_file(filename)
 
-    
+
+###############################################################################
+def create_directory(StorageType, dir_name, warn_if_already_exists=True, kwargs={}):
+  with StorageType(**kwargs) as storage:
+    with SomeAction(title=f'Creating {storage.str(dir_name)}',
+                    storages_dirs_that_must_exist=((storage, dir_name),)) as sa:
+      if not sa.dir_exists():
+        storage.create_directory(dir_name)
+      elif warn_if_already_exists:
+        print(storage.str(dir_name), 'already exists')

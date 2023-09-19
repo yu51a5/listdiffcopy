@@ -98,11 +98,17 @@ class StorageGitHub(StorageBase):
                           content=content,
                           sha=self.get_file_info(filename, 'sha'))
 
+  ###############################################################################
   def _create_directory(self, dirname):
     pass
-    
+
+  ###############################################################################
   def _delete_directory(self, dirname):
-    pass
+    all_files, all_directories = self._get_filenames_and_directories(path_so_far=dirname)
+    for f in all_files:
+      self._delete_file(filename=f)
+    for d in all_directories:
+      self._delete_directory(dirname=d)
     
   ###############################################################################
   def file_contents_is_text(self, filename):

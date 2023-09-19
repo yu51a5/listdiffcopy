@@ -1,4 +1,4 @@
-#import os 
+import os 
 import cProfile
 import pstats
 from StorageSFTP import StorageSFTP
@@ -6,7 +6,7 @@ from StorageGitHub import StorageGitHub
 from StoragePCloud import StoragePCloud
 
 from SomeAction import list_directory, rename_file, delete_directory, rename_directory, delete_file
-from SomeAction2 import compare, synchronize
+from SomeAction2 import compare, synchronize, copy
 
 # with cProfile.Profile() as pr:
 #with create_logging_object() as ll:
@@ -28,19 +28,32 @@ from SomeAction2 import compare, synchronize
 #list_contents(StorageGitHub, 'w1')
 
 
-synchronize(StorageGitHub, 'a', StoragePCloud, 'aa')
-compare(StorageGitHub, 'a', StoragePCloud, 'aa')
-
+copy(StoragePCloud, 'My Pictures', StoragePCloud, 'aa/My_Pictures')
+synchronize(StoragePCloud, 'aa', StorageGitHub, 'a')
 _, files, dirs = list_directory(StoragePCloud, 'aa')
 dirs_with_files = [d for d in dirs if len(dirs[d][0]) >= 1]
-print(dirs_with_files)
-assert len(dirs_with_files) >=3
+
+assert len(dirs_with_files) >= 3
 assert len(dirs[dirs_with_files[0]][0]) >=2
 
 delete_file(StoragePCloud, dirs[dirs_with_files[0]][0][1])
 #rename_file(StoragePCloud, dirs[dirs_with_files[0]][0][0], dirs[dirs_with_files[0]][0][1])
 
 delete_directory(StoragePCloud, dirs_with_files[2])
+
+synchronize(StorageGitHub, 'a', StoragePCloud, 'aa')
+
+compare(StorageGitHub, 'a', StoragePCloud, 'aa')
+
+assert 6 > 7
+
+
+list_directory(StoragePCloud, 'aa')
+list_directory(StorageGitHub, 'a')
+
+
+
+
 rename_directory(StoragePCloud, dirs_with_files[1], dirs_with_files[2])
 
 compare(StorageGitHub, 'a', StoragePCloud, 'aa')

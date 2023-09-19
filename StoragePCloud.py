@@ -155,14 +155,15 @@ class StoragePCloud(StorageBase):
     result = self.__post_fileid(url_addon='renamefile', 
                                 filename=path_to_existing_file, 
                                 param_dict={'topath': path_to_new_file})
-    print(result)
+    print(result, path_to_existing_file, path_to_new_file)
     return result['metadata']
     
   ###############################################################################
   def _rename_directory(self, path_to_existing_dir, path_to_new_dir):
     result = self.__post_folderid(url_addon='renamefolder', 
                                   dirname=path_to_existing_dir,
-                                  param_dict={'topath': path_to_new_dir})['metadata']
-    return result
+                                  param_dict={'topath': path_to_new_dir})
+    print(result, path_to_existing_dir, path_to_new_dir)
+    return result['metadata']
     
   ###############################################################################

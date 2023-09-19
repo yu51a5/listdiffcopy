@@ -15,19 +15,32 @@ class SomeAction2(SomeAction):
   enter_123 = [None, None, None]
   
   #################################################################################
-  def __init__(self, StorageFromType, dir_from, StorageToType, dir_to, kwargs_from={}, kwargs_to={}, **kwargs):
+  def __init__(self, StorageFromType, dir_from, StorageToType, dir_to, require_dir_to=True, kwargs_from={}, kwargs_to={}, **kwargs):
     self.root_dir_from = dir_from
     self.root_dir_to = dir_to
 
     self.index_comp_df = pd.MultiIndex.from_tuples(creates_multi_index(self.index_listing_df, self.status_names))
 
-    # f'{self.enter_123[0]} {common_dir_appendix} {self.enter_123[1]} {self.storage_from.str(self.root_dir_from)} {self.enter_123[2]} {self.storage_to.str(self.root_dir_to)}'
     with StorageFromType(**kwargs_from) as self.storage_from:
-      with StorageToType(**kwargs_to) as self.storage_to: 
-        super().__init__(title=f'{self.enter_123[0]} {self.storage_from.str(dir_from)} {self.enter_123[2]} {self.storage_to.str(dir_to)}',
-                         storages_dirs_that_must_exist=((self.storage_from, dir_from), (self.storage_to, dir_to)))
-        if self.dir_exists():
-          self._action_files_directories_recursive(common_dir_appendix='')
+      if (StorageFromType == StorageToType) and (kwargs_from == kwargs_to):
+        self.storage_to = self.storage_from 
+        self.__common_part_of_constructor(dir_from=dir_from, dir_to=dir_to, require_dir_to=require_dir_to)
+      else:
+        with StorageToType(**kwargs_to) as self.storage_to: 
+          self.__common_part_of_constructor(dir_from=dir_from, dir_to=dir_to, require_dir_to=require_dir_to)
+
+  ###############################################################################
+  def __common_part_of_constructor(self, dir_from, dir_to, require_dir_to):
+    if require_dir_to:
+      storages_dirs_that_must_exist = ((self.storage_from, dir_from), (self.storage_to, dir_to))
+    else:
+      storages_dirs_that_must_exist = ((self.storage_from, dir_from), )
+      self.storage_to.create_directory(dir_to)
+      
+    super().__init__(title=f'{self.enter_123[0]} {self.storage_from.str(dir_from)} {self.enter_123[2]} {self.storage_to.str(dir_to)}',
+                     storages_dirs_that_must_exist=storages_dirs_that_must_exist)
+    if self.dir_exists():
+      self._action_files_directories_recursive(common_dir_appendix='')
 
   ###############################################################################
   def _action_files_directories_recursive(self, common_dir_appendix):
@@ -39,8 +52,8 @@ class SomeAction2(SomeAction):
     _dir_to = os.path.join(self.root_dir_to, common_dir_appendix) if common_dir_appendix else self.root_dir_to
     files_to  , dirs_to  , _ = self.storage_to.get_filenames_and_directories(_dir_to, enforce_size_fetching=True)
   
-    dir_info_first_level = np.zeros((4, 3), int)
-    dir_info_total = np.zeros((4, 3), int)
+    dir_info_first_level = np.zeros((4, 3), float)
+    dir_info_total = np.zeros((4, 3), float)
     # dir_info_first_level[3][0] = math.nan # no information about deleted files' size 
     
     if_from = -len(files_from)
@@ -91,7 +104,7 @@ class SomeAction2(SomeAction):
     id_from = -len(dirs_from)
     id_to = -len(dirs_to)
   
-    while (id_from < 0) or (id_to < 0):
+    while ((id_from < 0) or (id_to < 0)):
       if id_from < 0:
         dir_from = dirs_from[id_from]
         basename_from = os.path.basename(dir_from)
@@ -105,19 +118,20 @@ class SomeAction2(SomeAction):
           subdir_info_total = self._action_files_directories_recursive(common_dir_appendix=os.path.join(common_dir_appendix, basename_from))
           dir_info_total += subdir_info_total
         else:
-          subdir_list_total, _, _ = self._list_files_directories_recursive(storage=self.storage_from, dir_to_list=dir_from, message2=f"Exists in {_dir_from} but not in {_dir_to}") 
+          subdir_list_total, _, _ = self._list_files_directories_recursive(storage=self.storage_from, dir_to_list=dir_from, message2=f"Exists in {_dir_from} but not in {_dir_to}", enforce_size_fetching=False) 
           dir_info_total[0] += subdir_list_total
         id_from += 1
-      if (id_from == 0) or (basename_to < basename_from):
+      elif (id_from == 0) or (basename_to < basename_from):
         dir_info_first_level[1][2] += 1
         if self.delete_if_right_only:
+          self.log_mention_directory(dirname=dir_to, message_to_print="Deleting", message2=f"in {self.storage_to.str(_dir_to)}")
           self.storage_to._delete_directory(dir_to)
           dir_info_first_level[1] += np.array([math.nan] * 3)
         else:
-          subdir_list_total, _, _ = self._list_files_directories_recursive(storage=self.storage_to, dir_to_list=dir_to, message2=f"Exists in {_dir_to} but not in {_dir_from}")
+          subdir_list_total, _, _ = self._list_files_directories_recursive(storage=self.storage_to, dir_to_list=dir_to, message2=f"Exists in {_dir_to} but not in {_dir_from}", enforce_size_fetching=False)
           dir_info_total[1] += subdir_list_total
         id_to += 1  
-      if (basename_from == basename_to):
+      elif (basename_from == basename_to):
         id_from += 1
         id_to += 1
         
@@ -164,7 +178,7 @@ class Copy(SomeAction2):
   
   #################################################################################
   def __init__(self, *args, **kwargs):
-    super().__init__(*args, **kwargs)
+    super().__init__(*args, require_dir_to=False, **kwargs)
     
 #################################################################################
 def copy(*args, **kwargs):

@@ -142,28 +142,34 @@ class StorageBase():
     self.set_dir_info(path, info)
     
   ###############################################################################
-  def check_directory_exists(self, path, create_if_doesnt_exist=False):
+  def _check_directory_exists_or_create(self, path, create_if_doesnt_exist):
     root_folders = StorageBase.split_path_into_folders_filename(path=path)
     if (len(root_folders) > 1) and (not root_folders[-1]):
       root_folders.pop(-1)
     path_so_far = self.get_init_path() 
-    result = True
+    was_created = False
     for rf in root_folders:
       _, directories_ = self._get_filenames_and_directories(path_so_far=path_so_far)
       path_so_far = os.path.join(path_so_far, rf)
-      
       if path_so_far in directories_:
         continue 
-        
       if create_if_doesnt_exist:
-        result = "created"
         self.create_directory_in_existing_folder(path_so_far)
+        was_created = True
         continue
-      
       return False
-      
+    return (not create_if_doesnt_exist) or was_created
+
+  ###############################################################################
+  def check_directory_exists(self, path):
+    result = self._check_directory_exists_or_create(path, create_if_doesnt_exist=False)
     return result
 
+  ###############################################################################
+  def create_directory(self, path):
+    dir_didnt_exist_before = self._check_directory_exists_or_create(path, create_if_doesnt_exist=True)
+    return dir_didnt_exist_before
+  
   ###############################################################################
   def check_file_exists(self, path):  
     dirname, filename = os.path.split(path)
@@ -256,12 +262,17 @@ class StorageBase():
   def delete_file(self, filename):
     if self.check_file_exists(filename):
       self._delete_file(filename)
+    else:
+      print(filename, 'not found')
     #log_print('DELETED file ', filename)
     
   ###############################################################################
   def delete_directory(self, dirname):
     if self.check_directory_exists(dirname):
       self._delete_directory(dirname)
+      print(self.check_directory_exists(dirname), 'self.check_directory_exists(dirname)')
+    else:
+      print(dirname, 'not found')
     #log_print('DELETED dir ', dirname)
 
   ###############################################################################

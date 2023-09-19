@@ -33,10 +33,16 @@ class Logger():
     return not self.__dirs_dont_exist
 
   ###############################################################################
+  def log_mention_directory(self, dirname, message_to_print, message2='', now_=None):
+    if now_ is None:
+      now_ = datetime.now()
+    self.log_print(message_to_print + ' directory ', dirname, message2, 'at', now_)
+
+  ###############################################################################
   def log_enter_level(self, dirname, message_to_print, message2=''):
     now_ = datetime.now()
     self.level_start_times_dirnames.append((now_, dirname))
-    self.log_print(message_to_print + ' directory ', dirname, message2, 'at', now_)
+    self.log_mention_directory(dirname=dirname, message_to_print=message_to_print, message2=message2, now_=now_)
 
   ###############################################################################
   def log_exit_level(self, dir_details_df):
