@@ -9,38 +9,19 @@ from settings import wp_images_extensions, default_ignore_wp_scaled_images
 #################################################################################
 class StorageSFTP(StorageBase):
 
-  def __init__(self,
-               hostname=None,
-               port=None,
-               username=None,
-               password=None,
-               private_key=None,
-               ignore_wp_scaled_images=default_ignore_wp_scaled_images):
+  def __init__(self, secret_name=None, ignore_wp_scaled_images=default_ignore_wp_scaled_images):
     super().__init__()
     self.ignore_wp_scaled_images = ignore_wp_scaled_images
-    self.ssh_client_params = dict(hostname=hostname,
-                                  port=port,
-                                  username=username,
-                                  password=password)
-    for what in ('hostname', 'port', 'username', 'password'):
-      if not self.ssh_client_params[what]:
-        self.ssh_client_params[what] = os.getenv(f'sftp_{what}')
 
-    not_defined_errors = [
-      what for what in ('hostname', 'port', 'username', 'password')
-      if not self.ssh_client_params[what]
-    ]
-    if not_defined_errors:
-      raise Exception(", ".join(not_defined_errors) + " are not defined")
+    secret_components = self._find_secret_components((4, 5), secret_name=secret_name)
+    self.ssh_client_params = {what : secret_components[i] for i, what in enumerate(('hostname', 'port', 'username', 'password'))}
 
-    if not private_key:
-      private_key = os.getenv("sftp_private_key")
-    if private_key:
+    if len(secret_components) == 5:
       # https://stackoverflow.com/questions/9963391/how-do-use-paramiko-rsakey-from-private-key
       # needed to ensure that `\n`s are in the right place
       private_key__ = io.StringIO()
       private_key__.write(f"""-----BEGIN OPENSSH PRIVATE KEY-----
-                         {private_key}==
+                         {secret_components[-1]}==
                          -----END OPENSSH PRIVATE KEY-----""")
       private_key__.seek(0)
       self.ssh_client_params['pkey'] = paramiko.RSAKey.from_private_key(

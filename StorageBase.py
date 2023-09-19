@@ -11,6 +11,18 @@ class StorageBase():
     self.__cached_filenames_flat, self.__cached_directories_flat = {}, self._get_default_root_dir_info()
 
   #################################################################################
+  def _find_secret_components(self, how_many, secret_name=None):
+    if secret_name is None:
+      secret_name = 'default_' + type(self).__name__[len('Storage'):].lower() + '_secret'
+    secret = os.getenv(secret_name)
+    secret_components = secret.split('|') if secret else []
+    if isinstance(how_many, int):
+      assert len(secret_components) == how_many, f"There should be {how_many} {type(self).__name__} secret components in environment variable {secret_name}, but {len(secret_components)} are provided"
+    else:
+      assert len(secret_components) in how_many, f"There should be {' or '.join([str(h) for h in how_many])} {type(self).__name__} secret components in environment variable {secret_name}, but {len(secret_components)} are provided"
+    return secret_components
+
+  #################################################################################
   def str(self, dir_name):
     result = f'{type(self).__name__}(`{dir_name}`)'
     return result

@@ -1,7 +1,6 @@
 import os
 import sys
 import requests
-from datetime import datetime
 import requests.packages.urllib3.contrib
 # installed using pip install urllib3==1.26.15 requests-toolbelt==0.10.1
 # https://stackoverflow.com/questions/76175487
@@ -20,9 +19,9 @@ class StoragePCloud(StorageBase):
   ###############################################################################
   # Use eapi if the server is in Europe
   # For Pcloud token, see
-  def __init__(self, is_eapi=pcloud_urls_are_eapi, token=None):
+  def __init__(self, is_eapi=pcloud_urls_are_eapi, secret_name=None):
     super().__init__()
-    self.token = os.environ['pcloud_token'] if token is None else token
+    self.token = self._find_secret_components(1, secret_name=secret_name)[0]
     self.url = StoragePCloud.base_url[is_eapi]
 
   ###############################################################################

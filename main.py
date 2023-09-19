@@ -27,7 +27,7 @@ from SomeAction2 import compare, synchronize, copy
 #list_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/themes/')
 #list_contents(StorageGitHub, 'w1')
 
-
+list_directory(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/themes/')
 copy(StoragePCloud, 'My Pictures', StoragePCloud, 'aa/My_Pictures')
 synchronize(StoragePCloud, 'aa', StorageGitHub, 'a')
 _, files, dirs = list_directory(StoragePCloud, 'aa')
@@ -37,27 +37,17 @@ assert len(dirs_with_files) >= 3
 assert len(dirs[dirs_with_files[0]][0]) >=2
 
 delete_file(StoragePCloud, dirs[dirs_with_files[0]][0][1])
-#rename_file(StoragePCloud, dirs[dirs_with_files[0]][0][0], dirs[dirs_with_files[0]][0][1])
-
 delete_directory(StoragePCloud, dirs_with_files[2])
 
 synchronize(StorageGitHub, 'a', StoragePCloud, 'aa')
-
 compare(StorageGitHub, 'a', StoragePCloud, 'aa')
 
-assert 6 > 7
-
-
-list_directory(StoragePCloud, 'aa')
-list_directory(StorageGitHub, 'a')
-
-
-
-
+rename_file(StoragePCloud, dirs[dirs_with_files[0]][0][0], dirs[dirs_with_files[0]][0][1])
 rename_directory(StoragePCloud, dirs_with_files[1], dirs_with_files[2])
 
-compare(StorageGitHub, 'a', StoragePCloud, 'aa')
 synchronize(StorageGitHub, 'a', StoragePCloud, 'aa')
+compare(StorageGitHub, 'a', StoragePCloud, 'aa')
+
   #sync_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/uploads', StoragePCloud, 'wp_uploads')
   #sync_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/uploads', StorageGitHub, 'dont')
   #list_contents(StoragePCloud, 'sf')
