@@ -27,8 +27,14 @@ from SomeAction2 import compare, synchronize, copy
 #list_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/themes/')
 #list_contents(StorageGitHub, 'w1')
 
-list_directory(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/themes/')
 copy(StoragePCloud, 'My Pictures', StoragePCloud, 'aa/My_Pictures')
+compare(StoragePCloud, 'My Pictures', StoragePCloud, 'aa/My_Pictures')
+compare(StoragePCloud, 'My Music', StoragePCloud, 'aa/My_Music')
+copy(StoragePCloud, 'My Music', StoragePCloud, 'aa/My_Music')
+
+list_directory(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/themes/')
+
+
 synchronize(StoragePCloud, 'aa', StorageGitHub, 'a')
 _, files, dirs = list_directory(StoragePCloud, 'aa')
 dirs_with_files = [d for d in dirs if len(dirs[d][0]) >= 1]

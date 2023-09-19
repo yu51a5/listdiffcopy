@@ -82,15 +82,16 @@ class SomeAction2(SomeAction):
           self.storage_to._delete_file(file_to)
         status, filename = 1, basename_to
         if_to += 1  
-      elif (basename_from == basename_to):
+      elif (basename_from == basename_from):
         if_from += 1
         if_to += 1
         files_are_identical, from_contents = self.storage_from.check_if_files_are_identical(my_filename=file_from, 
                                                                              source=self.storage_to, 
                                                                              source_filename=file_to)
-        if (not files_are_identical) and self.change_if_both:
-          if from_contents is None:
-            from_contents = self.storage_from.get_contents(file_from) 
+        if from_contents is None:
+          from_contents = self.storage_from.get_contents(file_from) 
+        if (not files_are_identical) and self.change_if_both:   
+          print(file_from, file_to)
           self.storage_to._update_file_given_content(filename=file_to, content=from_contents)
         file_size = len(from_contents) 
         status, filename = 3 if files_are_identical else 2, basename_to

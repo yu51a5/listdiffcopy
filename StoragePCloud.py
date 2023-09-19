@@ -54,11 +54,16 @@ class StoragePCloud(StorageBase):
       result = response.content
     else:
       raise Exception(f'Cannot process response which type is {content_type}')
+
+    if isinstance(result, dict) and 'error' in result:
+      print(result)
+      raise Exception(f'{result["error"]} with {url_addon} and {param_dict}')
       
     return result
 
   #############################################################
   def __post_fileid(self, url_addon, filename, param_dict={}, files=None):
+    print(filename)
     param_dict['fileid'] = self.get_file_info(filename, 'id')
     return self.__post(url_addon=url_addon, param_dict=param_dict, files=files)
 
@@ -151,17 +156,21 @@ class StoragePCloud(StorageBase):
   ###############################################################################
   # using https://docs.pcloud.com/methods/file/renamefile.html
   def _rename_file(self, path_to_existing_file, path_to_new_file):
+    param_dict = {'tofolderid' : self.get_dir_info(os.path.dirname(path_to_new_file), 'id'),
+                  'toname' : os.path.basename(path_to_new_file)}
     result = self.__post_fileid(url_addon='renamefile', 
                                 filename=path_to_existing_file, 
-                                param_dict={'topath': path_to_new_file})
+                                param_dict=param_dict)
     print(result, path_to_existing_file, path_to_new_file)
     return result['metadata']
     
   ###############################################################################
   def _rename_directory(self, path_to_existing_dir, path_to_new_dir):
+    aram_dict = {'tofolderid' : self.get_dir_info(os.path.dirname(path_to_new_file), 'id'),
+                  'toname' : os.path.basename(path_to_new_file)}
     result = self.__post_folderid(url_addon='renamefolder', 
                                   dirname=path_to_existing_dir,
-                                  param_dict={'topath': path_to_new_dir})
+                                  param_dict=param_dict)
     print(result, path_to_existing_dir, path_to_new_dir)
     return result['metadata']
     
