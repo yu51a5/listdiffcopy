@@ -23,10 +23,10 @@ def get_picture_url(html_text):
   return splints[0]
 
 
-def backup_a_url(url, storage, storage_dir):
+def backup_a_url(url, storage, storage_dir, backup_name_override=None):
   
   backup_name = url.split('/')[-1]
-  backup_name = backup_name[:backup_name.find("?")]
+  backup_name = backup_name[:backup_name.find("?")] if backup_name_override is None else backup_name_override
   
   logger = Logger(title='Backing up ' + url)
 
@@ -39,9 +39,8 @@ def backup_a_url(url, storage, storage_dir):
   article_text = h.handle(article_str)
   article_text = article_text[:article_text.find('\n[![')] + article_text[article_text.find('Share\n')+6:] 
 
-  assert storage.check_directory_exists(path=storage_dir)
   assets_dir = os.path.join(storage_dir, backup_name)
-  storage.create_directory_in_existing_directory(path=assets_dir)
+  storage.create_directory(path=assets_dir)
   captions_images = []
   all_divs = article_html.find_all("div")
   for ad in all_divs:
@@ -58,9 +57,10 @@ def backup_a_url(url, storage, storage_dir):
       url = get_picture_url(html_text=str(p))
       filename = url.split('/')[-1]
       captions_images[-1][1].append(filename)
-      logger.log_print_basic(f'Downloading {url}') 
+      target_path = os.path.join(assets_dir, filename)
+      logger.log_print_basic(f'Downloading {url} -> {target_path}') 
       with requests.get(url, stream=True) as response:
-        storage.create_file_given_content(filename=os.path.join(assets_dir, filename), content=response)
+        storage.create_file_given_content(filename=target_path, content=response.content)
 
   back_up_content = Logger.put_together_framed_message(message='Backing up ' + url)
   back_up_content += article_text

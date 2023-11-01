@@ -1,16 +1,10 @@
 import os
-import requests
-import requests.packages.urllib3.contrib
-# installed using pip install urllib3==1.26.15 requests-toolbelt==0.10.1
-# https://stackoverflow.com/questions/76175487
-from requests_toolbelt.multipart.encoder import MultipartEncoder
-
 from StorageBase import StorageBase
 
 #################################################################################
 # pCloud
 #################################################################################
-class StoragePCloud(StorageBase):
+class StorageLocal(StorageBase):
 
   ###############################################################################
   # Use eapi if the server is in Europe
@@ -27,17 +21,17 @@ class StoragePCloud(StorageBase):
     pass
 
   ###############################################################################
+  def get_init_path(self):
+    return '.'
+    
+  ###############################################################################
   def _get_filenames_and_directories(self, path_so_far : str):
-    contents_ = self.__post_folderid(url_addon='listfolder', dirname=path_so_far)['metadata']['contents']
+    print(path_so_far)
     files_, directories_ = [], []
-    for c in contents_:
-      full_name = os.path.join(path_so_far, c['name'])
-      if c['isfolder']:
-        self.set_dir_info(full_name, {'id' : c['folderid']})
-        directories_.append(full_name)
-      else:
-        files_.append(full_name)
-        self.set_file_info(full_name, {'id' : c['fileid']})
+    for basename_ in os.listdir(path_so_far):
+      full_name = os.path.join(path_so_far, basename_)
+      
+      (files_ if os.path.isfile(full_name) else directories_).append(full_name)
 
     return files_, directories_
 
