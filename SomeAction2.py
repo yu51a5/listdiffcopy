@@ -10,46 +10,123 @@ class SomeAction2(SomeAction):
 
   create_if_left_only = None
   delete_if_right_only = None
-  change_if_both = None
+  change_if_both_exist = None
+
+  is_renaming = None
+  is_move_not_copy = None
+  is_file_not_dir = None
+  require_path_to = None
 
   enter_123 = [None, None, None]
   
   #################################################################################
-  def __init__(self, StorageFromType, dir_from, StorageToType, dir_to, require_dir_to=True, kwargs_from={}, kwargs_to={}, **kwargs):
-    self.root_dir_from = dir_from
-    self.root_dir_to = dir_to
+  def __init__(self, StorageFromType, path_from, StorageToType, path_to, kwargs_from={}, kwargs_to={}, **kwargs):
+    self.root_path_from = path_from
+    self.root_path_to = path_to
 
     self.index_comp_df = pd.MultiIndex.from_tuples(creates_multi_index(self.index_listing_df, self.status_names))
 
     with StorageFromType(**kwargs_from) as self.storage_from:
       if (StorageFromType == StorageToType) and (kwargs_from == kwargs_to):
         self.storage_to = self.storage_from 
-        self.__common_part_of_constructor(dir_from=dir_from, dir_to=dir_to, require_dir_to=require_dir_to)
+        self.__common_part_of_constructor()
       else:
         with StorageToType(**kwargs_to) as self.storage_to: 
-          self.__common_part_of_constructor(dir_from=dir_from, dir_to=dir_to, require_dir_to=require_dir_to)
+          self.__common_part_of_constructor()
 
   ###############################################################################
-  def __common_part_of_constructor(self, dir_from, dir_to, require_dir_to):
-    if require_dir_to:
-      storages_dirs_that_must_exist = ((self.storage_from, dir_from), (self.storage_to, dir_to))
-    else:
-      storages_dirs_that_must_exist = ((self.storage_from, dir_from), )
-      self.storage_to.create_directory(dir_to)
-      
-    super().__init__(title=f'{self.enter_123[0]} {self.storage_from.str(dir_from)} {self.enter_123[2]} {self.storage_to.str(dir_to)}',
-                     storages_dirs_that_must_exist=storages_dirs_that_must_exist)
-    if self.dir_exists():
-      self._action_files_directories_recursive(common_dir_appendix='')
+  def __common_part_of_constructor(self):
 
+    str_from = self.storage_from.str(self.root_path_from)
+    str_to = self.storage_to.str(self.root_path_to)
+
+    super().__init__(title=f'{self.enter_123[0]} {str_from} {self.enter_123[2]} {str_to}')
+    
+    path_exist_is_dir_not_file_from = self.storage_from.check_path_exist_is_dir_not_file(self.root_path_from)
+    path_exist_is_dir_not_file_to = self.storage_to.check_path_exist_is_dir_not_file(self.root_path_to)
+    
+    if path_exist_is_dir_not_file_from is None:
+      self.log_error(f"{str_from} does not exist")
+    elif (path_exist_is_dir_not_file_from == 'both'):
+      if path_exist_is_dir_not_file_to == 'both':
+        self.log_error(f"Both {str_from} and {str_to} are both a directory and a file")
+      elif path_exist_is_dir_not_file_to is None:
+        self.log_error(f"{str_from} is both a directory and a file, and {str_to} does not exist")
+        return
+      else:
+        # make path_exist_is_dir_not_file_from either True or False
+        path_exist_is_dir_not_file_from = path_exist_is_dir_not_file_to
+    elif path_exist_is_dir_not_file_to == 'both':
+      path_exist_is_dir_not_file_to = path_exist_is_dir_not_file_to
+
+    # now path_exist_is_dir_not_file_from is either True or False
+    # now path_exist_is_dir_not_file_to is either True or False or None
+
+    if path_exist_is_dir_not_file_to is None:
+      if self.require_path_to:
+        self.log_error(f"{str_to} does not exist")
+      elif path_exist_is_dir_not_file_from is True:
+        self.storage_to.create_directory(self.root_path_to)
+        path_exist_is_dir_not_file_to = True
+        
+    if (path_exist_is_dir_not_file_from in [True, False]) and (path_exist_is_dir_not_file_to in [True, False]) and (path_exist_is_dir_not_file_from is not path_exist_is_dir_not_file_to):
+      self.log_error(f"{str_from} is a {'directory' if path_exist_is_dir_not_file_from else 'file'} whereas {str_to} is a {'directory' if path_exist_is_dir_not_file_to else 'file'} ")
+
+    if self.get_errors_count():
+      return
+    
+    if path_exist_is_dir_not_file_from:
+      self._action_files_directories_recursive(common_dir_appendix='')
+    else:
+      self._action_files(file_from=self.root_path_from, file_to=self.root_path_to, file_to_doesnt_exist=(path_exist_is_dir_not_file_to is None), add_basename=False)
+
+  ###############################################################################
+  def _action_files(self, file_from, file_to, file_to_doesnt_exist, add_basename, enforce_size_fetching):
+
+    basename = os.path.basename(file_from if file_from is not None else file_to)
+    if add_basename:
+      assert file_from is not None
+    file_to_2 = file_to if not add_basename else os.path.join(file_to, basename)
+
+    if file_to_doesnt_exist ...
+
+    file_size = math.nan
+    if file_to_doesnt_exist:
+      status = 0
+      if self.create_if_left_only:
+        file_size = self.storage_to.create_file(my_filename=file_to_2,
+                                                 source=self.storage_from, 
+                                                 source_filename=file_from)
+    elif file_from is None:
+      if self.delete_if_right_only:
+        self.storage_to._delete_file(file_to)
+      status = 1 
+    else:
+      files_are_identical, from_contents = self.storage_from.check_if_files_are_identical(my_filename=file_from, 
+                                                                               source=self.storage_to, 
+                                                                               source_filename=file_to_2)
+        
+      if (not files_are_identical) and self.change_if_both_exist:   
+        from_contents = self.storage_from.get_contents(file_from) 
+        self.storage_to._update_file_given_content(filename=file_to_2, content=from_contents)
+      elif enforce_size_fetching:
+        from_contents = self.storage_from.get_contents(file_from) 
+      else:
+        from_contents = None
+        
+      file_size = len(from_contents) if from_contents is not None else math.nan
+      status = 3 if files_are_identical else 2
+      
+    return basename, file_size, status
+    
   ###############################################################################
   def _action_files_directories_recursive(self, common_dir_appendix):
   
     self.log_enter_level(common_dir_appendix, self.enter_123[0])
 
-    _dir_from = os.path.join(self.root_dir_from, common_dir_appendix) if common_dir_appendix else self.root_dir_from
+    _dir_from = os.path.join(self.root_path_from, common_dir_appendix) if common_dir_appendix else self.root_path_from
     files_from, dirs_from, _ = self.storage_from.get_filenames_and_directories(_dir_from, enforce_size_fetching=True)
-    _dir_to = os.path.join(self.root_dir_to, common_dir_appendix) if common_dir_appendix else self.root_dir_to
+    _dir_to = os.path.join(self.root_path_to, common_dir_appendix) if common_dir_appendix else self.root_path_to
     files_to  , dirs_to  , _ = self.storage_to.get_filenames_and_directories(_dir_to, enforce_size_fetching=True)
   
     dir_info_first_level = np.zeros((4, 3), float)
@@ -61,40 +138,38 @@ class SomeAction2(SomeAction):
     files_data = []
     
     while (if_from < 0) or (if_to < 0):
-      if if_from < 0:
-        file_from = files_from[if_from]
+      
+      file_from = files_from[if_from] if if_from < 0 else None
+      file_to   = files_to[  if_to]   if if_to < 0   else None
+
+      if (file_from is not None) and (file_to is not None):
         basename_from = os.path.basename(file_from)
-      if if_to < 0:
-        file_to   = files_to[  if_to]
         basename_to   = os.path.basename(file_to)
+        if basename_from < basename_to:
+          file_to = None
+        if basename_to < basename_from:
+          file_from = None
+
+      if (file_from is not None):
+        if_from += 1      
+      if (file_to is not None):
+        if_to   += 1   
         
-      filename, status, file_size = None, None, math.nan
-      if (if_to == 0) or ((if_from != 0) and (basename_from < basename_to)):
-        status, filename = 0, basename_from
+      filename = os.path.basename(file_from if file_from is not None else file_to)
+      file_size = math.nan
+      if file_to is None:
+        status = 0
         if self.create_if_left_only:
           file_size = self.storage_to.create_file(my_filename=os.path.join(_dir_to, basename_from), 
-                                             source=self.storage_from, 
-                                             source_filename=file_from)
-          
-        if_from += 1
-      elif (if_from == 0) or (basename_to < basename_from):
+                                                   source=self.storage_from, 
+                                                   source_filename=file_from)
+      elif file_from is None:
         if self.delete_if_right_only:
           self.storage_to._delete_file(file_to)
-        status, filename = 1, basename_to
-        if_to += 1  
-      elif (basename_from == basename_from):
-        if_from += 1
-        if_to += 1
-        files_are_identical, from_contents = self.storage_from.check_if_files_are_identical(my_filename=file_from, 
-                                                                             source=self.storage_to, 
-                                                                             source_filename=file_to)
-        if from_contents is None:
-          from_contents = self.storage_from.get_contents(file_from) 
-        if (not files_are_identical) and self.change_if_both:   
-          print(file_from, file_to)
-          self.storage_to._update_file_given_content(filename=file_to, content=from_contents)
-        file_size = len(from_contents) 
-        status, filename = 3 if files_are_identical else 2, basename_to
+        status = 1 
+      else:
+        files_are_identical, file_size = self._compare_or_copy_files(file_from=file_from, file_to=file_to)
+        status = 3 if files_are_identical else 2
         
       dir_info_first_level[status][1] += 1
       dir_info_first_level[status][0] += file_size
@@ -115,7 +190,7 @@ class SomeAction2(SomeAction):
       if (id_to == 0) or (basename_from < basename_to):
         dir_info_first_level[0][2] += 1
         if self.create_if_left_only:
-          self.storage_to.create_directory_in_existing_folder(path=os.path.join(_dir_to, basename_from))
+          self.storage_to.create_directory_in_existing_directory(path=os.path.join(_dir_to, basename_from))
           subdir_info_total = self._action_files_directories_recursive(common_dir_appendix=os.path.join(common_dir_appendix, basename_from))
           dir_info_total += subdir_info_total
         else:
@@ -152,11 +227,12 @@ class Compare(SomeAction2):
 
   create_if_left_only = False
   delete_if_right_only = False
-  change_if_both = False
+  change_if_both_exist = False
+  require_path_to = True
   
   status_names = ["Left Only", "Right Only", "Different", "Identical"]
 
-  enter_123 = ['Comparing', 'in', 'against']
+  enter_123 = ['Comparing', '', 'against']
   
   #################################################################################
   def __init__(self, *args, **kwargs):
@@ -171,7 +247,8 @@ class Copy(SomeAction2):
 
   create_if_left_only = True
   delete_if_right_only = False
-  change_if_both = True
+  change_if_both_exist = True
+  require_path_to = False
 
   enter_123 = ['Copying', 'from', 'to']
 
@@ -179,10 +256,58 @@ class Copy(SomeAction2):
   
   #################################################################################
   def __init__(self, *args, **kwargs):
-    super().__init__(*args, require_dir_to=False, **kwargs)
+    super().__init__(*args, **kwargs)
     
 #################################################################################
 def copy(*args, **kwargs):
+  with Copy(*args, **kwargs) as _:
+    pass
+
+def copy_and_rename(*args, **kwargs):
+  with Copy(*args, **kwargs) as _:
+    pass
+
+def move(*args, **kwargs):
+  with Copy(*args, **kwargs) as _:
+    pass
+
+def move_and_rename(*args, **kwargs):
+  with Copy(*args, **kwargs) as _:
+    pass
+    
+#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.
+
+def copy_file(*args, **kwargs):
+  with Copy(*args, **kwargs) as _:
+    pass
+
+def copy_file_and_rename(*args, **kwargs):
+  with Copy(*args, **kwargs) as _:
+    pass
+
+def move_file(*args, **kwargs):
+  with Copy(*args, **kwargs) as _:
+    pass
+
+def move_file_and_rename(*args, **kwargs):
+  with Copy(*args, **kwargs) as _:
+    pass
+
+#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.
+
+def copy_directory(*args, **kwargs):
+  with Copy(*args, **kwargs) as _:
+    pass
+
+def copy_directory_and_rename(*args, **kwargs):
+  with Copy(*args, **kwargs) as _:
+    pass
+
+def move_directory(*args, **kwargs):
+  with Copy(*args, **kwargs) as _:
+    pass
+
+def move_directory_and_rename(*args, **kwargs):
   with Copy(*args, **kwargs) as _:
     pass
 
@@ -191,9 +316,10 @@ class Synchronize(SomeAction2):
 
   create_if_left_only = True
   delete_if_right_only = True
-  change_if_both = True
+  change_if_both_exist = True
+  require_path_to = False
 
-  enter_123 = ['Synchronizing', 'in', 'with']
+  enter_123 = ['Synchronizing', '', 'with']
 
   status_names = ["New", "Deleted", "Updated", "Identical"]
   

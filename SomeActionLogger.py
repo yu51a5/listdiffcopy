@@ -1,24 +1,26 @@
 from datetime import datetime
-import pandas as pd
-
 from settings import log_file
 
 #################################################################################
 class Logger():
 
+  def put_together_framed_message(message, char='*'):
+    chars = char * (len(message) + 6)
+    result = '\n'.join(['', chars, char * 2 + ' ' + message + ' ' + char * 2, chars, ''])
+    return result
+  
   ###############################################################################
-  def __init__(self, title, storages_dirs_that_must_exist=(), log_filename=log_file):
-    self.log_object = open(log_filename, "w")
+  def log_print_framed(self, message, char):
+    msg = Logger.put_together_framed_message(message=message, char=char)
+    self.log_print_basic(msg)
+
+  ###############################################################################
+  def __init__(self, title, log_filename=log_file):
+    self.log_text = []
+    self.log_filename = log_filename
     self.level_start_times_dirnames = []
-    stars = '*' * (len(title) + 6)
-    self.log_print_basic('\n'.join(['', stars, '** ' + title + ' **', stars, '']))
-
-    self.__dirs_dont_exist = False
-
-    for storage, dir_to_check in storages_dirs_that_must_exist:
-      if not storage.check_directory_exists(dir_to_check):
-        self.log_print_basic(f"Skipping because {storage.str(dir_to_check)} does not exist")
-        self.__dirs_dont_exist = True
+    self.log_print_framed(message=title, char='*')
+    self.error_count = 0
     
   ###############################################################################
   def __enter__(self):
@@ -26,12 +28,22 @@ class Logger():
 
   ###############################################################################
   def __exit__(self, type, value, traceback):
-    self.log_object.close()
+    with open(self.log_filename, "w") as log_object:
+      log_object.write('\n'.join(self.log_text))
 
   ###############################################################################
-  def dir_exists(self):
-    return not self.__dirs_dont_exist
+  def get_errors_count(self):
+    return self.error_count
 
+  ###############################################################################
+  def log_error(self, message):
+    self.log_print_framed(message='ERROR: ' + message, char='!')
+    self.error_count += 1
+
+  ###############################################################################
+  def log_warning(self, message):
+    self.log_print_framed(message='WARNING: ' + message, char='.')
+    
   ###############################################################################
   def log_mention_directory(self, dirname, message_to_print, message2='', now_=None):
     if now_ is None:
@@ -53,7 +65,7 @@ class Logger():
 
   ###############################################################################
   def log_print_basic(self, message):
-    self.log_object.write(message + '\n')
+    self.log_text.append(message)
     print(message)
 
   ###############################################################################

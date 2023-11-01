@@ -58,48 +58,48 @@ class SomeAction(Logger):
     self.log_exit_level(dir_details_df=pd.DataFrame(table_stats, index=self.index_listing_df, columns=self.columns_df))
   
     return totals, files_, dirs_dict
+    
+###############################################################################
+  def _list_a_file(self, storage, file_path, enforce_size_fetching):
+    file_info = storage.fetch_file_info(filename=file_path, enforce_size_fetching=enforce_size_fetching)
+    self.print_files_df(data = [[os.path.basename(file_path), file_info['size']]] if enforce_size_fetching 
+                          else [[os.path.basename(file_path)] ])
 
 ###############################################################################
-def list_directory(StorageType, dir_name, enforce_size_fetching=True, kwargs={}):
-  with StorageType(**kwargs) as storage:
-    with SomeAction(title=f'Listing {storage.str(dir_name)}',
-                    storages_dirs_that_must_exist=((storage, dir_name),)) as sa:
-      if sa.dir_exists():
-        return sa._list_files_directories_recursive(storage=storage, dir_to_list=dir_name, enforce_size_fetching=enforce_size_fetching) 
+def list(StorageType, path, enforce_size_fetching=True, kwargs_storage={}):
+  with StorageType(**kwargs_storage) as storage:
+    with SomeAction(title=f'Listing {storage.str(path)}') as sa:
+      path_exist_is_dir_not_file = storage.check_path_exist_is_dir_not_file(path)
+      if path_exist_is_dir_not_file is True:
+        sa._list_files_directories_recursive(storage=storage, dir_to_list=path, enforce_size_fetching=enforce_size_fetching)
+      if path_exist_is_dir_not_file is False:
+        sa._list_a_file(storage=storage, file_path=path, enforce_size_fetching=enforce_size_fetching)  
+      elif path_exist_is_dir_not_file == "both":
+        sa.log_error(f"{storage.str(path)} is both a file and a directory")
+      else:
+        sa.log_error(f"{storage.str(path)} does not exist")  
 
 ###############################################################################
-def rename_directory(StorageType, dir_name, new_dir_name, kwargs={}):
-  with StorageType(**kwargs) as storage:
-    with SomeAction(title=f'Renaming {storage.str(dir_name)}') as _:
-      storage.rename_directory(path_to_existing_dir=dir_name, 
-                                    path_to_new_dir=new_dir_name)
+def delete(StorageType, path, kwargs_storage={}):
+  with StorageType(**kwargs_storage) as storage:
+    with SomeAction(title=f'Deleting {storage.str(path)}') as sa:
+      path_exist_is_dir_not_file = storage.check_path_exist_is_dir_not_file(path)
+      if path_exist_is_dir_not_file is True:
+        storage.delete_directory(path)
+      elif path_exist_is_dir_not_file is False:
+        storage.delete_file(path)
+      elif path_exist_is_dir_not_file == "both":
+        sa.log_error(f"{storage.str(path)} is both a file and a directory")
+      else:
+        sa.log_error(f"{storage.str(path)} does not exist")
 
 ###############################################################################
-def rename_file(StorageType, path_to_existing_file, path_to_new_file, kwargs={}):
-  with StorageType(**kwargs) as storage:
-    with SomeAction(title=f'Renaming {storage.str(path_to_existing_file)}') as _:
-      storage.rename_file(path_to_existing_file=path_to_existing_file, 
-                               path_to_new_file=path_to_new_file)
-        
-###############################################################################
-def delete_directory(StorageType, dir_name, kwargs={}):
-  with StorageType(**kwargs) as storage:
-    with SomeAction(title=f'Deleting {storage.str(dir_name)}') as _:
-      storage.delete_directory(dir_name)
-
-###############################################################################
-def delete_file(StorageType, filename, kwargs={}):
-  with StorageType(**kwargs) as storage:
-    with SomeAction(title=f'Deleting {storage.str(filename)}') as _:
-      storage.delete_file(filename)
-
-
-###############################################################################
-def create_directory(StorageType, dir_name, warn_if_already_exists=True, kwargs={}):
-  with StorageType(**kwargs) as storage:
-    with SomeAction(title=f'Creating {storage.str(dir_name)}',
-                    storages_dirs_that_must_exist=((storage, dir_name),)) as sa:
-      if not sa.dir_exists():
+def create_directory(StorageType, dir_name, kwargs_storage={}):
+  with StorageType(**kwargs_storage) as storage:
+    with SomeAction(title=f'Creating {storage.str(dir_name)}') as sa:
+      path_exist_is_dir_not_file = storage.check_path_exist_is_dir_not_file(path)
+      if path_exist_is_dir_not_file is not None:
+        sa.log_warning(message=f"Skipping because {storage.str(dir_name)} exists")
+      else:
         storage.create_directory(dir_name)
-      elif warn_if_already_exists:
-        print(storage.str(dir_name), 'already exists')
+        

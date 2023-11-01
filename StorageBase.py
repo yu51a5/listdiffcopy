@@ -139,7 +139,7 @@ class StorageBase():
     return {}
 
   ###############################################################################
-  def split_path_into_folders_filename(path):
+  def split_path_into_dirs_filename(path):
     result = []
     while path:
       path, tail = os.path.split(path)
@@ -147,7 +147,7 @@ class StorageBase():
     return result
 
   ###############################################################################
-  def create_directory_in_existing_folder(self, path):
+  def create_directory_in_existing_directory(self, path):
     info = self._create_directory(path)
     if info is None:
       info = {}
@@ -155,7 +155,7 @@ class StorageBase():
     
   ###############################################################################
   def _check_directory_exists_or_create(self, path, create_if_doesnt_exist):
-    root_folders = StorageBase.split_path_into_folders_filename(path=path)
+    root_folders = StorageBase.split_path_into_dirs_filename(path=path)
     if (len(root_folders) > 1) and (not root_folders[-1]):
       root_folders.pop(-1)
     path_so_far = self.get_init_path() 
@@ -166,7 +166,7 @@ class StorageBase():
       if path_so_far in directories_:
         continue 
       if create_if_doesnt_exist:
-        self.create_directory_in_existing_folder(path_so_far)
+        self.create_directory_in_existing_directory(path_so_far)
         was_created = True
         continue
       return False
@@ -191,6 +191,17 @@ class StorageBase():
       return (path in files_)
     return False
 
+  ###############################################################################
+  def check_path_exist_is_dir_not_file(self, path):
+    is_file = self.check_file_exists(path)
+    is_dir = self.check_directory_exists(path)
+    if is_file: 
+      return "both" if is_dir else False
+    elif is_dir:
+      return True
+    else:
+      return None
+  
   ###############################################################################
   def rename_file(self, path_to_existing_file, path_to_new_file):
     if self.check_file_exists(path=path_to_existing_file):
@@ -226,12 +237,19 @@ class StorageBase():
     #files_sizes = [[f, math.nan] for f in files_]
     total_size = 0
     for i, filename in enumerate(files_):
-      file_size = self._fetch_file_size(filename)
-      #files_sizes[i][1] = file_size
-      self.set_file_info(filename, {'size' : file_size})
-      total_size += file_size
+      file_info = self.fetch_file_info(filename, enforce_size_fetching=True)
+      total_size += file_info['size']
     
     return files_, directories_, total_size
+
+  ###############################################################################
+  def fetch_file_info(self, filename, enforce_size_fetching=True):
+    file_info = {}
+    if enforce_size_fetching:
+      file_size = self._fetch_file_size(filename)
+      file_info['size'] = file_size
+    self.set_file_info(filename, file_info)
+    return file_info
 
   ###############################################################################
   def file_contents_is_text(self, filename):
@@ -276,7 +294,6 @@ class StorageBase():
       self._delete_file(filename)
     else:
       print(filename, 'not found')
-    #log_print('DELETED file ', filename)
     
   ###############################################################################
   def delete_directory(self, dirname):
@@ -285,9 +302,8 @@ class StorageBase():
       print(self.check_directory_exists(dirname), 'self.check_directory_exists(dirname)')
     else:
       print(dirname, 'not found')
-    #log_print('DELETED dir ', dirname)
 
   ###############################################################################
   def create_file_given_content(self, filename, content):
     self._create_file_given_content(filename=filename, content=content)
-    #log_print('CREATED file ', filename)
+
