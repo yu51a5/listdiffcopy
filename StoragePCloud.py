@@ -24,12 +24,11 @@ class StoragePCloud(StorageBase):
     self.url = StoragePCloud.base_url[is_eapi]
 
   ###############################################################################
-  def __enter__(self):
+  def _open(self):
     self.requests_session = requests.Session()
-    return self
 
   ###############################################################################
-  def __exit__(self, type, value, traceback):
+  def _close(self):
     self.requests_session.close()
 
   ###############################################################################

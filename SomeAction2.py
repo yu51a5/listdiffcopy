@@ -37,6 +37,9 @@ class SomeAction2(SomeAction):
   ###############################################################################
   def __common_part_of_constructor(self):
 
+    self.storage_from._logger = self
+    self.storage_to._logger = self
+
     str_from = self.storage_from.str(self.root_path_from)
     str_to = self.storage_to.str(self.root_path_to)
 
@@ -87,8 +90,6 @@ class SomeAction2(SomeAction):
     if add_basename:
       assert file_from is not None
     file_to_2 = file_to if not add_basename else os.path.join(file_to, basename)
-
-    if file_to_doesnt_exist ...
 
     file_size = math.nan
     if file_to_doesnt_exist:

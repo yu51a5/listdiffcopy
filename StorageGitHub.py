@@ -1,5 +1,4 @@
-import os
-from github import Github, ContentFile
+from github import Github, ContentFile, GithubException
 import requests
 from requests.structures import CaseInsensitiveDict
 
@@ -14,11 +13,18 @@ class StorageGitHub(StorageBase):
   def __init__(self, secret_name=None):
     super().__init__()
 
-    self.owner, self.repo_name, self.token = self._find_secret_components(3, secret_name=secret_name)
-        
-    github_object = Github(self.token)
+    self.repo_name, self.token = self._find_secret_components(2, secret_name=secret_name)
+
+    try:
+      github_object = Github(self.token)
+    except:
+      raise Exception(f"Secret {secret_name} contains invalid GitHub token")
     github_user = github_object.get_user()
-    self.repo = github_user.get_repo(self.repo_name)
+    self.owner = github_user.login
+    try:
+      self.repo = github_user.get_repo(self.repo_name)
+    except GithubException:
+      raise Exception(f'ERROR! Repository {self.owner}/{self.repo_name} does not exist')
 
     self.headers = CaseInsensitiveDict()
     self.headers["Accept"] = "application/vnd.github.v3.raw"
@@ -83,6 +89,8 @@ class StorageGitHub(StorageBase):
                           sha=self.get_file_info(filename, 'sha'))
 
   def _create_file_given_content(self, filename, content):
+    assert isinstance(content, (str, bytes)), f'Type of contents is {type(content)}'
+    print(filename)
     self.repo.create_file(filename,
                           message="creating " + filename,
                           content=content)

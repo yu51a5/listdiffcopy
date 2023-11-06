@@ -21,13 +21,9 @@ class Logger():
     self.level_start_times_dirnames = []
     self.log_print_framed(message=title, char='*')
     self.error_count = 0
-    
-  ###############################################################################
-  def __enter__(self):
-    return self
 
   ###############################################################################
-  def __exit__(self, type, value, traceback):
+  def _close(self):
     with open(self.log_filename, "w") as log_object:
       log_object.write('\n'.join(self.log_text))
 

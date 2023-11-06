@@ -1,8 +1,7 @@
 import os
+import shutil
 from StorageBase import StorageBase
 
-#################################################################################
-# pCloud
 #################################################################################
 class StorageLocal(StorageBase):
 
@@ -13,20 +12,11 @@ class StorageLocal(StorageBase):
     super().__init__()
 
   ###############################################################################
-  def __enter__(self):
-    return self
-
-  ###############################################################################
-  def __exit__(self, type, value, traceback):
-    pass
-
-  ###############################################################################
   def get_init_path(self):
     return '.'
     
   ###############################################################################
   def _get_filenames_and_directories(self, path_so_far : str):
-    print(path_so_far)
     files_, directories_ = [], []
     for basename_ in os.listdir(path_so_far):
       full_name = os.path.join(path_so_far, basename_)
@@ -37,16 +27,16 @@ class StorageLocal(StorageBase):
 
 ###############################################################################
   def get_contents(self, filename, length=None):
-    contents_ = self.wrapper_with_id(filename=filename, func=self.__get_contents_inner, length=length)
-    return contents_
+    f = open(filename, "r")
+    return f.read()
 
   ###############################################################################
   def _delete_file(self, filename):
-    self.__post_fileid(url_addon='deletefile', filename=filename)
+    os.remove(filename)
 
   ###############################################################################
   def _delete_directory(self, dirname):
-    self.__post_folderid(url_addon='deletefolderrecursive', dirname=dirname)
+    shutil.rmtree(dirname=dirname)
 
   ###############################################################################
   def _create_directory(self, dirname):
@@ -64,27 +54,13 @@ class StorageLocal(StorageBase):
 
   ###############################################################################
   def _fetch_file_size(self, filename):
-    response = self.__post_fileid(url_addon='stat', filename=filename)
-    metadata = response['metadata']
-    result = metadata['size']
-    # 'modified' : datetime.strptime(metadata['modified'], '%a, %d %b %Y %H:%M:%S +0000')
-    return  result
+    return os.path.getsize(filename)
 
   ###############################################################################
-  # using https://docs.pcloud.com/methods/file/renamefile.html
   def _rename_file(self, path_to_existing_file, path_to_new_file):
-    param_dict = {'tofolderid' : self.get_dir_info(os.path.dirname(path_to_new_file), 'id'),
-                  'toname' : os.path.basename(path_to_new_file)}
-    result = self.__post_fileid(url_addon='renamefile', 
-                                filename=path_to_existing_file, 
-                                param_dict=param_dict)
-    return result['metadata']
+    os.rename(path_to_existing_file, path_to_new_file)
 
   ###############################################################################
   def _rename_directory(self, path_to_existing_dir, path_to_new_dir):
-    param_dict = {'tofolderid' : self.get_dir_info(os.path.dirname(path_to_new_file), 'id'),
-                  'toname' : os.path.basename(path_to_new_dir)}
-    result = self.__post_folderid(url_addon='renamefolder', 
-                                  dirname=path_to_existing_dir,
-                                  param_dict=param_dict)
-    return result['metadata']
+    # https://stackoverflow.com/questions/8735312/how-to-change-folder-names-in-python
+    shutil.move(path_to_existing_dir, path_to_new_dir)

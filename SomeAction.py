@@ -64,42 +64,4 @@ class SomeAction(Logger):
     file_info = storage.fetch_file_info(filename=file_path, enforce_size_fetching=enforce_size_fetching)
     self.print_files_df(data = [[os.path.basename(file_path), file_info['size']]] if enforce_size_fetching 
                           else [[os.path.basename(file_path)] ])
-
-###############################################################################
-def list(StorageType, path, enforce_size_fetching=True, kwargs_storage={}):
-  with StorageType(**kwargs_storage) as storage:
-    with SomeAction(title=f'Listing {storage.str(path)}') as sa:
-      path_exist_is_dir_not_file = storage.check_path_exist_is_dir_not_file(path)
-      if path_exist_is_dir_not_file is True:
-        sa._list_files_directories_recursive(storage=storage, dir_to_list=path, enforce_size_fetching=enforce_size_fetching)
-      if path_exist_is_dir_not_file is False:
-        sa._list_a_file(storage=storage, file_path=path, enforce_size_fetching=enforce_size_fetching)  
-      elif path_exist_is_dir_not_file == "both":
-        sa.log_error(f"{storage.str(path)} is both a file and a directory")
-      else:
-        sa.log_error(f"{storage.str(path)} does not exist")  
-
-###############################################################################
-def delete(StorageType, path, kwargs_storage={}):
-  with StorageType(**kwargs_storage) as storage:
-    with SomeAction(title=f'Deleting {storage.str(path)}') as sa:
-      path_exist_is_dir_not_file = storage.check_path_exist_is_dir_not_file(path)
-      if path_exist_is_dir_not_file is True:
-        storage.delete_directory(path)
-      elif path_exist_is_dir_not_file is False:
-        storage.delete_file(path)
-      elif path_exist_is_dir_not_file == "both":
-        sa.log_error(f"{storage.str(path)} is both a file and a directory")
-      else:
-        sa.log_error(f"{storage.str(path)} does not exist")
-
-###############################################################################
-def create_directory(StorageType, dir_name, kwargs_storage={}):
-  with StorageType(**kwargs_storage) as storage:
-    with SomeAction(title=f'Creating {storage.str(dir_name)}') as sa:
-      path_exist_is_dir_not_file = storage.check_path_exist_is_dir_not_file(path)
-      if path_exist_is_dir_not_file is not None:
-        sa.log_warning(message=f"Skipping because {storage.str(dir_name)} exists")
-      else:
-        storage.create_directory(dir_name)
         

@@ -60,10 +60,19 @@ class StorageBase():
 
   ###############################################################################
   def __enter__(self):
+    self._open()
     return self
 
   ###############################################################################
   def __exit__(self, type, value, traceback):
+    self._close()
+
+  ###############################################################################
+  def _open(self):
+    pass
+
+  ###############################################################################
+  def _close(self):
     pass
 
   ###############################################################################
@@ -281,29 +290,52 @@ class StorageBase():
 
     return files_are_identical_, from_contents
 
-  ###############################################################################
-  def create_file(self, my_filename, source, source_filename):
-    size_contents = source._create_file_in_another_source(my_filename=source_filename, 
-                                                    source=self, 
-                                                    source_filename=my_filename)
-    return size_contents
 
   ###############################################################################
+  def _update_file_given_content(self, filename, content):
+    self.__please_override()
+    
+  ###############################################################################
+  def create_file(self, my_filename, source, source_filename):
+    try:
+      size_contents = source._create_file_in_another_source(my_filename=source_filename, 
+                                                      source=self, 
+                                                      source_filename=my_filename)
+      return size_contents
+    except:
+      self._logger.log_error(f'{self.str(my_filename)} could not be created from {source.str(source_filename)}')
+      return math.nan
+  
+  ###############################################################################
   def delete_file(self, filename):
-    if self.check_file_exists(filename):
-      self._delete_file(filename)
-    else:
-      print(filename, 'not found')
+    try:
+      if self.check_file_exists(filename):
+        self._delete_file(filename)
+      else:
+        self._logger.log_warning(f'{self.str(filename)} not found')
+    except:
+      self._logger.log_error(f'{self.str(filename)} could not be deleted')
     
   ###############################################################################
   def delete_directory(self, dirname):
-    if self.check_directory_exists(dirname):
-      self._delete_directory(dirname)
-      print(self.check_directory_exists(dirname), 'self.check_directory_exists(dirname)')
-    else:
-      print(dirname, 'not found')
+    try:
+      if self.check_directory_exists(dirname):
+        self._delete_directory(dirname)
+      else:
+        self._logger.log_warning(f'{self.str(dirname)} not found')
+    except:
+      self._logger.log_error(f'{self.str(dirname)} could not be deleted')
+      
 
   ###############################################################################
   def create_file_given_content(self, filename, content):
-    self._create_file_given_content(filename=filename, content=content)
-
+    try:
+      path_exist_is_dir_not_file_to = self.check_path_exist_is_dir_not_file(filename)
+      if path_exist_is_dir_not_file_to is False:
+        self._update_file_given_content(filename=filename, content=content)
+      elif path_exist_is_dir_not_file_to is None:
+        self._create_file_given_content(filename=filename, content=content)
+      else:
+        self._logger.log_error(f'{self.str(filename)} exists, and it is a directory')
+    except:
+      self._logger.log_error(f'Contents of {self.str(dirname)} could not be set')

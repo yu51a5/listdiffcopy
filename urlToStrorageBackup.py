@@ -7,6 +7,7 @@ from SomeActionLogger import Logger
 
 h = html2text.HTML2Text()
 h.ignore_links = False
+h.body_width = 0
 #h.ignore_images = False # DOESN'T WORK
 
 # inspirations: https://gist.github.com/bgoonz/217ba804d2b3aabe8415c9c99d8f9224
@@ -22,8 +23,7 @@ def get_picture_url(html_text):
   assert not divergent, splints
   return splints[0]
 
-
-def backup_a_url(url, storage, storage_dir, backup_name_override=None):
+def backup_a_url(url, storage, storage_dir, backup_name_override=None, main_tag='article'):
   
   backup_name = url.split('/')[-1]
   backup_name = backup_name[:backup_name.find("?")] if backup_name_override is None else backup_name_override
@@ -31,12 +31,14 @@ def backup_a_url(url, storage, storage_dir, backup_name_override=None):
   logger = Logger(title='Backing up ' + url)
 
   response = requests.get(url)
+  if response.status_code != 200:
+    logger.log_print_basic(f'Downloading of {url} failed, code {response.status_code}') 
+    return []
   
   soup = bs4.BeautifulSoup(response.text, 'html.parser')
 
-  article_html = soup.find('article')
-  article_str = str(article_html)
-  article_text = h.handle(article_str)
+  article_html = soup.find(main_tag)
+  article_text = h.handle(str(article_html))
   article_text = article_text[:article_text.find('\n[![')] + article_text[article_text.find('Share\n')+6:] 
 
   assets_dir = os.path.join(storage_dir, backup_name)
@@ -54,19 +56,27 @@ def backup_a_url(url, storage, storage_dir, backup_name_override=None):
     captions_images.append((figcaption, []))
     pictures = ad.find_all('picture')
     for p in pictures:
-      url = get_picture_url(html_text=str(p))
-      filename = url.split('/')[-1]
+      url_pic = get_picture_url(html_text=str(p))
+      filename = url_pic.split('/')[-1]
       captions_images[-1][1].append(filename)
       target_path = os.path.join(assets_dir, filename)
-      logger.log_print_basic(f'Downloading {url} -> {target_path}') 
-      with requests.get(url, stream=True) as response:
-        storage.create_file_given_content(filename=target_path, content=response.content)
+      logger.log_print_basic(f'Downloading {url_pic} -> {target_path}') 
+      with requests.get(url) as response:
+        #print(dir(response))
+        #if response.status_code == 200:
+          storage.create_file_given_content(filename=target_path, content=response.content)
+        #else:
+        #  logger.log_print_basic(f'Downloading of {url} failed, code {response.status_code}') 
+
+  all_as = article_html.find_all("a")
+  hrefs = [a_tag['href'] for a_tag in all_as]
 
   back_up_content = Logger.put_together_framed_message(message='Backing up ' + url)
   back_up_content += article_text
-  back_up_content += Logger.put_together_framed_message(message='Pictures ' + url)
+  back_up_content += Logger.put_together_framed_message(message='Pictures')
   back_up_content += ''.join([f'{i+1}. {ci[0]} : {ci[1]}\n' for i, ci in enumerate(captions_images)])
 
   storage.create_file_given_content(filename=os.path.join(storage_dir, backup_name+'.txt'), content=back_up_content)
-  
+
+  return hrefs
   

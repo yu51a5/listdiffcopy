@@ -29,7 +29,7 @@ class StorageSFTP(StorageBase):
       del self.ssh_client_params['password']
 
   ###############################################################################
-  def __enter__(self):
+  def _open(self):
     self.ssh_client = paramiko.SSHClient()
     # AutoAddPolicy explained in --> https://www.linode.com/docs/guides/use-paramiko-python-to-ssh-into-a-server/
     self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -38,7 +38,7 @@ class StorageSFTP(StorageBase):
     return self
 
   ###############################################################################
-  def __exit__(self, type, value, traceback):
+  def _close(self):
     self.sftp_client.close()
     self.ssh_client.close()
 
