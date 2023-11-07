@@ -10,14 +10,14 @@ urls = ['https://medium.com//@real.zyxxy/python-for-busy-people-part-0-why-pytho
        'https://medium.com//@real.zyxxy/hello-chatgpt-world-run-chatgpt-inside-a-python-script-in-5-minutes-4c9f4bdb6e28?source=about_page-------------------------------------&sk=453993a0cb6a50d4e5f3bcf1a1f9800a']
 #url = 'https://medium.com/@real.zyxxy/about'
 
-from urlToStrorageBackup import backup_a_url
+from ScrappingMediumPage import ScrappingMediumPage
 from StorageLocal import StorageLocal
 from StoragePCloud import StoragePCloud
 from StorageGitHub import StorageGitHub
 
-with StorageGitHub(secret_name="medium_github_secret") as sp:
-  for url in urls:
-    backup_a_url(url=url, storage=sp, storage_dir='medium')
+for url in urls: # url, 
+  with ScrappingMediumPage(url=url, StorageType=StorageGitHub, path='medium', kwargs_storage={'secret_name':"medium_github_secret"}) as _:
+    pass
 
 
 #print(', \n'.join(["'https://medium.com/" + u + "'" for u in urls if not u.startswith('https://')]))
