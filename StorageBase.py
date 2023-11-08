@@ -1,5 +1,14 @@
 import os
 import math
+from enum import Enum
+
+#################################################################################
+class FDStatus(Enum):
+  LeftOnly_or_New  = 0
+  RightOnly_or_Deleted = 1
+  Different_or_Updated = 2
+  Identical = 3
+  Error     = 4
 
 #################################################################################
 class StorageBase():
@@ -7,9 +16,14 @@ class StorageBase():
   __txt_chrs = set([chr(i) for i in range(32, 127)] + list("\n\r\t\b"))
 
   #################################################################################
-  def __init__(self):
+  def __init__(self, constructor_kwargs):
     self.__cached_filenames_flat, self.__cached_directories_flat = {}, self._get_default_root_dir_info()
+    self.__constructor_kwargs = {k : v for k, v in constructor_kwargs.items()}
 
+  ###############################################################################
+  def get_constructor_kwargs(self):
+    return self.__constructor_kwargs
+    
   #################################################################################
   def _find_secret_components(self, how_many, secret_name=None):
     if secret_name is None:
@@ -80,7 +94,7 @@ class StorageBase():
      raise Exception("needs to be overriden", type(self))
       
   ###############################################################################
-  def _get_filenames_and_directories(self, root: str):
+  def _get_filenames_and_directories(self, dir_name: str):
     self.__please_override()
   
   ###############################################################################
@@ -170,7 +184,7 @@ class StorageBase():
     path_so_far = self.get_init_path() 
     was_created = False
     for rf in root_folders:
-      _, directories_ = self._get_filenames_and_directories(path_so_far=path_so_far)
+      _, directories_ = self._get_filenames_and_directories(dir_name=path_so_far)
       path_so_far = os.path.join(path_so_far, rf)
       if path_so_far in directories_:
         continue 
@@ -196,12 +210,13 @@ class StorageBase():
     dirname, filename = os.path.split(path)
     dir_exists = self.check_directory_exists(path=dirname)
     if dir_exists:
-      files_, _ = self._get_filenames_and_directories(path_so_far=dirname)
+      files_, _ = self._get_filenames_and_directories(dir_name=dirname)
       return (path in files_)
     return False
 
   ###############################################################################
   def check_path_exist_is_dir_not_file(self, path):
+    print('check_path_exist_is_dir_not_file', path)
     is_file = self.check_file_exists(path)
     is_dir = self.check_directory_exists(path)
     if is_file: 
@@ -233,7 +248,7 @@ class StorageBase():
   
   ###############################################################################
   def get_filenames_and_directories(self, root, enforce_size_fetching=False):
-    files_, directories_ = self._get_filenames_and_directories(path_so_far=root)
+    files_, directories_ = self._get_filenames_and_directories(dir_name=root)
     
     files_.sort(key=lambda x: x.lower())
     directories_.sort(key=lambda x: x.lower())
@@ -311,31 +326,50 @@ class StorageBase():
     try:
       if self.check_file_exists(filename):
         self._delete_file(filename)
+        return FDStatus.RightOnly_or_Deleted
       else:
         self._logger.log_warning(f'{self.str(filename)} not found')
+        return FDStatus.Error
     except:
       self._logger.log_error(f'{self.str(filename)} could not be deleted')
+      return FDStatus.Error
     
   ###############################################################################
   def delete_directory(self, dirname):
     try:
       if self.check_directory_exists(dirname):
         self._delete_directory(dirname)
+        return FDStatus.RightOnly_or_Deleted
       else:
         self._logger.log_warning(f'{self.str(dirname)} not found')
+        return FDStatus.Error
     except:
       self._logger.log_error(f'{self.str(dirname)} could not be deleted')
-      
+      return FDStatus.Error
 
   ###############################################################################
-  def create_file_given_content(self, filename, content):
+  def create_file_given_content(self, filename, content, check_if_contents_is_the_same_before_writing=True):
     try:
       path_exist_is_dir_not_file_to = self.check_path_exist_is_dir_not_file(filename)
-      if path_exist_is_dir_not_file_to is False:
+      if path_exist_is_dir_not_file_to is False: # it's a file
+        if check_if_contents_is_the_same_before_writing:
+          if content == self.get_contents(filename):
+            return FDStatus.Identical
         self._update_file_given_content(filename=filename, content=content)
-      elif path_exist_is_dir_not_file_to is None:
+        return FDStatus.Different_or_Updated
+      elif path_exist_is_dir_not_file_to is None: # it does not exist
         self._create_file_given_content(filename=filename, content=content)
-      else:
+        return FDStatus.LeftOnly_or_New
+      else: # it's a folder or both
         self._logger.log_error(f'{self.str(filename)} exists, and it is a directory')
+        return FDStatus.Error
     except:
       self._logger.log_error(f'Contents of {self.str(dirname)} could not be set')
+      return FDStatus.Error
+
+
+      return FDStatus.LeftOnly_or_New
+      return FDStatus.RightOnly_or_Deleted
+      return FDStatus.Different_or_Updated
+      return FDStatus.Identical
+      return FDStatus.Error

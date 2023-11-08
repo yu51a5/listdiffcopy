@@ -11,7 +11,7 @@ class StorageGitHub(StorageBase):
   # github_token secret structure: OWNER|REPO|TOKEN . For Github token, see
   # https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens
   def __init__(self, secret_name=None):
-    super().__init__()
+    super().__init__(constructor_kwargs=dict(secret_name=secret_name))
 
     self.repo_name, self.token = self._find_secret_components(2, secret_name=secret_name)
 
@@ -39,15 +39,15 @@ class StorageGitHub(StorageBase):
   # filenames and their sha's are needed to be able to update existing files, see
   # https://stackoverflow.com/questions/63435987/python-pygithub-if-file-exists-then-update-else-create
   ###############################################################################
-  def _get_filenames_and_directories(self, path_so_far: str):
+  def _get_filenames_and_directories(self, dir_name: str):
     
     all_files, all_directories = [], []
     
-    exists = self.check_directory_exists(path=path_so_far)
+    exists = self.check_directory_exists(path=dir_name)
 
     if exists:
     
-      contents = self.repo.get_contents(path_so_far)
+      contents = self.repo.get_contents(dir_name)
       if isinstance(contents, ContentFile.ContentFile):
         contents = [contents]
   
@@ -107,7 +107,7 @@ class StorageGitHub(StorageBase):
 
   ###############################################################################
   def _delete_directory(self, dirname):
-    all_files, all_directories = self._get_filenames_and_directories(path_so_far=dirname)
+    all_files, all_directories = self._get_filenames_and_directories(dir_name=dirname)
     for f in all_files:
       self._delete_file(filename=f)
     for d in all_directories:

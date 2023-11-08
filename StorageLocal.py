@@ -6,20 +6,18 @@ from StorageBase import StorageBase
 class StorageLocal(StorageBase):
 
   ###############################################################################
-  # Use eapi if the server is in Europe
-  # For Pcloud token, see
   def __init__(self):
-    super().__init__()
+    super().__init__(constructor_kwargs={})
 
   ###############################################################################
   def get_init_path(self):
     return '.'
     
   ###############################################################################
-  def _get_filenames_and_directories(self, path_so_far : str):
+  def _get_filenames_and_directories(self, dir_name : str):
     files_, directories_ = [], []
-    for basename_ in os.listdir(path_so_far):
-      full_name = os.path.join(path_so_far, basename_)
+    for basename_ in os.listdir(dir_name):
+      full_name = os.path.join(dir_name, basename_)
       
       (files_ if os.path.isfile(full_name) else directories_).append(full_name)
 

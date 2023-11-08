@@ -15,6 +15,7 @@ class SomeAction1(SomeAction):
 
   ###############################################################################
   def __exit__(self, type, value, traceback):
+    super().__exit__(type, value, traceback)
     self.storage._close()
 
 ###############################################################################

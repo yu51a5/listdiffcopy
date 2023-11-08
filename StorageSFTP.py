@@ -10,7 +10,7 @@ from settings import wp_images_extensions, default_ignore_wp_scaled_images
 class StorageSFTP(StorageBase):
 
   def __init__(self, secret_name=None, ignore_wp_scaled_images=default_ignore_wp_scaled_images):
-    super().__init__()
+    super().__init__(constructor_kwargs=dict(secret_name=secret_name, ignore_wp_scaled_images=ignore_wp_scaled_images))
     self.ignore_wp_scaled_images = ignore_wp_scaled_images
 
     secret_components = self._find_secret_components((4, 5), secret_name=secret_name)
@@ -43,13 +43,13 @@ class StorageSFTP(StorageBase):
     self.ssh_client.close()
 
   ###############################################################################
-  def _get_filenames_and_directories(self, path_so_far: str):
+  def _get_filenames_and_directories(self, dir_name: str):
     
-    contents = self.sftp_client.listdir_attr(path_so_far)
+    contents = self.sftp_client.listdir_attr(dir_name)
 
     all_files, all_directories = [], []
     for entry in contents:
-      path = os.path.join(path_so_far, entry.filename)
+      path = os.path.join(dir_name, entry.filename)
       mode = entry.st_mode
       if S_ISDIR(mode):
         all_directories.append(path)

@@ -19,7 +19,7 @@ class StoragePCloud(StorageBase):
   # Use eapi if the server is in Europe
   # For Pcloud token, see
   def __init__(self, is_eapi=pcloud_urls_are_eapi, secret_name=None):
-    super().__init__()
+    super().__init__(constructor_kwargs=dict(is_eapi=is_eapi, secret_name=secret_name))
     self.token = self._find_secret_components(1, secret_name=secret_name)[0]
     self.url = StoragePCloud.base_url[is_eapi]
 
@@ -75,11 +75,11 @@ class StoragePCloud(StorageBase):
     return {'' : {'id' : 0}}
     
   ###############################################################################
-  def _get_filenames_and_directories(self, path_so_far : str):
-    contents_ = self.__post_folderid(url_addon='listfolder', dirname=path_so_far)['metadata']['contents']
+  def _get_filenames_and_directories(self, dir_name : str):
+    contents_ = self.__post_folderid(url_addon='listfolder', dirname=dir_name)['metadata']['contents']
     files_, directories_ = [], []
     for c in contents_:
-      full_name = os.path.join(path_so_far, c['name'])
+      full_name = os.path.join(dir_name, c['name'])
       if c['isfolder']:
         self.set_dir_info(full_name, {'id' : c['folderid']})
         directories_.append(full_name)
