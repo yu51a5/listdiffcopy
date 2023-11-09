@@ -304,11 +304,6 @@ class StorageBase():
     files_are_identical_ = self.get_contents(my_filename) == from_contents
 
     return files_are_identical_, from_contents
-
-
-  ###############################################################################
-  def _update_file_given_content(self, filename, content):
-    self.__please_override()
     
   ###############################################################################
   def create_file(self, my_filename, source, source_filename):

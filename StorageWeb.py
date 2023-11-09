@@ -26,9 +26,12 @@ class StorageWeb(StorageBase):
 
   ###############################################################################
   def create_fake_directory(dir_name, urls, fake_filename_contents):
+    print('create_fake_directory', dir_name, urls, fake_filename_contents)
     would_be_filenames = [os.path.basename(u) for u in urls] + [k for k in fake_filename_contents.keys()]
     dupes = [x for n, x in enumerate(would_be_filenames) if would_be_filenames.index(x) < n]
     assert not dupes, f'Duplicate filenames: {dupes}'
+
+    StorageWeb.__fake_files.update({os.path.join(dir_name, k) : v for k, v in fake_filename_contents.items()})
 
     root_folders = StorageBase.split_path_into_dirs_filename(path=dir_name)
     dict_to_use = StorageWeb.__fake_directories
@@ -36,27 +39,26 @@ class StorageWeb(StorageBase):
       if rf not in dict_to_use:
         dict_to_use[0][rf] = [{}, [], []]
       dict_to_use = dict_to_use[0][rf]
-    
-    dict_to_use = ({}, urls, fake_filename_contents.keys())
-    StorageWeb.__fake_files.update({os.path.join(dir_name, k) : v for k, v in fake_filename_contents.items()})
+    dict_to_use[1] = urls
+    dict_to_use[2] = fake_filename_contents.keys()
 
   ###############################################################################
   def _get_filenames_and_directories(self, dir_name : str):
     files_, directories_ = [], []
     if not dir_name:
-      directories_ = [k for k in self.__fake_directories[0].keys()]
-      return files_, directories_
+      directories_, urls, fake_filename_contents = self.__fake_directories
+    else:
+      root_folders = StorageBase.split_path_into_dirs_filename(path=dir_name)
+      what = self.__fake_directories
+      for rf in root_folders:
+        if rf not in what[0]:
+          return [], []
+        what = what[0][rf]
+        print('what', rf, what)
+      directories_, urls, fake_filename_contents = what
       
-    root_folders = StorageBase.split_path_into_dirs_filename(path=dir_name)
-    what = self.__fake_directories
-    #print('root_folders', root_folders, 'dir_name', dir_name)
-    for rf in root_folders:
-      if rf not in what[0]:
-        return [], []
-      what = what[0][rf]
-      #print('rf', rf, 'what', what)
-    directories_, urls, fake_filename_contents = what
+      
     directories_ = [os.path.join(dir_name, k) for k in directories_.keys()]
     files_ = urls + [os.path.join(dir_name, k) for k in fake_filename_contents]
-    print(dir_name, files_, directories_)
+    print('result', dir_name, directories_, files_)
     return files_, directories_

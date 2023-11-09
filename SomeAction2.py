@@ -154,6 +154,11 @@ class SomeAction2(SomeAction):
     files_from, dirs_from, _ = self.storage_from.get_filenames_and_directories(_dir_from, enforce_size_fetching=True)
     _dir_to = os.path.join(self.root_path_to, common_dir_appendix) if common_dir_appendix else self.root_path_to
     files_to  , dirs_to  , _ = self.storage_to.get_filenames_and_directories(_dir_to, enforce_size_fetching=True)
+
+    print('_dir_from', _dir_from, type(self.storage_from))
+    print('files_from', files_from)
+    print('files_to', files_to)
+    print('_dir_to', _dir_to)
   
     dir_info_first_level = np.zeros((4, 3), float)
     dir_info_total = np.zeros((4, 3), float)
