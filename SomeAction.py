@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 
 from SomeActionLogger import Logger
+from StorageBase import FDStatus
 
 #################################################################################
 def creates_multi_index(index_1, index_2):
@@ -17,7 +18,7 @@ class SomeAction(Logger):
 
   status_names = None
   columns_df = pd.MultiIndex.from_tuples([["Files",  "Size"],  ["Files", "How Many"], ["Directories", "How Many"]])
-  columns_files_df = ['File Name', 'File Size', 'File Status']
+  columns_files_df = {i : ['File Name'] + ['File Size' + j for j in ([''] * (i - 2) if (i < 4) else [' L', ' R'])]+ ['File Status'] for i in (3, 4)}
   index_listing_df = ["First level", "Total"]
 
   ###############################################################################
@@ -31,10 +32,10 @@ class SomeAction(Logger):
     if not data:
       return
     how_many_columns = len(data[0])
-    if how_many_columns == 3:
+    if isinstance(data[0][-1], FDStatus):
       for row_ in data:
-        row_[-1] = self.status_names[row_[-1]]
-    df_files = pd.DataFrame(data, columns=self.columns_files_df[:how_many_columns])
+        row_[-1] = self.status_names[row_[-1].value]
+    df_files = pd.DataFrame(data, columns=self.columns_files_df[how_many_columns])
     self.log_print_df(df_files, extra_prefix='╟──── ')
 
   ###############################################################################
@@ -42,7 +43,8 @@ class SomeAction(Logger):
   
     self.log_enter_level(dirname=dir_to_list, message_to_print='Listing', message2=message2)
     
-    files_, dirs_, total_size_first_level = storage.get_filenames_and_directories(dir_to_list, enforce_size_fetching=enforce_size_fetching)
+    files_, dirs_ = storage.get_filenames_and_directories(dir_to_list, enforce_size_fetching=enforce_size_fetching)
+    total_size_first_level = sum([storage.fetch_file_size(f) for f in files_])
     totals = np.array([total_size_first_level, len(files_), len(dirs_)])
   
     self.print_files_df(data = [[os.path.basename(f), storage.get_file_info(f, 'size')] for f in files_] if enforce_size_fetching 

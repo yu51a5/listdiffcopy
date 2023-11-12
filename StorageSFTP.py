@@ -102,7 +102,7 @@ class StorageSFTP(StorageBase):
     self.sftp_client.rmdir(dirname)
 
   ###############################################################################
-  def _fetch_file_size(self, filename):
+  def _fetch_file_size_efficiently(self, filename):
     result_raw = self.sftp_client.stat(filename)
     result = result_raw.st_size #, 'modified' : result_raw.st_mtime
     return result

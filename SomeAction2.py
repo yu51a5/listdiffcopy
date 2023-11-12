@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 
 from SomeAction import SomeAction, creates_multi_index
+from StorageBase import FDStatus
 
 #################################################################################
 class SomeAction2(SomeAction):
@@ -106,44 +107,64 @@ class SomeAction2(SomeAction):
     if path_exist_is_dir_not_file_from:
       self._action_files_directories_recursive(common_dir_appendix='')
     else:
-      self._action_files(file_from=self.root_path_from, file_to=self.root_path_to, file_to_doesnt_exist=(path_exist_is_dir_not_file_to is None), add_basename=False)
+      self._action_files(file_from=self.root_path_from, file_to=self.root_path_to, 
+                         file_from_doesnt_exist=(path_exist_is_dir_not_file_from is None), 
+                         file_to_doesnt_exist  =(path_exist_is_dir_not_file_to   is None), add_basename=False)
 
   ###############################################################################
-  def _action_files(self, file_from, file_to, file_to_doesnt_exist, add_basename, enforce_size_fetching):
-
+  def _action_files(self, file_from, file_to, file_from_doesnt_exist, file_to_doesnt_exist, add_basename):
     basename = os.path.basename(file_from if file_from is not None else file_to)
-    if add_basename:
-      assert file_from is not None
-    file_to_2 = file_to if not add_basename else os.path.join(file_to, basename)
+    size_from, size_to, status = math.nan, math.nan, FDStatus.Error
+    try:
+      assert (file_from is not None) or (not add_basename)
+      file_to_2 = file_to if (not add_basename) or not(basename) else os.path.join(file_to, basename)
 
-    file_size = math.nan
-    if file_to_doesnt_exist:
-      status = 0
-      if self.create_if_left_only:
-        file_size = self.storage_to.create_file(my_filename=file_to_2,
-                                                 source=self.storage_from, 
-                                                 source_filename=file_from)
-    elif file_from is None:
-      if self.delete_if_right_only:
-        self.storage_to._delete_file(file_to)
-      status = 1 
-    else:
-      files_are_identical, from_contents = self.storage_from.check_if_files_are_identical(my_filename=file_from, 
-                                                                               source=self.storage_to, 
-                                                                               source_filename=file_to_2)
-        
-      if (not files_are_identical) and self.change_if_both_exist:   
-        from_contents = self.storage_from.get_contents(file_from) 
-        self.storage_to._update_file_given_content(filename=file_to_2, content=from_contents)
-      elif enforce_size_fetching:
-        from_contents = self.storage_from.get_contents(file_from) 
+      if not file_from_doesnt_exist:
+        assert file_from
+
+      if not file_to_doesnt_exist:
+        assert file_to
+        assert file_to_2, file_to
+  
+      if file_to_doesnt_exist:
+        status = FDStatus.LeftOnly_or_New
+        if self.create_if_left_only:
+          from_contents = self.storage_from.get_contents(file_from) 
+          self.storage_to.create_file_given_content(filename=file_to_2, content=from_contents) 
+          size_from = len(from_contents)
+          size_to = size_from
+        else:
+          size_from = self.storage_from.get_file_size(my_filename=file_from)
+          size_to   = 0
+      elif file_from_doesnt_exist:
+        status = FDStatus.RightOnly_or_Deleted
+        if self.delete_if_right_only:
+          self.storage_to._delete_file(file_to_2)
+          size_from, size_to = 0, 0
+        else:
+          size_from, size_to = 0, self.storage_to.get_file_size(my_filename=file_to_2)
       else:
-        from_contents = None
-        
-      file_size = len(from_contents) if from_contents is not None else math.nan
-      status = 3 if files_are_identical else 2
-      
-    return basename, file_size, status
+        if self.change_if_both_exist:
+          from_contents = self.storage_from.get_contents(file_from) 
+          assert file_to_2 is not None
+          status = self.storage_to.create_file_given_content(filename=file_to_2, content=from_contents) 
+          size_from = len(from_contents)
+          size_to = size_from
+        else:
+          size_from, cont_from = self.storage_from.get_file_size_or_contents(filename=file_from)
+          size_to, cont_to = self.storage_to.get_file_size_or_contents(filename=file_to_2)
+          if size_from != size_to:
+            status = FDStatus.Different_or_Updated
+          else:
+            if cont_from is None:
+              cont_from = self.storage_from.get_contents(file_from) 
+            if cont_to is None:
+              cont_to = self.storage_to.get_contents(file_to_2) 
+            status = FDStatus.Different_or_Updated if cont_from != cont_to else FDStatus.Identical
+    except:
+      self.log_error(f'{self.enter_123[0]} {self.enter_123[1]} {self.storage_from.str(file_from)} {self.storage_to.str(file_to)} {self.enter_123[1]} failed')
+    
+    return [basename, size_from, size_to, status]
     
   ###############################################################################
   def _action_files_directories_recursive(self, common_dir_appendix):
@@ -151,14 +172,9 @@ class SomeAction2(SomeAction):
     self.log_enter_level(common_dir_appendix, self.enter_123[0])
 
     _dir_from = os.path.join(self.root_path_from, common_dir_appendix) if common_dir_appendix else self.root_path_from
-    files_from, dirs_from, _ = self.storage_from.get_filenames_and_directories(_dir_from, enforce_size_fetching=True)
+    files_from, dirs_from = self.storage_from.get_filenames_and_directories(_dir_from)
     _dir_to = os.path.join(self.root_path_to, common_dir_appendix) if common_dir_appendix else self.root_path_to
-    files_to  , dirs_to  , _ = self.storage_to.get_filenames_and_directories(_dir_to, enforce_size_fetching=True)
-
-    print('_dir_from', _dir_from, type(self.storage_from))
-    print('files_from', files_from)
-    print('files_to', files_to)
-    print('_dir_to', _dir_to)
+    files_to  , dirs_to   = self.storage_to.get_filenames_and_directories(_dir_to)
   
     dir_info_first_level = np.zeros((4, 3), float)
     dir_info_total = np.zeros((4, 3), float)
@@ -174,37 +190,35 @@ class SomeAction2(SomeAction):
       file_to   = files_to[  if_to]   if if_to < 0   else None
 
       if (file_from is not None) and (file_to is not None):
-        basename_from = os.path.basename(file_from)
-        basename_to   = os.path.basename(file_to)
-        if basename_from < basename_to:
+        basename = min(os.path.basename(file_from), os.path.basename(file_to))
+        if os.path.basename(file_to) > basename:
           file_to = None
-        if basename_to < basename_from:
+        if os.path.basename(file_from) > basename:
           file_from = None
+      elif (file_from is not None) and (file_to is None):
+        basename = os.path.basename(file_from)
+      elif (file_from is None) and (file_to is not None):
+        basename = os.path.basename(file_to)
+      else:
+        basename = None
 
       if (file_from is not None):
         if_from += 1      
       if (file_to is not None):
-        if_to   += 1   
-        
-      filename = os.path.basename(file_from if file_from is not None else file_to)
-      file_size = math.nan
-      if file_to is None:
-        status = 0
-        if self.create_if_left_only:
-          file_size = self.storage_to.create_file(my_filename=os.path.join(_dir_to, basename_from), 
-                                                   source=self.storage_from, 
-                                                   source_filename=file_from)
-      elif file_from is None:
-        if self.delete_if_right_only:
-          self.storage_to._delete_file(file_to)
-        status = 1 
+        if_to   += 1  
       else:
-        files_are_identical, file_size = self._compare_or_copy_files(file_from=file_from, file_to=file_to)
-        status = 3 if files_are_identical else 2
-        
+        file_to = os.path.join(_dir_from, basename)
+
+      this_file_result = self._action_files(file_from=file_from, 
+                                            file_to=file_to, 
+                                            file_from_doesnt_exist=(file_from is None), 
+                                            file_to_doesnt_exist=(file_to is None), 
+                                            add_basename=False)
+
+      status = this_file_result[-1].value
       dir_info_first_level[status][1] += 1
-      dir_info_first_level[status][0] += file_size
-      files_data.append([filename, file_size, status])
+      dir_info_first_level[status][0] += this_file_result[1]
+      files_data.append(this_file_result)
   
     self.print_files_df(data=files_data)
   

@@ -71,7 +71,7 @@ class StorageGitHub(StorageBase):
     response = requests.get(url, headers=self.headers)
     content = response.content
 
-    self.set_file_info(filename, {'size' : len(content)})
+    #self.set_file_info(filename, {'size' : len(content)})
     #content_2 = requests.get(url2, headers=headers).content
     #contents = [content, content_2]
     #print("checking contents", contents[0] == contents[1], filename)
@@ -118,23 +118,22 @@ class StorageGitHub(StorageBase):
     return None
   
   ###############################################################################
-  def _fetch_file_size(self, filename):
+  #def _fetch_file_size(self, filename):
     #last_modif_date = None
-    if False: #fetch_github_modif_timestamps:
+    #if False: #fetch_github_modif_timestamps:
       # https://stackoverflow.com/questions/50194241/get-when-the-file-was-last-updated-from-a-github-repository
       #sha=self.get_file_info(filename, 'sha')
-      commits = self.repo.get_commits(path=filename) # sha=sha)
-      if commits.totalCount:
-        pass # last_modif_date = commits[0].commit.committer.date
-      else:
-        pass
+      #commits = self.repo.get_commits(path=filename) # sha=sha)
+      #if commits.totalCount:
+      #  pass # last_modif_date = commits[0].commit.committer.date
+      #else:
         #print(f"total count is 0, filename is {filename}, sha is {sha}")
         #commits2 = self.repo.get_commits(path=filename)
         #contents = self.repo.get_contents(filename)
         #print(f"total count 2 is {commits2.totalCount}, filename is {filename}, sha is {sha}, {sha==contents.sha}")
-    self.get_contents(filename=filename)
-    result = self.get_file_info(filename, 'size')
-    return result
+    #self.get_contents(filename=filename)
+    #result = self.get_file_info(filename, 'size')
+    #return result
 
   
   ###############################################################################

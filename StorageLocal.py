@@ -51,7 +51,7 @@ class StorageLocal(StorageBase):
     self._create_file_given_content(filename=filename, content=content)
 
   ###############################################################################
-  def _fetch_file_size(self, filename):
+  def _fetch_file_size_efficiently(self, filename):
     return os.path.getsize(filename)
 
   ###############################################################################

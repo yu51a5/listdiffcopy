@@ -216,7 +216,6 @@ class StorageBase():
 
   ###############################################################################
   def check_path_exist_is_dir_not_file(self, path):
-    print('check_path_exist_is_dir_not_file', path)
     is_file = self.check_file_exists(path)
     is_dir = self.check_directory_exists(path)
     if is_file: 
@@ -247,7 +246,7 @@ class StorageBase():
     return files_
   
   ###############################################################################
-  def get_filenames_and_directories(self, root, enforce_size_fetching=False):
+  def get_filenames_and_directories(self, root):
     files_, directories_ = self._get_filenames_and_directories(dir_name=root)
     
     files_.sort(key=lambda x: x.lower())
@@ -255,26 +254,8 @@ class StorageBase():
 
     files_ = self._filter_out_files(files_)
 
-    if not enforce_size_fetching:
-      return files_, directories_, math.nan
-
-    #files_sizes = [[f, math.nan] for f in files_]
-    total_size = 0
-    for i, filename in enumerate(files_):
-      file_info = self.fetch_file_info(filename, enforce_size_fetching=True)
-      total_size += file_info['size']
-    
-    return files_, directories_, total_size
-
-  ###############################################################################
-  def fetch_file_info(self, filename, enforce_size_fetching=True):
-    file_info = {}
-    if enforce_size_fetching:
-      file_size = self._fetch_file_size(filename)
-      file_info['size'] = file_size
-    self.set_file_info(filename, file_info)
-    return file_info
-
+    return files_, directories_
+      
   ###############################################################################
   def file_contents_is_text(self, filename):
     file_beginning = self.get_contents(filename=filename, length=2048)
@@ -286,24 +267,18 @@ class StorageBase():
     my_contents = self.get_contents(my_filename)
     source.create_file_given_content(filename=source_filename, content=my_contents)
     return len(my_contents)
-  
+
   ###############################################################################
-  def check_if_files_are_identical(self, my_filename, source, source_filename):
-    
-    definitely_different = False
-    for info_name in ['size']: #, 'modified', 'textness'
-      info_from = source.get_file_info(source_filename, info_name)
-      info_to = self.get_file_info(my_filename, info_name)
-      if (info_from is not None) and (info_to is not None) and ((info_from > info_to) if info_name == 'modified' else (info_from != info_to)):
-        definitely_different = True
-      
-    if definitely_different:
-      return False, None
+  def get_file_size_or_contents(self, filename):
 
-    from_contents = source.get_contents(source_filename) 
-    files_are_identical_ = self.get_contents(my_filename) == from_contents
+    if self.can_fetch_file_size_efficiently():
+      my_contents = None
+      my_file_size = self.fetch_file_size(filename)
+    else:
+      my_contents = self.get_contents(filename)
+      my_file_size = len(my_contents)
 
-    return files_are_identical_, from_contents
+    return my_file_size, my_contents
     
   ###############################################################################
   def create_file(self, my_filename, source, source_filename):
@@ -344,7 +319,10 @@ class StorageBase():
 
   ###############################################################################
   def create_file_given_content(self, filename, content, check_if_contents_is_the_same_before_writing=True):
+    if filename is None:
+      assert False, filename
     try:
+      assert filename is not None
       path_exist_is_dir_not_file_to = self.check_path_exist_is_dir_not_file(filename)
       if path_exist_is_dir_not_file_to is False: # it's a file
         if check_if_contents_is_the_same_before_writing:
@@ -359,10 +337,27 @@ class StorageBase():
         self._logger.log_error(f'{self.str(filename)} exists, and it is a directory')
         return FDStatus.Error
     except:
-      self._logger.log_error(f'Contents of {self.str(dirname)} could not be set')
+      self._logger.log_error(f'Contents of {self.str(filename)} could not be set')
       return FDStatus.Error
 
-
+    ###############################################################################
+    def can_fetch_file_size_efficiently(self):
+      ffse = getattr(self, '_fetch_file_size_efficiently', None)
+      return ffse is not None
+    
+    ###############################################################################
+    def fetch_file_size(self, filename):
+      try:
+        ffse = getattr(self, '_fetch_file_size_efficiently', None)
+        if ffse:
+          result = ffse(filename=filename)
+        else:
+          result = len(self.get_contents(filename=filename))
+        return result
+      except:
+        self._logger.log_error(f'Contents of {self.str(filename)} could not be set')
+        return FDStatus.Error
+          
       return FDStatus.LeftOnly_or_New
       return FDStatus.RightOnly_or_Deleted
       return FDStatus.Different_or_Updated

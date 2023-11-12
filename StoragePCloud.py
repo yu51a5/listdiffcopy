@@ -139,13 +139,12 @@ class StoragePCloud(StorageBase):
     self.__post_fileid(url_addon='file_write', filename=filename)
 
   ###############################################################################
-  def _fetch_file_size(self, filename):
+  def _fetch_file_size_efficiently(self, filename):
     response = self.__post_fileid(url_addon='stat', filename=filename)
     metadata = response['metadata']
     result = metadata['size']
     # 'modified' : datetime.strptime(metadata['modified'], '%a, %d %b %Y %H:%M:%S +0000')
     return  result
-
 
   ###############################################################################
   # using https://docs.pcloud.com/methods/file/renamefile.html
