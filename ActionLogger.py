@@ -1,4 +1,6 @@
 from datetime import datetime
+import pandas as pd
+
 from settings import log_file
 from StorageLocal import StorageLocal
 from utils import put_together_framed_message
@@ -21,7 +23,7 @@ class Logger():
     self.log_print_basic(msg)
 
   ###############################################################################
-  def __init__(self, title, log_filename=None, log_storage=None, log_StorageType=None, log_storage_kwargs={}):
+  def __init__(self, title, log_filename=log_file, log_storage=None, log_StorageType=None, log_storage_kwargs={}):
     if log_storage is None and log_StorageType is None and (not log_storage_kwargs):
       log_StorageType = StorageLocal
       
@@ -76,10 +78,13 @@ class Logger():
     self.log_mention_directory(dirname=dirname, message_to_print=message_to_print, message2=message2, now_=now_)
 
   ###############################################################################
-  def log_exit_level(self, dir_details_df):
+  def log_exit_level(self, dir_details_df=None):
     now_ = datetime.now()
     time_elapsed = now_ - self.level_start_times_dirnames[-1][0]
-    self.log_print('exited directory ', self.level_start_times_dirnames[-1][1], 'at', now_, 'time elapsed:', time_elapsed, dir_details_df)
+    args = ['exited directory ', self.level_start_times_dirnames[-1][1], 'at', now_, 'time elapsed:', time_elapsed]
+    if dir_details_df:
+      args.append(dir_details_df)
+    self.log_print(*args)
     self.level_start_times_dirnames.pop(-1)
 
   ###############################################################################
@@ -105,16 +110,17 @@ class Logger():
     level = len(self.level_start_times_dirnames)
   
     prefix = '╟──── '
+    dir_details_df = None
+    args_to_use = args
     if 'dir' in message0:
       prefix = prefix.replace('─', '═')
       prefix = ('╚' if 'exit' in message0.lower() else ('╠' if 'DELETED' in message0 else '╔')) + prefix[1:]
-    if message0.lower().startswith('exited'):
-      prefix = prefix[:-2] + '╦ ' 
-      dir_details_df = args[-1]
-      args_to_use = args[:-1]
-    else:
-      dir_details_df = None
-      args_to_use = args
+      if message0.lower().startswith('exited'):
+        if args_to_use:
+          if isinstance(args_to_use[-1], pd.DataFrame):
+            prefix = prefix[:-2] + '╦ ' 
+            dir_details_df = args_to_use.pop(-1)
+      
     # boxy symbols https://www.ncbi.nlm.nih.gov/staff/beck/charents/unicode/2500-257F.html
     string_ = '║' * (level - 1) + prefix + message0 + '`' + name + '` ' + ' '.join([str(a) for a in args_to_use if a])
     

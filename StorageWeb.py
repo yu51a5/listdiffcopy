@@ -1,7 +1,7 @@
 import os
 import requests
 
-from utils import find_duplicates, remove_duplicates
+from utils import remove_duplicates
 from StorageBase import StorageBase
 
 #################################################################################
@@ -51,7 +51,6 @@ class StorageWeb(StorageBase):
     
   ###############################################################################
   def url_or_urls_to_fake_directory(self, url_or_urls, path, do_same_root_urls=True, check_other_urls=True):
-    print(url_or_urls)
     urls = [url_or_urls] if isinstance(url_or_urls, str) else [s for s in url_or_urls]
     # removing duplicates
     urls = remove_duplicates(urls)
@@ -63,7 +62,6 @@ class StorageWeb(StorageBase):
     external_urls = {}
     while urls:
       url = urls.pop(0)
-      print(url, urls)
       back_up_content, assets_urls, urls_to_add, backup_name = self.url_to_backup_content_hrefs(url)
     
       if do_same_root_urls:
@@ -81,22 +79,22 @@ class StorageWeb(StorageBase):
 
       assets_urls = remove_duplicates(assets_urls)
       fake_filename_contents_text = {'source_'+backup_name+'.txt' : back_up_content}
-      would_be_filenames = [os.path.basename(u) for u in assets_urls] + [k for k in fake_filename_contents_text.keys()]
 
-      StorageWeb.__fake_files.update({os.path.join(path, k) : v for k, v in fake_filename_contents_text.items()})
+      StorageWeb.__fake_files.update({os.path.join(path, backup_name, k) : v for k, v in fake_filename_contents_text.items()})
 
-      root_folders = StorageBase.split_path_into_dirs_filename(path=path)
+      root_folders = StorageBase.split_path_into_dirs_filename(path=os.path.join(path, backup_name))
       dict_to_use = StorageWeb.__fake_directories
       for rf in root_folders:
-        if rf not in dict_to_use:
+        if rf not in dict_to_use[0]:
           dict_to_use[0][rf] = [{}, [], []]
         dict_to_use = dict_to_use[0][rf]
+
       dict_to_use[1] = assets_urls
-      dict_to_use[2] = fake_filename_contents_text.keys()
+      dict_to_use[2] = fake_filename_contents_text.keys()      
 
       StorageWeb.__name_content_type_is_content.update({k: True for k in assets_urls})
       StorageWeb.__name_content_type_is_content.update({k: False for k in fake_filename_contents_text})
-
+      
     return external_urls
 
   ###############################################################################
