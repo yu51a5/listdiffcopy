@@ -5,8 +5,8 @@ from StorageSFTP import StorageSFTP
 from StorageGitHub import StorageGitHub
 from StoragePCloud import StoragePCloud
 
-from SomeAction import list_directory, rename_file, delete_directory, rename_directory, delete_file
-from SomeAction2 import compare, synchronize, copy
+from Action1 import list_directory, rename_file, delete_directory, rename_directory, delete_file
+from Action2 import compare, synchronize, copy
 
 # with cProfile.Profile() as pr:
 #with create_logging_object() as ll:

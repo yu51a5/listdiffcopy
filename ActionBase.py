@@ -1,9 +1,9 @@
 import os
-
+import math
 import pandas as pd
 import numpy as np
 
-from SomeActionLogger import Logger
+from ActionLogger import Logger
 from StorageBase import FDStatus
 
 #################################################################################
@@ -14,11 +14,11 @@ def creates_multi_index(index_1, index_2):
   return result
 
 #################################################################################
-class SomeAction(Logger):
+class ActionBase(Logger):
 
   status_names = None
   columns_df = pd.MultiIndex.from_tuples([["Files",  "Size"],  ["Files", "How Many"], ["Directories", "How Many"]])
-  columns_files_df = {i : ['File Name'] + ['File Size' + j for j in ([''] * (i - 2) if (i < 4) else [' L', ' R'])]+ ['File Status'] for i in (3, 4)}
+  columns_files_df = {i : ['File Name'] + ['File Size' + j for j in ([''] * (i - 2) if (i < 4) else [' L', ' R'])]+ (['File Status'] if i > 1 else []) for i in (1, 2, 3, 4)}
   index_listing_df = ["First level", "Total"]
 
   ###############################################################################
@@ -43,12 +43,14 @@ class SomeAction(Logger):
   
     self.log_enter_level(dirname=dir_to_list, message_to_print='Listing', message2=message2)
     
-    files_, dirs_ = storage.get_filenames_and_directories(dir_to_list, enforce_size_fetching=enforce_size_fetching)
-    total_size_first_level = sum([storage.fetch_file_size(f) for f in files_])
+    files_, dirs_ = storage.get_filenames_and_directories(dir_to_list)
+
+    df =  [[os.path.basename(f), storage.fetch_file_size(f)] for f in files_] if enforce_size_fetching \
+    else [[os.path.basename(f)] for f in files_]
+    self.print_files_df(data =df)
+
+    total_size_first_level = sum([dfr[1] for dfr in df]) if enforce_size_fetching else math.nan
     totals = np.array([total_size_first_level, len(files_), len(dirs_)])
-  
-    self.print_files_df(data = [[os.path.basename(f), storage.get_file_info(f, 'size')] for f in files_] if enforce_size_fetching 
-                          else [[os.path.basename(f)] for f in files_])
     
     dirs_dict = {}  
     for dir_ in dirs_:

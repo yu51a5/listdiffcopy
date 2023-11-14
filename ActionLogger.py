@@ -1,21 +1,37 @@
 from datetime import datetime
 from settings import log_file
+from StorageLocal import StorageLocal
+from utils import put_together_framed_message
 
 #################################################################################
 class Logger():
 
-  def put_together_framed_message(message, char='*'):
-    chars = char * (len(message) + 6)
-    result = '\n'.join(['', chars, char * 2 + ' ' + message + ' ' + char * 2, chars, ''])
-    return result
+  ###############################################################################
+  def _check_storage_or_type(storage, StorageType, kwargs):
+    errors = []
+    if (storage is None) == (StorageType is None):
+      errors.append(f"storage_from {storage} and StorageFromType {StorageType} mustn't be both None or both not None")
+    if (StorageType is None) and kwargs:
+      errors.append(f"StorageFromType is not provided, but arguments {kwargs} are")
+    return errors
   
   ###############################################################################
   def log_print_framed(self, message, char):
-    msg = Logger.put_together_framed_message(message=message, char=char)
+    msg = put_together_framed_message(message=message, char=char)
     self.log_print_basic(msg)
 
   ###############################################################################
-  def __init__(self, title, log_filename=log_file):
+  def __init__(self, title, log_filename=None, log_storage=None, log_StorageType=None, log_storage_kwargs={}):
+    if log_storage is None and log_StorageType is None and (not log_storage_kwargs):
+      log_StorageType = StorageLocal
+      
+    errors = Logger._check_storage_or_type(storage=log_storage, StorageType=log_StorageType, kwargs=log_storage_kwargs)
+    assert not errors, '.\n'.join(['ERRORS:'] + errors)
+
+    self.log_storage = log_storage
+    self.log_StorageType = log_StorageType
+    self.log_storage_kwargs = log_storage_kwargs
+    
     self.log_text = []
     self.log_filename = log_filename
     self.level_start_times_dirnames = []
@@ -23,17 +39,16 @@ class Logger():
     self.error_count = 0
 
   ###############################################################################
-  def __enter__(self):
-    return self
-
-  ###############################################################################
-  def __exit__(self, type, value, traceback):
-    self._close()
-
-  ###############################################################################
-  def _close(self):
-    with open(self.log_filename, "w") as log_object:
-      log_object.write('\n'.join(self.log_text))
+  def __del__(self):
+    log_kwargs = dict(filename = self.log_filename, 
+                       content = '\n'.join(self.log_text), 
+                       check_if_contents_is_the_same_before_writing = False)
+    
+    if self.log_storage:
+      self.log_storage.create_file_given_content(**log_kwargs)
+    else:
+      st = self.log_StorageType(self.log_storage_kwargs)
+      st.create_file_given_content(**log_kwargs)
 
   ###############################################################################
   def get_errors_count(self):
@@ -43,7 +58,6 @@ class Logger():
   def log_error(self, message):
     self.log_print_framed(message='ERROR: ' + message, char='!')
     self.error_count += 1
-    assert 6 > 7
 
   ###############################################################################
   def log_warning(self, message):

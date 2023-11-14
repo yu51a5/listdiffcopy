@@ -1,26 +1,30 @@
-from SomeAction import SomeAction
+from ActionBase import ActionBase
 
 #################################################################################
-class SomeAction1(SomeAction):
+class Action1(ActionBase):
 
-  def __init__(self, title, StorageType, kwargs_storage, path):
-    self.storage = StorageType(**kwargs_storage)
-    super().__init__(title=title + ' ' + self.storage.str(path))
+  def __init__(self, title, StorageType, kwargs_storage, storage, path, func, **func_kwargs):
+    
+    errors = ActionBase._check_storage_or_type(storage=storage, StorageType=StorageType, kwargs=kwargs_storage)
 
-  ###############################################################################
-  def __enter__(self):
-    self.storage._open()
-    self.storage._logger = self
-    return self
+    assert not errors, '.\n'.join(['ERRORS:'] + errors)
 
-  ###############################################################################
-  def __exit__(self, type, value, traceback):
-    super().__exit__(type, value, traceback)
-    self.storage._close()
+    def inner_func(a1, path, func):
+      a1.storage._logger = self
+      super().__init__(title=title + ' ' + a1.storage.str(path))
+      func(sa=a1, path=path, **func_kwargs)
+
+    if StorageType:
+      with StorageType(**kwargs_storage) as self.storage:
+        inner_func(a1=self, path=path, func=func)
+    else:
+      self.storage = storage
+      inner_func(a1=self, path=path, func=func)
 
 ###############################################################################
-def list(StorageType, path, enforce_size_fetching=True, kwargs_storage={}):
-  with SomeAction1(title='Listing', StorageType=StorageType, kwargs_storage=kwargs_storage, path=path) as sa:
+def list(path, storage=None, StorageType=None, kwargs_storage={}, enforce_size_fetching=True):
+
+  def func(sa, path, enforce_size_fetching):
     path_exist_is_dir_not_file = sa.storage.check_path_exist_is_dir_not_file(path)
     if path_exist_is_dir_not_file is True:
       sa._list_files_directories_recursive(storage=sa.storage, dir_to_list=path, enforce_size_fetching=enforce_size_fetching)
@@ -31,9 +35,12 @@ def list(StorageType, path, enforce_size_fetching=True, kwargs_storage={}):
     else:
       sa.log_error(f"{sa.storage.str(path)} does not exist")  
 
+  Action1(title='Listing', StorageType=StorageType, kwargs_storage=kwargs_storage, storage=storage, path=path,
+              func=func, enforce_size_fetching=enforce_size_fetching)
+
 ###############################################################################
-def delete(StorageType, path, kwargs_storage={}):
-  with SomeAction1(title='Deleting', StorageType=StorageType, kwargs_storage=kwargs_storage, path=path) as sa:
+def delete(path, storage=None, StorageType=None, kwargs_storage={}):
+  def func_(sa, path):
     path_exist_is_dir_not_file = sa.storage.check_path_exist_is_dir_not_file(path)
     if path_exist_is_dir_not_file is True:
       sa.storage.delete_directory(path)
@@ -43,12 +50,14 @@ def delete(StorageType, path, kwargs_storage={}):
       sa.log_error(f"{sa.storage.str(path)} is both a file and a directory")
     else:
       sa.log_error(f"{sa.storage.str(path)} does not exist")
+  Action1(title='Deleting', StorageType=StorageType, kwargs_storage=kwargs_storage, storage=storage, path=path, func=func)
 
 ###############################################################################
-def create_directory(StorageType, dir_name, kwargs_storage={}):
-  with SomeAction1(title='Creating', StorageType=StorageType, kwargs_storage=kwargs_storage, path=dir_name) as sa:
+def create_directory(dir_name, storage=None, StorageType=None, kwargs_storage={}):
+  def func_(sa, path):
     path_exist_is_dir_not_file = sa.storage.check_path_exist_is_dir_not_file(dir_name)
     if path_exist_is_dir_not_file is not None:
       sa.log_warning(message=f"Skipping because {sa.storage.str(dir_name)} exists")
     else:
       sa.storage.create_directory(dir_name)
+  Action1(title='Creating', StorageType=StorageType, kwargs_storage=kwargs_storage, storage=storage, path=dir_name, func=func)

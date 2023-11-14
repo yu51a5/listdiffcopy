@@ -3,11 +3,12 @@ import math
 import pandas as pd
 import numpy as np
 
-from SomeAction import SomeAction, creates_multi_index
+from Action2 import Action2
+from ActionBase import creates_multi_index
 from StorageBase import FDStatus
 
 #################################################################################
-class SomeAction2(SomeAction):
+class Action2CompareCopyMove(Action2):
 
   create_if_left_only = None
   delete_if_right_only = None
@@ -22,54 +23,24 @@ class SomeAction2(SomeAction):
   
   #################################################################################
   def __init__(self, path_from, path_to, storage_from=None, storage_to=None, StorageFromType=None, StorageToType=None, kwargs_from={}, kwargs_to={}):
-    self.root_path_from = path_from
-    self.root_path_to = path_to
+     super().__init__(path_from=path_from, path_to=path_to, 
+                      storage_from=storage_from, storage_to=storage_to, 
+                      StorageFromType=StorageFromType, StorageToType=StorageToType, 
+                      kwargs_from=kwargs_from, kwargs_to=kwargs_to)
 
-    self.index_comp_df = pd.MultiIndex.from_tuples(creates_multi_index(self.index_listing_df, self.status_names))
-
-    errors = []
-    if (storage_from is None) == (StorageFromType is None):
-      errors.append(f"storage_from {storage_from} and StorageFromType {StorageFromType} mustn't be both None or both not None")
-    if (StorageFromType is None) and kwargs_from:
-      errors.append(f"StorageFromType is not provided, but arguments {kwargs_from} are")
-    if (storage_to is None) == (StorageToType is None):
-      errors.append(f"storage_from {storage_to} and StorageToType {StorageToType} mustn't be both None or both not None")
-    if (StorageToType is None) and kwargs_to:
-      errors.append(f"StorageToType is not provided, but arguments {kwargs_to} are")
-
-    assert not errors, '.\n'.join(['ERRORS:'] + errors)
-
-    self.storage_from = storage_from if storage_from else None
-    self.storage_to   = storage_to   if storage_to   else None
-
-    if self.storage_from and not self.storage_to and StorageToType == type(self.storage_from) and kwargs_to == self.storage_from.get_constructor_kwargs():
-      self.storage_to = self.storage_from
-    if self.storage_to and not self.storage_from and StorageFromType == type(self.storage_to) and kwargs_from == self.storage_to.get_constructor_kwargs():
-      self.storage_from = self.storage_to
-
-    if self.storage_to and self.storage_from:
-      self.__common_part_of_constructor()
-    elif self.storage_to and (not self.storage_from):
-      with StorageFromType(**kwargs_from) as self.storage_from:
-        self.__common_part_of_constructor()
-    elif self.storage_from and (not self.storage_to):
-      with StorageToType(**kwargs_to) as self.storage_to:
-        self.__common_part_of_constructor()
-    else:
-      with StorageFromType(**kwargs_from) as self.storage_from:
-        with StorageToType(**kwargs_to) as self.storage_to: 
-          self.__common_part_of_constructor()
+  #################################################################################
+  def _put_title_together(self):
+    title = f'{self.enter_123[0]} {self.storage_from.str(self.root_path_from)} {self.enter_123[2]} {self.storage_to.str(self.root_path_to)}'
+    return title
 
   ###############################################################################
-  def __common_part_of_constructor(self):
+  def _common_part_of_constructor(self):
 
     self.storage_from._logger = self
     self.storage_to._logger = self
 
     str_from = self.storage_from.str(self.root_path_from)
     str_to = self.storage_to.str(self.root_path_to)
-
-    super().__init__(title=f'{self.enter_123[0]} {str_from} {self.enter_123[2]} {str_to}')
     
     path_exist_is_dir_not_file_from = self.storage_from.check_path_exist_is_dir_not_file(self.root_path_from)
     path_exist_is_dir_not_file_to = self.storage_to.check_path_exist_is_dir_not_file(self.root_path_to)
@@ -268,7 +239,7 @@ class SomeAction2(SomeAction):
 
 
 #################################################################################
-class Compare(SomeAction2):
+class Compare(Action2):
 
   create_if_left_only = False
   delete_if_right_only = False
@@ -288,7 +259,7 @@ def compare(*args, **kwargs):
   Compare(*args, **kwargs)
 
 #################################################################################
-class Copy(SomeAction2):
+class Copy(Action2):
 
   create_if_left_only = True
   delete_if_right_only = False
@@ -357,7 +328,7 @@ def move_directory_and_rename(*args, **kwargs):
     pass
 
 #################################################################################
-class Synchronize(SomeAction2):
+class Synchronize(Action2):
 
   create_if_left_only = True
   delete_if_right_only = True
