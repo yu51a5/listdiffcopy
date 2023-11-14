@@ -81,10 +81,8 @@ class Logger():
   def log_exit_level(self, dir_details_df=None):
     now_ = datetime.now()
     time_elapsed = now_ - self.level_start_times_dirnames[-1][0]
-    args = ['exited directory ', self.level_start_times_dirnames[-1][1], 'at', now_, 'time elapsed:', time_elapsed]
-    if dir_details_df:
-      args.append(dir_details_df)
-    self.log_print(*args)
+    self.log_print('exited directory ', self.level_start_times_dirnames[-1][1], 'at', now_, 'time elapsed:', time_elapsed, 
+                   dir_details_df=dir_details_df)
     self.level_start_times_dirnames.pop(-1)
 
   ###############################################################################
@@ -105,24 +103,20 @@ class Logger():
         self.log_print_basic(prefix + df_str_)
 
   ###############################################################################
-  def log_print(self, message0, name, *args):
+  def log_print(self, message0, name, *args, dir_details_df=None):
 
     level = len(self.level_start_times_dirnames)
   
     prefix = '╟──── '
-    dir_details_df = None
-    args_to_use = args
     if 'dir' in message0:
       prefix = prefix.replace('─', '═')
       prefix = ('╚' if 'exit' in message0.lower() else ('╠' if 'DELETED' in message0 else '╔')) + prefix[1:]
       if message0.lower().startswith('exited'):
-        if args_to_use:
-          if isinstance(args_to_use[-1], pd.DataFrame):
-            prefix = prefix[:-2] + '╦ ' 
-            dir_details_df = args_to_use.pop(-1)
+        if dir_details_df is not None:
+          prefix = prefix[:-2] + '╦ ' 
       
     # boxy symbols https://www.ncbi.nlm.nih.gov/staff/beck/charents/unicode/2500-257F.html
-    string_ = '║' * (level - 1) + prefix + message0 + '`' + name + '` ' + ' '.join([str(a) for a in args_to_use if a])
+    string_ = '║' * (level - 1) + prefix + message0 + '`' + name + '` ' + ' '.join([str(a) for a in args if a])
     
     self.log_print_basic(string_)
 

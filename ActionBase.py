@@ -64,7 +64,6 @@ class ActionBase(Logger):
     kwargs = {}
     if enforce_size_fetching or dirs_:
       kwargs['dir_details_df'] = pd.DataFrame(table_stats, index=self.index_listing_df, columns=self.columns_df)
-    
     self.log_exit_level(**kwargs)
   
     return totals, files_, dirs_dict
