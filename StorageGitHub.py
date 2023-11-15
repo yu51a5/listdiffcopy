@@ -10,8 +10,8 @@ class StorageGitHub(StorageBase):
   
   # github_token secret structure: OWNER|REPO|TOKEN . For Github token, see
   # https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens
-  def __init__(self, secret_name=None):
-    super().__init__(constructor_kwargs=dict(secret_name=secret_name))
+  def __init__(self, secret_name=None, logger=None):
+    super().__init__(constructor_kwargs=dict(secret_name=secret_name), logger=logger)
 
     self.repo_name, self.token = self._find_secret_components(2, secret_name=secret_name)
 

@@ -14,7 +14,7 @@ def creates_multi_index(index_1, index_2):
   return result
 
 #################################################################################
-class ActionBase(Logger):
+class ActionBase:
 
   status_names = None
   columns_df = pd.MultiIndex.from_tuples([["Files",  "Size"],  ["Files", "How Many"], ["Directories", "How Many"]])
@@ -22,9 +22,10 @@ class ActionBase(Logger):
   index_listing_df = ["First level", "Total"]
 
   ###############################################################################
-  def __init__(self, **kwargs):
+  def __init__(self, logger=None, **kwargs):
     if self.status_names:
       self.index_totals_df = pd.MultiIndex.from_tuples(creates_multi_index(self.index_listing_df, self.status_names))
+    self.__logger = logger
     super().__init__(**kwargs)
 
   ###############################################################################

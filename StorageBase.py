@@ -2,6 +2,8 @@ import os
 import math
 from enum import Enum
 
+from Logger import ObjectWithLogger
+
 #################################################################################
 class FDStatus(Enum):
   LeftOnly_or_New  = 0
@@ -11,18 +13,19 @@ class FDStatus(Enum):
   Error     = 4
 
 #################################################################################
-class StorageBase():
+class StorageBase(ObjectWithLogger):
 
   __txt_chrs = set([chr(i) for i in range(32, 127)] + list("\n\r\t\b"))
 
   #################################################################################
-  def __init__(self, constructor_kwargs):
+  def __init__(self, constructor_kwargs, logger):
     self.__cached_filenames_flat, self.__cached_directories_flat = {}, self._get_default_root_dir_info()
     self.__constructor_kwargs = {k : v for k, v in constructor_kwargs.items()}
+    super().__init__(logger=logger)
 
   ###############################################################################
-  def get_constructor_kwargs(self):
-    return self.__constructor_kwargs
+  def check_if_constructor_kwargs_are_the_same(self, the_other_constructor_kwargs):
+    return the_other_constructor_kwargs == self.__constructor_kwargs
     
   #################################################################################
   def _find_secret_components(self, how_many, secret_name=None):
@@ -260,7 +263,7 @@ class StorageBase():
       return files_, directories_
   
     except:
-      self._logger.log_error(f'Filenames and directories in {self.str(dir_name)} could not be identified')
+      self.log_error(f'Filenames and directories in {self.str(dir_name)} could not be identified')
       return FDStatus.Error
       
   ###############################################################################
@@ -295,7 +298,7 @@ class StorageBase():
                                                       source_filename=my_filename)
       return size_contents
     except:
-      self._logger.log_error(f'{self.str(my_filename)} could not be created from {source.str(source_filename)}')
+      self.log_error(f'{self.str(my_filename)} could not be created from {source.str(source_filename)}')
       return math.nan
   
   ###############################################################################
@@ -305,10 +308,10 @@ class StorageBase():
         self._delete_file(filename)
         return FDStatus.RightOnly_or_Deleted
       else:
-        self._logger.log_warning(f'{self.str(filename)} not found')
+        self.log_warning(f'{self.str(filename)} not found')
         return FDStatus.Error
     except:
-      self._logger.log_error(f'{self.str(filename)} could not be deleted')
+      self.log_error(f'{self.str(filename)} could not be deleted')
       return FDStatus.Error
     
   ###############################################################################
@@ -318,10 +321,10 @@ class StorageBase():
         self._delete_directory(dirname)
         return FDStatus.RightOnly_or_Deleted
       else:
-        self._logger.log_warning(f'{self.str(dirname)} not found')
+        self.log_warning(f'{self.str(dirname)} not found')
         return FDStatus.Error
     except:
-      self._logger.log_error(f'{self.str(dirname)} could not be deleted')
+      self.log_error(f'{self.str(dirname)} could not be deleted')
       return FDStatus.Error
 
   ###############################################################################
@@ -341,10 +344,10 @@ class StorageBase():
         self._create_file_given_content(filename=filename, content=content)
         return FDStatus.LeftOnly_or_New
       else: # it's a folder or both
-        self._logger.log_error(f'{self.str(filename)} exists, and it is a directory')
+        self.log_error(f'{self.str(filename)} exists, and it is a directory')
         return FDStatus.Error
     except:
-      self._logger.log_error(f'Contents of {self.str(filename)} could not be set')
+      self.log_error(f'Contents of {self.str(filename)} could not be set')
       return FDStatus.Error
 
     ###############################################################################
@@ -362,7 +365,7 @@ class StorageBase():
           result = len(self.get_contents(filename=filename))
         return result
       except:
-        self._logger.log_error(f'Contents of {self.str(filename)} could not be set')
+        self.log_error(f'Contents of {self.str(filename)} could not be set')
         return FDStatus.Error
           
       return FDStatus.LeftOnly_or_New

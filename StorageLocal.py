@@ -6,8 +6,8 @@ from StorageBase import StorageBase
 class StorageLocal(StorageBase):
 
   ###############################################################################
-  def __init__(self):
-    super().__init__(constructor_kwargs={})
+  def __init__(self, logger=None):
+    super().__init__(constructor_kwargs={}, logger=logger)
 
   ###############################################################################
   def get_init_path(self):

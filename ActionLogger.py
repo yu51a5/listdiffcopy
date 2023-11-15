@@ -1,12 +1,11 @@
 from datetime import datetime
-import pandas as pd
 
 from settings import log_file
 from StorageLocal import StorageLocal
 from utils import put_together_framed_message
 
 #################################################################################
-class Logger():
+class Logger:
 
   ###############################################################################
   def _check_storage_or_type(storage, StorageType, kwargs):
@@ -128,3 +127,20 @@ class Logger():
 
     if dir_details_df is not None:
       self.log_print_df(df=dir_details_df, extra_prefix=' ' * (len(prefix) - 2) + '╠═ ', last_chars_last_prefix='╚═ ')
+
+
+###################################################################################
+class ObjectWithLogger:
+  #################################################################################
+  def __init__(self, logger):
+    self.__logger = logger
+    assert isinstance(logger, Logger)
+
+  #################################################################################
+  def log_warning(self, message):
+    self.__logger.log_warning(message)
+
+  #################################################################################
+  def log_error(self, message):
+    self.__logger.log_error(message)
+    

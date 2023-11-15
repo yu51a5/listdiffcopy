@@ -18,9 +18,9 @@ class Action2(ActionBase):
     self.storage_from = storage_from if storage_from else None
     self.storage_to   = storage_to   if storage_to   else None
 
-    if self.storage_from and not self.storage_to and StorageToType == type(self.storage_from) and kwargs_to == self.storage_from.get_constructor_kwargs():
+    if self.storage_from and not self.storage_to and StorageToType == type(self.storage_from) and self.storage_from.check_if_constructor_kwargs_are_the_same(kwargs_to):
       self.storage_to = self.storage_from
-    if self.storage_to and not self.storage_from and StorageFromType == type(self.storage_to) and kwargs_from == self.storage_to.get_constructor_kwargs():
+    if self.storage_to and not self.storage_from and StorageFromType == type(self.storage_to) and self.storage_to.check_if_constructor_kwargs_are_the_same(kwargs_from):
       self.storage_from = self.storage_to
 
     if self.storage_to and self.storage_from:
@@ -33,8 +33,12 @@ class Action2(ActionBase):
         self.__common_part_of_constructor(**kwargs)
     else:
       with StorageFromType(**kwargs_from) as self.storage_from:
-        with StorageToType(**kwargs_to) as self.storage_to: 
+        if StorageFromType == StorageToType and kwargs_from == kwargs_to:
+          self.storage_to = self.storage_from
           self.__common_part_of_constructor(**kwargs)
+        else:
+          with StorageToType(**kwargs_to) as self.storage_to: 
+            self.__common_part_of_constructor(**kwargs)
 
   #################################################################################
   def __common_part_of_constructor(self, **kwargs):

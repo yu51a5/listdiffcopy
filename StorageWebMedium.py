@@ -20,8 +20,8 @@ class StorageWebMedium(StorageWeb):
     return remove_char_and_after(s=s, c='?')
 
   ###############################################################################
-  def __init__(self):
-    super().__init__()
+  def __init__(self, logger=None):
+    super().__init__(logger=logger)
 
   ###############################################################################
   def url_to_backup_content_hrefs(self, url):
