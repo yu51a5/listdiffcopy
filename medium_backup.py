@@ -15,8 +15,10 @@ from StorageLocal import StorageLocal
 from StoragePCloud import StoragePCloud
 from StorageGitHub import StorageGitHub
 
-with BackupMediumWebsite(url_or_urls=urls, StorageType=StorageGitHub, path='medium', kwargs_storage={'secret_name':"medium_github_secret"}) as _:
-    pass
+BackupMediumWebsite(url_or_urls='https://medium.com/@real.zyxxy/about', 
+                    StorageType=StorageGitHub, 
+                    path='medium', 
+                    kwargs_storage={'secret_name':"medium_github_secret"})
 
 
 #print(', \n'.join(["'https://medium.com/" + u + "'" for u in urls if not u.startswith('https://')]))

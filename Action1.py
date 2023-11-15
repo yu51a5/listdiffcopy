@@ -28,7 +28,7 @@ def list(path, storage=None, StorageType=None, kwargs_storage={}, enforce_size_f
     path_exist_is_dir_not_file = sa.storage.check_path_exist_is_dir_not_file(path)
     if path_exist_is_dir_not_file is True:
       sa._list_files_directories_recursive(storage=sa.storage, dir_to_list=path, enforce_size_fetching=enforce_size_fetching)
-    if path_exist_is_dir_not_file is False:
+    elif path_exist_is_dir_not_file is False:
       sa._list_a_file(storage=sa.storage, file_path=path, enforce_size_fetching=enforce_size_fetching)  
     elif path_exist_is_dir_not_file == "both":
       sa.log_error(f"{sa.storage.str(path)} is both a file and a directory")

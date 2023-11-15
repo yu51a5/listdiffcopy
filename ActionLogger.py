@@ -39,9 +39,14 @@ class Logger():
     self.level_start_times_dirnames = []
     self.log_print_framed(message=title, char='*')
     self.error_count = 0
+    self.flush()
 
   ###############################################################################
   def __del__(self):
+    self.flush()
+
+  ###############################################################################
+  def flush(self):
     log_kwargs = dict(filename = self.log_filename, 
                        content = '\n'.join(self.log_text), 
                        check_if_contents_is_the_same_before_writing = False)
@@ -49,7 +54,7 @@ class Logger():
     if self.log_storage:
       self.log_storage.create_file_given_content(**log_kwargs)
     else:
-      st = self.log_StorageType(self.log_storage_kwargs)
+      st = self.log_StorageType(**self.log_storage_kwargs)
       st.create_file_given_content(**log_kwargs)
 
   ###############################################################################
@@ -60,6 +65,7 @@ class Logger():
   def log_error(self, message):
     self.log_print_framed(message='ERROR: ' + message, char='!')
     self.error_count += 1
+    assert 6 > 7
 
   ###############################################################################
   def log_warning(self, message):

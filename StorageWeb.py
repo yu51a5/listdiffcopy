@@ -56,19 +56,18 @@ class StorageWeb(StorageBase):
     urls = remove_duplicates(urls)
     # making sure the root is the same
     root_url = os.path.dirname(urls[0])
-    faulty_urls = [u for u in urls if not u.startswith(root_url)]
+    faulty_urls = [u for u in urls if not u.startswith(os.path.dirname(urls[0]))]
     urls = [u for u in urls if u not in faulty_urls]
     completed_urls = []
     external_urls = {}
     while urls:
       url = urls.pop(0)
       back_up_content, assets_urls, urls_to_add, backup_name = self.url_to_backup_content_hrefs(url)
-    
+      self._logger.log_print_basic(f'Analysing "{url}".\nResults saved as directory "{backup_name}"\n')
       if do_same_root_urls:
         completed_urls.append(url)
         urls += [u for u in urls_to_add if u not in completed_urls and u.startswith(root_url)]
-        urls = remove_duplicates(urls)
-    
+        urls = remove_duplicates(urls)    
       if check_other_urls:
         for u in urls_to_add:
           if not u.startswith(root_url):

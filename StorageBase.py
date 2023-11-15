@@ -184,7 +184,7 @@ class StorageBase():
     path_so_far = self.get_init_path() 
     was_created = False
     for rf in root_folders:
-      _, directories_ = self._get_filenames_and_directories(dir_name=path_so_far)
+      _, directories_ = self.get_filenames_and_directories(dir_name=path_so_far)
       path_so_far = os.path.join(path_so_far, rf)
       if path_so_far in directories_:
         continue 
@@ -210,7 +210,7 @@ class StorageBase():
     dirname, filename = os.path.split(path)
     dir_exists = self.check_directory_exists(path=dirname)
     if dir_exists:
-      files_, _ = self._get_filenames_and_directories(dir_name=dirname)
+      files_, _ = self.get_filenames_and_directories(dir_name=dirname)
       return (path in files_)
     return False
 
@@ -246,15 +246,22 @@ class StorageBase():
     return files_
   
   ###############################################################################
-  def get_filenames_and_directories(self, root):
-    files_, directories_ = self._get_filenames_and_directories(dir_name=root)
-    
-    files_.sort(key=lambda x: x.lower())
-    directories_.sort(key=lambda x: x.lower())
-
-    files_ = self._filter_out_files(files_)
-
-    return files_, directories_
+  def get_filenames_and_directories(self, dir_name):
+    try:
+      if not dir_name:
+        dir_name = self.get_init_path()
+      files_, directories_ = self._get_filenames_and_directories(dir_name=dir_name)
+      
+      files_.sort(key=lambda x: x.lower())
+      directories_.sort(key=lambda x: x.lower())
+  
+      files_ = self._filter_out_files(files_)
+  
+      return files_, directories_
+  
+    except:
+      self._logger.log_error(f'Filenames and directories in {self.str(dir_name)} could not be identified')
+      return FDStatus.Error
       
   ###############################################################################
   def file_contents_is_text(self, filename):

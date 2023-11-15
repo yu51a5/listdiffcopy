@@ -107,7 +107,7 @@ class StorageGitHub(StorageBase):
 
   ###############################################################################
   def _delete_directory(self, dirname):
-    all_files, all_directories = self._get_filenames_and_directories(dir_name=dirname)
+    all_files, all_directories = self.get_filenames_and_directories(dir_name=dirname)
     for f in all_files:
       self._delete_file(filename=f)
     for d in all_directories:

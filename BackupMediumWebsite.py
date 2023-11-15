@@ -19,6 +19,7 @@ class BackupMediumWebsite:
     swm._logger = logger
 
     external_urls_only = swm.url_or_urls_to_fake_directory(url_or_urls=url_or_urls, path=path, do_same_root_urls=True, check_other_urls=True)
+
     list(path=path, storage=swm, enforce_size_fetching=False)
 
     #path_from, path_to, storage_from=None, storage_to=None, StorageFromType=None, StorageToType=None, kwargs_from={}, kwargs_to={}
