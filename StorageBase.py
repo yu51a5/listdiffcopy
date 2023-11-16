@@ -10,10 +10,10 @@ class StorageBase(ObjectWithLogger):
   __txt_chrs = set([chr(i) for i in range(32, 127)] + list("\n\r\t\b"))
 
   #################################################################################
-  def __init__(self, constructor_kwargs, logger):
+  def __init__(self, constructor_kwargs, logger=None, objects_to_sync_logger_with=[]):
     self.__cached_filenames_flat, self.__cached_directories_flat = {}, self._get_default_root_dir_info()
     self.__constructor_kwargs = {k : v for k, v in constructor_kwargs.items()}
-    super().__init__(logger=logger)
+    super().__init__(logger=logger, objects_to_sync_logger_with=objects_to_sync_logger_with)
 
   ###############################################################################
   def check_if_constructor_kwargs_are_the_same(self, the_other_constructor_kwargs):
@@ -272,8 +272,8 @@ class StorageBase(ObjectWithLogger):
 
   ###############################################################################
   def get_file_size_or_contents(self, filename):
-
-    if self.can_fetch_file_size_efficiently():
+    ffse = getattr(self, '_fetch_file_size_efficiently', None)
+    if ffse is not None:
       my_contents = None
       my_file_size = self.fetch_file_size(filename)
     else:
@@ -341,11 +341,6 @@ class StorageBase(ObjectWithLogger):
     except:
       self.log_error(f'Contents of {self.str(filename)} could not be set')
       return FDStatus.Error
-
-    ###############################################################################
-    def can_fetch_file_size_efficiently(self):
-      ffse = getattr(self, '_fetch_file_size_efficiently', None)
-      return ffse is not None
     
     ###############################################################################
     def fetch_file_size(self, filename):

@@ -12,8 +12,8 @@ class StorageWeb(StorageBase):
   __name_content_type_is_content = {}
     
   ###############################################################################
-  def __init__(self, logger=None):
-    super().__init__(constructor_kwargs={}, logger=logger)
+  def __init__(self, logger=None, objects_to_sync_logger_with=[]):
+    super().__init__(constructor_kwargs={}, logger=logger, objects_to_sync_logger_with=objects_to_sync_logger_with)
 
   ###############################################################################
   def get_response_code(url):

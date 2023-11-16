@@ -9,8 +9,8 @@ from settings import wp_images_extensions, default_ignore_wp_scaled_images
 #################################################################################
 class StorageSFTP(StorageBase):
 
-  def __init__(self, secret_name=None, ignore_wp_scaled_images=default_ignore_wp_scaled_images, logger=None):
-    super().__init__(constructor_kwargs=dict(secret_name=secret_name, ignore_wp_scaled_images=ignore_wp_scaled_images), logger=logger)
+  def __init__(self, secret_name=None, ignore_wp_scaled_images=default_ignore_wp_scaled_images, logger=None, objects_to_sync_logger_with=[]):
+    super().__init__(constructor_kwargs=dict(secret_name=secret_name, ignore_wp_scaled_images=ignore_wp_scaled_images), logger=logger, objects_to_sync_logger_with=objects_to_sync_logger_with)
     self.ignore_wp_scaled_images = ignore_wp_scaled_images
 
     secret_components = self._find_secret_components((4, 5), secret_name=secret_name)

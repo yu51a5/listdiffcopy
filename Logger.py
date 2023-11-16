@@ -22,6 +22,8 @@ class LogMessageType(Enum):
 #################################################################################
 class Logger:
 
+  DO_ERROR_THROWING_NOT_LOGGING = False
+
   ###############################################################################
   def _check_storage_or_type(storage, StorageType, kwargs):
     errors = []
@@ -53,7 +55,7 @@ class Logger:
     self.log_filename = log_filename
     self.level_start_times_dirnames = []
     self.error_count = 0
-    #self.flush()
+    self.flush()
 
   ###############################################################################
   def __del__(self):
@@ -61,15 +63,13 @@ class Logger:
 
   ###############################################################################
   def flush(self):
-    log_kwargs = dict(filename = self.log_filename, 
-                       content = '\n'.join(self.log_text), 
-                       check_if_contents_is_the_same_before_writing = False)
-    
-    if self.log_storage:
-      self.log_storage.create_file_given_content(**log_kwargs)
-    else:
-      st = self.log_StorageType(**self.log_storage_kwargs)
-      st.create_file_given_content(**log_kwargs)
+    Logger.DO_ERROR_THROWING_NOT_LOGGING = True
+    if not self.log_storage:
+      self.log_storage = self.log_StorageType(**self.log_storage_kwargs)
+    self.log_storage.create_file_given_content(filename = self.log_filename, 
+                                               content = '\n'.join(self.log_text), 
+                                               check_if_contents_is_the_same_before_writing = False)
+    Logger.DO_ERROR_THROWING_NOT_LOGGING = False
 
   ###############################################################################
   def get_errors_count(self):
@@ -79,7 +79,7 @@ class Logger:
   def log_error(self, message):
     self.log_print_framed(message='ERROR: ' + message, char='!')
     self.error_count += 1
-    assert 6 > 7
+    assert "stopping here to show the full call stack"
 
   ###############################################################################
   def log_warning(self, message):

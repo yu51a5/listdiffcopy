@@ -11,7 +11,7 @@ class Action1(ObjectWithLogger):
     assert not errors, '.\n'.join(['ERRORS:'] + errors)
 
     def inner_func(a1, path, func, storage_):
-      super().__init__(title=title + ' ' + a1.storage.str(path), objects_to_sync_logger_with=storage_)
+      super().__init__(title=title + ' ' + a1.storage.str(path), objects_to_sync_logger_with=[storage_])
       func(sa=a1, path=path, **func_kwargs)
 
     if StorageType:

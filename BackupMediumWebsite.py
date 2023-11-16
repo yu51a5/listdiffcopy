@@ -21,7 +21,6 @@ class BackupMediumWebsite:
     external_urls_only = swm.url_or_urls_to_fake_directory(url_or_urls=url_or_urls, path=path, do_same_root_urls=True, check_other_urls=True)
 
     list(path=path, storage=swm, enforce_size_fetching=False)
-    print(swm.has_logger(), 1)
     compare(path_from=path, path_to=path, storage_from=swm, StorageToType=StorageType, kwargs_to=kwargs_storage)
 
     

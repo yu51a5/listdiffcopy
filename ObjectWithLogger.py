@@ -15,12 +15,14 @@ class ObjectWithLogger:
   index_listing_df = ["First level", "Total"]
 
 ###################################################################################
-  def __init__(self, logger=None, objects_to_sync_logger_with=None, title=None):
-    if objects_to_sync_logger_with is not None:
-      self.__logger = objects_to_sync_logger_with.__logger
-    else:
+  def __init__(self, logger=None, objects_to_sync_logger_with=[], title=None):
+    if logger is not None:
       assert isinstance(logger, Logger) or (logger is None), f'{type(logger)}, {logger} is not an instance of Logger'
-      self.__logger = logger
+
+    self.__logger = logger
+    if Logger.DO_ERROR_THROWING_NOT_LOGGING:
+      return
+    ObjectWithLogger.sync_loggers(*([self] + objects_to_sync_logger_with))
       
     if title:
       self.log_title(title)
@@ -30,7 +32,7 @@ class ObjectWithLogger:
   #################################################################################
   def sync_loggers(*args):
     not_owl = [arg for arg in args if not isinstance(arg, ObjectWithLogger)]
-    assert not not_owl
+    assert not not_owl, f'{not_owl}'
     existing_loggers = [i for i, arg in enumerate(args) if arg.has_logger()]
     assert existing_loggers
     first_with_logger = args[existing_loggers[0]]
@@ -70,6 +72,8 @@ class ObjectWithLogger:
 
   #################################################################################
   def log_error(self, message):
+    if Logger.DO_ERROR_THROWING_NOT_LOGGING:
+      raise Exception(message)
     self.__logger.log_error(message)
 
   #################################################################################

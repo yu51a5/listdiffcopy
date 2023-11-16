@@ -9,7 +9,6 @@ h.ignore_images = False # DOESN'T WORK
 
 from utils import put_together_framed_message, remove_char_and_after
 from StorageWeb import StorageWeb
-from Logger import Logger
 
 #################################################################################
 class StorageWebMedium(StorageWeb):
@@ -21,10 +20,8 @@ class StorageWebMedium(StorageWeb):
     return remove_char_and_after(s=s, c='?')
 
   ###############################################################################
-  def __init__(self, logger=None):
-    if logger is not None:
-      assert isinstance(logger, Logger), f'{type(logger)}, {logger} is not an instance of Logger'
-    super().__init__(logger=logger)
+  def __init__(self, logger=None, objects_to_sync_logger_with=[]):
+    super().__init__(logger=logger, objects_to_sync_logger_with=objects_to_sync_logger_with)
 
   ###############################################################################
   def url_to_backup_content_hrefs(self, url):

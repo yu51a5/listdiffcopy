@@ -3,7 +3,7 @@ import math
 import pandas as pd
 import numpy as np
 
-#from Action2 import Action2
+from utils import creates_multi_index
 from Logger import FDStatus
 
 from ObjectWithLogger import ObjectWithLogger
@@ -28,7 +28,7 @@ class Action2(ObjectWithLogger):
     self.root_path_from = path_from
     self.root_path_to = path_to
 
-    #self.index_comp_df = pd.MultiIndex.from_tuples(creates_multi_index(self.index_listing_df, self.status_names))
+    self.index_comp_df = pd.MultiIndex.from_tuples(creates_multi_index(self.index_listing_df, self.status_names))
 
     errors = Logger._check_storage_or_type(storage=storage_from, StorageType=StorageFromType, kwargs=kwargs_from) \
            + Logger._check_storage_or_type(storage=storage_to  , StorageType=StorageToType  , kwargs=kwargs_to)
@@ -46,12 +46,10 @@ class Action2(ObjectWithLogger):
     if self.storage_to and self.storage_from:
       self.__common_part_of_constructor(**kwargs)
     elif self.storage_to and (not self.storage_from):
-      with StorageFromType(**kwargs_from) as self.storage_from:
-        self.storage_from.set_logger(self.storage_to)
+      with StorageFromType(**kwargs_from, objects_to_sync_logger_with=[self.storage_to]) as self.storage_from:
         self.__common_part_of_constructor(**kwargs)
     elif self.storage_from and (not self.storage_to):
-      with StorageToType(**kwargs_to) as self.storage_to:
-        self.storage_to.set_logger(self.storage_from)
+      with StorageToType(**kwargs_to, objects_to_sync_logger_with=[self.storage_from]) as self.storage_to:
         self.__common_part_of_constructor(**kwargs)
     else:
       with StorageFromType(**kwargs_from) as self.storage_from:
@@ -59,8 +57,7 @@ class Action2(ObjectWithLogger):
           self.storage_to = self.storage_from
           self.__common_part_of_constructor(**kwargs)
         else:
-          with StorageToType(**kwargs_to) as self.storage_to: 
-            self.storage_to.set_logger(self.storage_from)
+          with StorageToType(**kwargs_to, objects_to_sync_logger_with=[self.storage_from]) as self.storage_to: 
             self.__common_part_of_constructor(**kwargs)
 
   #################################################################################
@@ -71,9 +68,7 @@ class Action2(ObjectWithLogger):
   ###############################################################################
   def __common_part_of_constructor(self):
 
-    ObjectWithLogger.sync_loggers(self.storage_from, self, self.storage_to)
-
-    super().__init__(title = self._put_title_together())
+    super().__init__(title = self._put_title_together(), objects_to_sync_logger_with=[self.storage_from, self.storage_to])
 
     str_from = self.storage_from.str(self.root_path_from)
     str_to = self.storage_to.str(self.root_path_to)
@@ -141,7 +136,7 @@ class Action2(ObjectWithLogger):
           size_from = len(from_contents)
           size_to = size_from
         else:
-          size_from = self.storage_from.get_file_size(my_filename=file_from)
+          size_from, _ = self.storage_from.get_file_size_or_contents(filename=file_from)
           size_to   = 0
       elif file_from_doesnt_exist:
         status = FDStatus.RightOnly_or_Deleted
@@ -149,7 +144,8 @@ class Action2(ObjectWithLogger):
           self.storage_to._delete_file(file_to_2)
           size_from, size_to = 0, 0
         else:
-          size_from, size_to = 0, self.storage_to.get_file_size(my_filename=file_to_2)
+          size_from = 0
+          size_to, _ = self.storage_to.get_file_size_or_contents(filename=file_to_2)
       else:
         if self.change_if_both_exist:
           from_contents = self.storage_from.get_contents(file_from) 
