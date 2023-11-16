@@ -1,9 +1,24 @@
 from datetime import datetime
+from enum import Enum
 
 from settings import log_file
-from StorageLocal import StorageLocal
 from utils import put_together_framed_message
 
+#################################################################################
+class FDStatus(Enum):
+  LeftOnly_or_New  = 0
+  RightOnly_or_Deleted = 1
+  Different_or_Updated = 2
+  Identical = 3
+  Error     = 4
+
+#################################################################################
+class LogMessageType(Enum):
+  Basic = 0
+  Title = 1
+  Warning = 2
+  Error = 3
+  
 #################################################################################
 class Logger:
 
@@ -22,7 +37,8 @@ class Logger:
     self.log_print_basic(msg)
 
   ###############################################################################
-  def __init__(self, title, log_filename=log_file, log_storage=None, log_StorageType=None, log_storage_kwargs={}):
+  def __init__(self, log_filename=log_file, log_storage=None, log_StorageType=None, log_storage_kwargs={}):
+    from StorageLocal import StorageLocal
     if log_storage is None and log_StorageType is None and (not log_storage_kwargs):
       log_StorageType = StorageLocal
       
@@ -36,9 +52,8 @@ class Logger:
     self.log_text = []
     self.log_filename = log_filename
     self.level_start_times_dirnames = []
-    self.log_print_framed(message=title, char='*')
     self.error_count = 0
-    self.flush()
+    #self.flush()
 
   ###############################################################################
   def __del__(self):
@@ -128,19 +143,4 @@ class Logger:
     if dir_details_df is not None:
       self.log_print_df(df=dir_details_df, extra_prefix=' ' * (len(prefix) - 2) + '╠═ ', last_chars_last_prefix='╚═ ')
 
-
-###################################################################################
-class ObjectWithLogger:
-  #################################################################################
-  def __init__(self, logger):
-    self.__logger = logger
-    assert isinstance(logger, Logger)
-
-  #################################################################################
-  def log_warning(self, message):
-    self.__logger.log_warning(message)
-
-  #################################################################################
-  def log_error(self, message):
-    self.__logger.log_error(message)
     

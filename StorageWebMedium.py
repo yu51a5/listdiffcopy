@@ -9,6 +9,7 @@ h.ignore_images = False # DOESN'T WORK
 
 from utils import put_together_framed_message, remove_char_and_after
 from StorageWeb import StorageWeb
+from Logger import Logger
 
 #################################################################################
 class StorageWebMedium(StorageWeb):
@@ -21,6 +22,8 @@ class StorageWebMedium(StorageWeb):
 
   ###############################################################################
   def __init__(self, logger=None):
+    if logger is not None:
+      assert isinstance(logger, Logger), f'{type(logger)}, {logger} is not an instance of Logger'
     super().__init__(logger=logger)
 
   ###############################################################################

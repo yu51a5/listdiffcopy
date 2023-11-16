@@ -1,25 +1,25 @@
-from ActionBase import ActionBase
+from ObjectWithLogger import ObjectWithLogger
+from Logger import Logger
 
 #################################################################################
-class Action1(ActionBase):
+class Action1(ObjectWithLogger):
 
   def __init__(self, title, StorageType, kwargs_storage, storage, path, func, **func_kwargs):
     
-    errors = ActionBase._check_storage_or_type(storage=storage, StorageType=StorageType, kwargs=kwargs_storage)
+    errors = Logger._check_storage_or_type(storage=storage, StorageType=StorageType, kwargs=kwargs_storage)
 
     assert not errors, '.\n'.join(['ERRORS:'] + errors)
 
-    def inner_func(a1, path, func):
-      a1.storage._logger = self
-      super().__init__(title=title + ' ' + a1.storage.str(path))
+    def inner_func(a1, path, func, storage_):
+      super().__init__(title=title + ' ' + a1.storage.str(path), objects_to_sync_logger_with=storage_)
       func(sa=a1, path=path, **func_kwargs)
 
     if StorageType:
       with StorageType(**kwargs_storage) as self.storage:
-        inner_func(a1=self, path=path, func=func)
+        inner_func(a1=self, path=path, func=func, storage_=self.storage)
     else:
       self.storage = storage
-      inner_func(a1=self, path=path, func=func)
+      inner_func(a1=self, path=path, func=func, storage_=self.storage)
 
 ###############################################################################
 def list(path, storage=None, StorageType=None, kwargs_storage={}, enforce_size_fetching=True):

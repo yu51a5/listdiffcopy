@@ -63,7 +63,7 @@ class StorageWeb(StorageBase):
     while urls:
       url = urls.pop(0)
       back_up_content, assets_urls, urls_to_add, backup_name = self.url_to_backup_content_hrefs(url)
-      self._logger.log_print_basic(f'Analysing "{url}".\nResults saved as directory "{backup_name}"\n')
+      self.log_print_basic(f'Analysing "{url}".\nResults saved as directory "{backup_name}"\n')
       if do_same_root_urls:
         completed_urls.append(url)
         urls += [u for u in urls_to_add if u not in completed_urls and u.startswith(root_url)]

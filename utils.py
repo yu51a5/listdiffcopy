@@ -24,3 +24,11 @@ def remove_duplicates(a_list, transform_func=None):
 def find_duplicates(a_list):
   result = [x for n, x in enumerate(a_list) if a_list.index(x) < n]
   return result
+
+
+#################################################################################
+def creates_multi_index(index_1, index_2):
+  index_1_expanded = [i1  for i1 in index_1 for _ in index_2]
+  index_2_expanded = index_2 * len(index_1)
+  result = list(map(list, zip(index_1_expanded, index_2_expanded)))
+  return result

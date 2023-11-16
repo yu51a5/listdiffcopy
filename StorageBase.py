@@ -1,16 +1,8 @@
 import os
 import math
-from enum import Enum
 
-from Logger import ObjectWithLogger
-
-#################################################################################
-class FDStatus(Enum):
-  LeftOnly_or_New  = 0
-  RightOnly_or_Deleted = 1
-  Different_or_Updated = 2
-  Identical = 3
-  Error     = 4
+from ObjectWithLogger import ObjectWithLogger
+from Logger import FDStatus
 
 #################################################################################
 class StorageBase(ObjectWithLogger):
