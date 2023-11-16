@@ -21,7 +21,7 @@ class BackupMediumWebsite:
     external_urls_only = swm.url_or_urls_to_fake_directory(url_or_urls=url_or_urls, path=path, do_same_root_urls=True, check_other_urls=True)
 
     list(path=path, storage=swm, enforce_size_fetching=False)
-    compare(path_from=path, path_to=path, storage_from=swm, StorageToType=StorageType, kwargs_to=kwargs_storage)
+    synchronize(path_from=path, path_to=path, storage_from=swm, StorageToType=StorageType, kwargs_to=kwargs_storage)
 
     
     #sa = SomeAction1(title=f'Scrapping {"/n".join(urls)} -> ',  StorageType=StorageType, path=path, kwargs_storage=kwargs_storage, storage=None, )

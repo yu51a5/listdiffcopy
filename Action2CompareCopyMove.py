@@ -308,38 +308,30 @@ class Copy(Action2):
     
 #################################################################################
 def copy(*args, **kwargs):
-  with Copy(*args, **kwargs) as _:
-    pass
+  Copy(*args, **kwargs)
 
 def copy_and_rename(*args, **kwargs):
-  with Copy(*args, **kwargs) as _:
-    pass
+  Copy(*args, **kwargs)
 
 def move(*args, **kwargs):
-  with Copy(*args, **kwargs) as _:
-    pass
+  Copy(*args, **kwargs)
 
 def move_and_rename(*args, **kwargs):
-  with Copy(*args, **kwargs) as _:
-    pass
+  Copy(*args, **kwargs)
     
 #.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.
 
 def copy_file(*args, **kwargs):
-  with Copy(*args, **kwargs) as _:
-    pass
+  Copy(*args, **kwargs)
 
 def copy_file_and_rename(*args, **kwargs):
-  with Copy(*args, **kwargs) as _:
-    pass
+  Copy(*args, **kwargs)
 
 def move_file(*args, **kwargs):
-  with Copy(*args, **kwargs) as _:
-    pass
+  Copy(*args, **kwargs)
 
 def move_file_and_rename(*args, **kwargs):
-  with Copy(*args, **kwargs) as _:
-    pass
+  Copy(*args, **kwargs)
 
 #.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.
 
@@ -348,16 +340,13 @@ def copy_directory(*args, **kwargs):
     pass
 
 def copy_directory_and_rename(*args, **kwargs):
-  with Copy(*args, **kwargs) as _:
-    pass
+  Copy(*args, **kwargs)
 
 def move_directory(*args, **kwargs):
-  with Copy(*args, **kwargs) as _:
-    pass
+  Copy(*args, **kwargs)
 
 def move_directory_and_rename(*args, **kwargs):
-  with Copy(*args, **kwargs) as _:
-    pass
+  Copy(*args, **kwargs)
 
 #################################################################################
 class Synchronize(Action2):
@@ -377,6 +366,5 @@ class Synchronize(Action2):
 
 #################################################################################
 def synchronize(*args, **kwargs):
-  with Synchronize(*args, **kwargs) as _:
-    pass
+  Synchronize(*args, **kwargs)
   
