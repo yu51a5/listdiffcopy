@@ -21,6 +21,28 @@ class StorageWeb(StorageBase):
       return response.status_code
 
   ###############################################################################
+  def check_urls(self, urls, print_ok=False):
+    by_resp_code = {}
+    for url, pages_where_referenced in urls.items():
+      try:
+        response_code = StorageWeb.get_response_code(url)
+      except:
+        response_code = 418
+      if response_code in by_resp_code:
+        by_resp_code[response_code].append([url, pages_where_referenced])
+      else:
+        by_resp_code[response_code] = [[url, pages_where_referenced]]
+
+    for code, urls_pages in by_resp_code.items():
+      if code == 200:
+        if print_ok:
+          self.log_print_basic("OK URL:\n" + "\n".join([u for u, p in urls_pages]))
+      elif code == 403:
+        self.log_warning("URL that cannot be automatically checked (code 403):\n" + "\n".join([("\n" + u + ": this URL is referenced in:\n" + "\n".join(p)) for u, p in urls_pages]))
+      else:
+        self.log_error(f"URL check failed (code {code}):\n" + "\n".join([("\n" + u + ": this URL is referenced in:\n" + "\n".join(p)) for u, p in urls_pages]))
+    
+  ###############################################################################
   def get_contents(self, filename, length=None, use_content_not_text=None): # filename is url
     if filename in StorageWeb.__fake_files:
       return StorageWeb.__fake_files[filename]

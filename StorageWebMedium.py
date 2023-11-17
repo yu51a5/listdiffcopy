@@ -69,7 +69,7 @@ class StorageWebMedium(StorageWeb):
           urls_to_add[i] = "https://medium.com" + u
 
       url_following = os.path.join(os.path.dirname(url), 'following')
-      urls_to_add = [u for u in urls_to_add if not (u.startswith(url_following) or os.path.dirname(url).startswith(StorageWebMedium.transformer_for_comparison(u)))]
+      urls_to_add = [u for u in urls_to_add if not (u.startswith(url_following) or os.path.dirname(url).startswith(StorageWebMedium.transformer_for_comparison(u)) or (u.startswith('/m/signin')))]
   
       return back_up_content, assets_urls, urls_to_add, backup_name
     except Exception as e:

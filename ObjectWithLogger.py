@@ -36,21 +36,16 @@ class ObjectWithLogger:
     existing_loggers = [i for i, arg in enumerate(args) if arg.has_logger()]
     assert existing_loggers
     first_with_logger = args[existing_loggers[0]]
+    first_with_logger.__logger.flush()
     for arg in args:
-      arg.set_logger(first_with_logger)
+      if arg.__logger is None:
+        arg.__logger = first_with_logger.__logger 
+      else:
+        assert first_with_logger.is_my_logger_same_as(arg.__logger)
 
   #################################################################################
   def has_logger(self):
     return self.__logger is not None
-    
-  #################################################################################
-  def set_logger(self, another_objest_with_logger):
-    assert isinstance(another_objest_with_logger, ObjectWithLogger)
-    assert isinstance(self, ObjectWithLogger)
-    if self.__logger is None:
-      self.__logger = another_objest_with_logger.__logger 
-    else:
-      assert another_objest_with_logger.is_my_logger_same_as(self.__logger)
 
   #################################################################################
   def is_my_logger_same_as(self, another_logger):
