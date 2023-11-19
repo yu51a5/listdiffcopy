@@ -1,8 +1,8 @@
-from logging_config import set_up_logger
-import logging
+from logging_config import get_logger
 
-logger = logging.getLogger(__name__)
-set_up_logger(logger)
+logger = get_logger(__name__)
 
+logger.debug("An debug")
 logger.info("An info")
 logger.warning("A warning")
+logger.error("A error")
