@@ -1,8 +1,8 @@
 
 
 ###############################################################################
-def put_together_framed_message(message, char='*'):
-  chars = char * (len(message) + 6)
+def put_together_framed_message(message, char='*', max_chars=60):
+  chars = char * min(max_chars, len(message) + 6)
   result = '\n'.join(['', chars, char * 2 + ' ' + message + ' ' + char * 2, chars, ''])
   return result
 
