@@ -1,4 +1,4 @@
-from ObjectWithLogger import ObjectWithLogger
+from ObjectWithLogger2 import ObjectWithLogger
 from Logger import Logger
 
 #################################################################################

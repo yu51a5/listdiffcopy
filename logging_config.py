@@ -34,12 +34,11 @@ class ConsoleFormatter(logging.Formatter):
   def format(self, record):
     log_fmt = self.FORMATS[record.levelno]
     formatter = logging.Formatter(log_fmt)
-    print(dir(record))
     return formatter.format(record)
 
 
-def get_logger(log_name, add_date=True, add_uuid=True, log_dir='logs'):
-  logger = logging.getLogger(log_name)
+def get_logger(name, add_date=True, add_uuid=True, log_dir='logs'):
+  logger = logging.getLogger(name)
   logger.propagate = False
   logger.setLevel(logging.DEBUG) # the least offensive level that will be taken into account
   
@@ -54,7 +53,7 @@ def get_logger(log_name, add_date=True, add_uuid=True, log_dir='logs'):
 
   # create console handler with a higher log level
   for fname, level in (('log', logging.INFO), ('error', logging.WARNING)):
-    filename = log_name + filename_date + '_' + fname + filename_uuid + '.log'
+    filename = name + filename_date + '_' + fname + filename_uuid + '.log'
     if log_dir:
       filename = os.path.join(log_dir, filename)
     ch = logging.FileHandler(filename=filename, mode='a')
@@ -62,3 +61,44 @@ def get_logger(log_name, add_date=True, add_uuid=True, log_dir='logs'):
     logger.addHandler(ch)
 
   return logger
+
+#################################################################################
+#################################################################################
+class LoggerExtra:
+  ###############################################################################
+  def __init__(self):
+    self.__level_start_times_dirnames = []
+    self.__error_count = 0
+
+  ###############################################################################
+  def get_errors_count(self):
+    return self.__error_count
+
+  ###############################################################################
+  def increment_errors_count(self):
+    self.__error_count += 1
+    #assert "stopping here to show the full call stack"
+
+  ###############################################################################
+  def __to_at_now():
+    now_ = datetime.now()
+    at_now = now_.strftime("%H:%M:%S")
+    return now_, at_now
+
+  ###############################################################################
+  def log_enter_level(self, dirname):
+    now_, at_now = LoggerExtra.__to_at_now()
+    self.__level_start_times_dirnames.append((now_, dirname))
+    return at_now
+
+  ###############################################################################
+  def log_exit_level(self):
+    now_, at_now = LoggerExtra.__to_at_now()
+    start_time, dirname_ = self.__level_start_times_dirnames.pop(-1)
+    time_elapsed = now_ - start_time
+    return dirname_, at_now, time_elapsed
+
+  ###############################################################################
+  def get_level_depth(self):
+    result = len(self.__level_start_times_dirnames)
+    return result

@@ -14,9 +14,7 @@ class BackupMediumWebsite:
   
   def __init__(self, url_or_urls, path, storage=None, StorageType=None, kwargs_storage={}, do_same_root_urls=True, check_other_urls=True):
 
-    logger = Logger()
-
-    swm = StorageWebMedium(logger=logger)
+    swm = StorageWebMedium(logger_name=__name__)
 
     external_urls = swm.url_or_urls_to_fake_directory(url_or_urls=url_or_urls, path=path, do_same_root_urls=do_same_root_urls, check_other_urls=check_other_urls)
 

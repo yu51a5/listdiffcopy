@@ -6,7 +6,7 @@ import numpy as np
 from utils import creates_multi_index
 from Logger import FDStatus
 
-from ObjectWithLogger import ObjectWithLogger
+from ObjectWithLogger2 import ObjectWithLogger
 from Logger import Logger
 
 #################################################################################

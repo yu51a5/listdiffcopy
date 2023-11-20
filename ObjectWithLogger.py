@@ -67,13 +67,11 @@ class ObjectWithLogger:
 
   #################################################################################
   def log_error(self, message):
-    if Logger.DO_ERROR_THROWING_NOT_LOGGING:
-      raise Exception(message)
     self.__logger.log_error(message)
 
   #################################################################################
-  def log_print_basic(self, message):
-    self.__logger.log_print_basic(message)
+  def log_info(self, message):
+    self.__logger.log_info(message)
 
   #################################################################################
   def log_enter_level(self, *args, **kwargs):
@@ -82,10 +80,6 @@ class ObjectWithLogger:
   ###############################################################################
   def log_exit_level(self, *args, **kwargs):
     self.__logger.log_exit_level(*args, **kwargs)
-
-  ###############################################################################
-  def log_print_df(self, *args, **kwargs):
-    self.__logger.log_print_df(*args, **kwargs)
   
   ###############################################################################
   def print_files_df(self, data):
@@ -96,7 +90,7 @@ class ObjectWithLogger:
       for row_ in data:
         row_[-1] = self.status_names[row_[-1].value]
     df_files = pd.DataFrame(data, columns=self.columns_files_df[how_many_columns])
-    self.log_print_df(df_files, extra_prefix='╟──── ')
+    self.__logger.log_print_df(df_files, extra_prefix='╟──── ')
 
   ###############################################################################
   def _list_files_directories_recursive(self, storage, dir_to_list, enforce_size_fetching, message2=''):

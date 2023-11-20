@@ -18,8 +18,8 @@ class StoragePCloud(StorageBase):
   ###############################################################################
   # Use eapi if the server is in Europe
   # For Pcloud token, see
-  def __init__(self, is_eapi=pcloud_urls_are_eapi, secret_name=None, logger=None, objects_to_sync_logger_with=[]):
-    super().__init__(constructor_kwargs=dict(is_eapi=is_eapi, secret_name=secret_name), logger=logger, objects_to_sync_logger_with=objects_to_sync_logger_with)
+  def __init__(self, is_eapi=pcloud_urls_are_eapi, secret_name=None, logger_name=None, objects_to_sync_logger_with=[]):
+    super().__init__(constructor_kwargs=dict(is_eapi=is_eapi, secret_name=secret_name), logger_name=logger_name, objects_to_sync_logger_with=objects_to_sync_logger_with)
     self.token = self._find_secret_components(1, secret_name=secret_name)[0]
     self.url = StoragePCloud.base_url[is_eapi]
 

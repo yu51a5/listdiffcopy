@@ -1,3 +1,1 @@
-#import medium_backup
-
-import logger2
+import medium_backup

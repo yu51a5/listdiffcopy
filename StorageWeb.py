@@ -12,8 +12,8 @@ class StorageWeb(StorageBase):
   __name_content_type_is_content = {}
     
   ###############################################################################
-  def __init__(self, logger=None, objects_to_sync_logger_with=[]):
-    super().__init__(constructor_kwargs={}, logger=logger, objects_to_sync_logger_with=objects_to_sync_logger_with)
+  def __init__(self, logger_name=None, objects_to_sync_logger_with=[]):
+    super().__init__(constructor_kwargs={}, logger_name=logger_name, objects_to_sync_logger_with=objects_to_sync_logger_with)
 
   ###############################################################################
   def get_response_code(url):
@@ -36,7 +36,7 @@ class StorageWeb(StorageBase):
     for code, urls_pages in by_resp_code.items():
       if code == 200:
         if print_ok:
-          self.log_print_basic("OK URL:\n" + "\n".join([u for u, p in urls_pages]))
+          self.log_info("OK URL:\n" + "\n".join([u for u, p in urls_pages]))
       elif code == 403:
         self.log_warning("URL that cannot be automatically checked (code 403):\n" + "\n".join([("\n" + u + ": this URL is referenced in:\n" + "\n".join(p)) for u, p in urls_pages]))
       else:
@@ -85,7 +85,7 @@ class StorageWeb(StorageBase):
     while urls:
       url = urls.pop(0)
       back_up_content, assets_urls, urls_to_add, backup_name = self.url_to_backup_content_hrefs(url)
-      self.log_print_basic(f'Analysing "{url}".\nResults saved as directory "{backup_name}"\n')
+      self.log_info(f'Analysing "{url}".\nResults saved as directory "{backup_name}"\n')
       if do_same_root_urls:
         completed_urls.append(url)
         urls += [u for u in urls_to_add if u not in completed_urls and u.startswith(root_url)]
