@@ -1,10 +1,16 @@
-import os
-import math
 import pandas as pd
-import numpy as np
+from enum import Enum
 
-from Logger import Logger, FDStatus
-from utils import creates_multi_index
+from utils import creates_multi_index, put_together_framed_message
+from logging_config import get_logger, LoggerExtra
+
+#################################################################################
+class FDStatus(Enum):
+  LeftOnly_or_New = 0
+  RightOnly_or_Deleted = 1
+  Different_or_Updated = 2
+  Identical = 3
+  Error = 4
 
 #################################################################################
 class ObjectWithLogger:
@@ -15,15 +21,18 @@ class ObjectWithLogger:
   index_listing_df = ["First level", "Total"]
 
 ###################################################################################
-  def __init__(self, logger=None, objects_to_sync_logger_with=[], title=None):
-    if logger is not None:
-      assert isinstance(logger, Logger) or (logger is None), f'{type(logger)}, {logger} is not an instance of Logger'
+  def __init__(self, logger_name=None, objects_to_sync_logger_with=[], title=None):
+    assert bool(logger_name) or bool(objects_to_sync_logger_with), "You must specify either a logger name or objects to sync it with"
 
-    self.__logger = logger
-    if Logger.DO_ERROR_THROWING_NOT_LOGGING:
-      return
+    if logger_name is not None:
+      self.__logger = get_logger(name=logger_name)
+      self.__logger_extra = LoggerExtra()
+    else:
+      self.__logger = None
+      self.__logger_extra = None
+    
     ObjectWithLogger.sync_loggers(*([self] + objects_to_sync_logger_with))
-      
+
     if title:
       self.log_title(title)
     if self.status_names:
@@ -32,14 +41,15 @@ class ObjectWithLogger:
   #################################################################################
   def sync_loggers(*args):
     not_owl = [arg for arg in args if not isinstance(arg, ObjectWithLogger)]
-    assert not not_owl, f'{not_owl}'
+    assert not not_owl, f"{not_owl} don't derive from ObjectWithLogger"
     existing_loggers = [i for i, arg in enumerate(args) if arg.has_logger()]
     assert existing_loggers
     first_with_logger = args[existing_loggers[0]]
-    first_with_logger.__logger.flush()
+
     for arg in args:
       if arg.__logger is None:
         arg.__logger = first_with_logger.__logger 
+        arg.__logger_extra = first_with_logger.__logger_extra 
       else:
         assert first_with_logger.is_my_logger_same_as(arg.__logger)
 
@@ -54,33 +64,75 @@ class ObjectWithLogger:
     return l is another_logger, f'{l} {another_logger}'
 
   #################################################################################
-  def get_errors_count(self):
-    return  self.__logger.get_errors_count()
-    
-  #################################################################################
   def log_title(self, title):
-    self.__logger.log_print_framed(message=title, char='*')
-    
-  #################################################################################
-  def log_warning(self, message):
-    self.__logger.log_warning(message)
-
-  #################################################################################
-  def log_error(self, message):
-    self.__logger.log_error(message)
-
-  #################################################################################
-  def log_info(self, message):
-    self.__logger.log_info(message)
-
-  #################################################################################
-  def log_enter_level(self, *args, **kwargs):
-    self.__logger.log_enter_level(*args, **kwargs)
+    msg = put_together_framed_message(message=title, char='*')
+    self.log_info(msg)
 
   ###############################################################################
-  def log_exit_level(self, *args, **kwargs):
-    self.__logger.log_exit_level(*args, **kwargs)
-  
+  def get_errors_count(self):
+    return self.__logger_extra.get_errors_count()
+
+  ###############################################################################
+  def log_critical(self, message):
+    self.__logger.critical(message)
+    self.__logger_extra.increment_errors_count()
+
+  ###############################################################################
+  def log_error(self, message):
+    self.__logger.error(message)
+    self.__logger_extra.increment_errors_count()
+
+  ###############################################################################
+  def log_warning(self, message):
+    self.__logger.warning(message)
+
+  ###############################################################################
+  def log_info(self, message):
+    self.__logger.info(message)
+
+  ###############################################################################
+  def log_enter_level(self, dirname, message_to_print, message2=''):
+    at_now = self.__logger_extra.log_enter_level(dirname=dirname)
+    self.__log_print(message_to_print + ' directory ', dirname, message2, at_now)
+
+  ###############################################################################
+  def log_exit_level(self, dir_details_df=None):
+    dirname_, at_now, time_elapsed = self.__logger_extra.log_exit_level()
+    self.__log_print('exited directory ', dirname_, at_now, 'time elapsed:', time_elapsed, 
+                   dir_details_df=dir_details_df)
+
+  ###############################################################################
+  def _df_to_str(self, df, extra_prefix, last_chars_last_prefix=''):
+    result = ''
+    if (df is None) or df.index.empty:
+      return result
+    df_str = df.to_string().split('\n')
+    level = self.__logger_extra.get_level_depth()
+    prefix = '║' * (level - 1) + extra_prefix
+    for i, df_str_ in enumerate(df_str):
+      if i == (len(df_str) - 1) and last_chars_last_prefix:
+        prefix = prefix[:-len(last_chars_last_prefix)] + last_chars_last_prefix
+      result += prefix + df_str_
+    return result
+
+  ###############################################################################
+  def __log_print(self, message0, name, *args, dir_details_df=None):
+
+    level = self.__logger_extra.get_level_depth()
+
+    prefix = '╟──── '
+    if 'dir' in message0:
+      prefix = prefix.replace('─', '═')
+      prefix = ('╚' if 'exit' in message0.lower() else ('╠' if 'DELETED' in message0 else '╔')) + prefix[1:]
+      if message0.lower().startswith('exited') and (dir_details_df is not None):
+        prefix = prefix[:-2] + '╦ ' 
+
+    # boxy symbols https://www.ncbi.nlm.nih.gov/staff/beck/charents/unicode/2500-257F.html
+    string_ = '║' * (level - 1) + prefix + message0 + '`' + name + '` ' + ' '.join([str(a) for a in args if a])
+    string_ += self._df_to_str(df=dir_details_df, extra_prefix=' ' * (len(prefix) - 2) + '╠═ ', last_chars_last_prefix='╚═ ')
+
+    self.log_info(string_)
+
   ###############################################################################
   def print_files_df(self, data):
     if not data:
@@ -90,41 +142,5 @@ class ObjectWithLogger:
       for row_ in data:
         row_[-1] = self.status_names[row_[-1].value]
     df_files = pd.DataFrame(data, columns=self.columns_files_df[how_many_columns])
-    self.__logger.log_print_df(df_files, extra_prefix='╟──── ')
-
-  ###############################################################################
-  def _list_files_directories_recursive(self, storage, dir_to_list, enforce_size_fetching, message2=''):
-  
-    self.log_enter_level(dirname=dir_to_list, message_to_print='Listing', message2=message2)
-    
-    files_, dirs_ = storage.get_filenames_and_directories(dir_to_list)
-
-    df =  [[os.path.basename(f), storage.fetch_file_size(f)] for f in files_] if enforce_size_fetching \
-    else [[os.path.basename(f)] for f in files_]
-    self.print_files_df(data =df)
-
-    total_size_first_level = sum([dfr[1] for dfr in df]) if enforce_size_fetching else math.nan
-    totals = np.array([total_size_first_level, len(files_), len(dirs_)])
-    
-    dirs_dict = {}  
-    for dir_ in dirs_:
-      dir_totals, dir_files, dir_dirs_dict = self._list_files_directories_recursive(storage=storage, dir_to_list=dir_, enforce_size_fetching=enforce_size_fetching)
-      totals += dir_totals
-      dirs_dict[dir_] = (dir_files, dir_dirs_dict)
-    
-    table_stats = [[total_size_first_level, len(files_), len(dirs_)], 
-                   totals.tolist()]
-
-    kwargs = {}
-    if enforce_size_fetching or dirs_:
-      kwargs['dir_details_df'] = pd.DataFrame(table_stats, index=self.index_listing_df, columns=self.columns_df)
-    self.log_exit_level(**kwargs)
-  
-    return totals, files_, dirs_dict
-    
-###############################################################################
-  def _list_a_file(self, storage, file_path, enforce_size_fetching):
-    file_info = storage.fetch_file_info(filename=file_path, enforce_size_fetching=enforce_size_fetching)
-    self.print_files_df(data = [[os.path.basename(file_path), file_info['size']]] if enforce_size_fetching 
-                          else [[os.path.basename(file_path)] ])
-        
+    df_str = self._df_to_str(df_files, extra_prefix='╟──── ')
+    self.log_info(df_str)

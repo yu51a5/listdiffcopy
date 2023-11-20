@@ -1,13 +1,26 @@
 import os
 import math
+import pandas as pd
+import numpy as np
 
-from ObjectWithLogger2 import ObjectWithLogger
-from Logger import FDStatus
+from ObjectWithLogger import ObjectWithLogger, FDStatus
 
 #################################################################################
 class StorageBase(ObjectWithLogger):
 
   __txt_chrs = set([chr(i) for i in range(32, 127)] + list("\n\r\t\b"))
+
+  ###############################################################################
+  def _check_storage_or_type(storage, StorageType, kwargs):
+    errors = []
+    if (storage is None) == (StorageType is None):
+      errors.append(f"storage_from {storage} and StorageType {StorageType} mustn't be both None or both not None")
+    if StorageType is None:
+      if kwargs:
+        errors.append(f"StorageType is not provided, but arguments {kwargs} are")
+    elif not issubclass(StorageType, StorageBase):
+      errors.append(f"StorageType {StorageType} is not a subclass of StorageBase")
+    return errors
 
   #################################################################################
   def __init__(self, constructor_kwargs, logger_name=None, objects_to_sync_logger_with=[]):
@@ -194,11 +207,6 @@ class StorageBase(ObjectWithLogger):
   def check_directory_exists(self, path):
     result = self._check_directory_exists_or_create(path, create_if_doesnt_exist=False)
     return result
-
-  ###############################################################################
-  def create_directory(self, path):
-    dir_didnt_exist_before = self._check_directory_exists_or_create(path, create_if_doesnt_exist=True)
-    return dir_didnt_exist_before
   
   ###############################################################################
   def check_file_exists(self, path):  
@@ -360,3 +368,82 @@ class StorageBase(ObjectWithLogger):
       return FDStatus.Different_or_Updated
       return FDStatus.Identical
       return FDStatus.Error
+
+  ###############################################################################
+  def _list_files_directories_recursive(self, dir_to_list, enforce_size_fetching, message2=''):
+
+    self.log_enter_level(dirname=dir_to_list, message_to_print='Listing', message2=message2)
+
+    files_, dirs_ = self.get_filenames_and_directories(dir_to_list)
+
+    df =  [[os.path.basename(f), self.fetch_file_size(f)] for f in files_] if enforce_size_fetching \
+    else [[os.path.basename(f)] for f in files_]
+    self.print_files_df(data =df)
+
+    total_size_first_level = sum([dfr[1] for dfr in df]) if enforce_size_fetching else math.nan
+    totals = np.array([total_size_first_level, len(files_), len(dirs_)])
+
+    dirs_dict = {}  
+    for dir_ in dirs_:
+      dir_totals, dir_files, dir_dirs_dict = self._list_files_directories_recursive(dir_to_list=dir_, enforce_size_fetching=enforce_size_fetching)
+      totals += dir_totals
+      dirs_dict[dir_] = (dir_files, dir_dirs_dict)
+
+    table_stats = [[total_size_first_level, len(files_), len(dirs_)], 
+                   totals.tolist()]
+
+    kwargs = {}
+    if enforce_size_fetching or dirs_:
+      kwargs['dir_details_df'] = pd.DataFrame(table_stats, index=self.index_listing_df, columns=self.columns_df)
+    self.log_exit_level(**kwargs)
+
+    return totals, files_, dirs_dict
+
+###############################################################################
+  def _list_a_file(self, file_path, enforce_size_fetching):
+    file_info = self.fetch_file_info(filename=file_path, enforce_size_fetching=enforce_size_fetching)
+    self.print_files_df(data = [[os.path.basename(file_path), file_info['size']]] if enforce_size_fetching 
+                          else [[os.path.basename(file_path)] ])
+
+###############################################################################
+  def _list(self, path, enforce_size_fetching):
+    path_exist_is_dir_not_file = self.check_path_exist_is_dir_not_file(path)
+    if path_exist_is_dir_not_file is True:
+      self._list_files_directories_recursive(dir_to_list=path, enforce_size_fetching=enforce_size_fetching)
+    elif path_exist_is_dir_not_file is False:
+      self._list_a_file(file_path=path, enforce_size_fetching=enforce_size_fetching)  
+    elif path_exist_is_dir_not_file == "both":
+      self.log_error(f"{self.str(path)} is both a file and a directory")
+    else:
+      self.log_error(f"{self.str(path)} does not exist")  
+
+###############################################################################
+  def list(self, path, enforce_size_fetching):
+    self.log_title(title=f'Listing {self.str(path)}')
+    self._list_path(path=path, enforce_size_fetching=enforce_size_fetching)
+
+###############################################################################
+  def _delete(self, path):
+    path_exist_is_dir_not_file = self.check_path_exist_is_dir_not_file(path)
+    if path_exist_is_dir_not_file is True:
+      self.delete_directory(path)
+    elif path_exist_is_dir_not_file is False:
+      self.delete_file(path)  
+    elif path_exist_is_dir_not_file == "both":
+      self.log_error(f"{self.str(path)} is both a file and a directory")
+    else:
+      self.log_error(f"{self.str(path)} does not exist")  
+
+###############################################################################
+  def delete(self, path):
+    self.log_title(title=f'Deleting {self.str(path)}')
+    self._delete(path=path)
+
+###############################################################################
+  def create_directory(self, dir_name):
+    self.log_title(title=f'Creating {self.str(dir_name)}')
+    path_exist_is_dir_not_file = self.check_path_exist_is_dir_not_file(dir_name)
+    if path_exist_is_dir_not_file is not None:
+      self.log_warning(message=f"Skipping because {self.str(dir_name)} exists")
+    else:
+      self._check_directory_exists_or_create(dir_name, create_if_doesnt_exist=True)

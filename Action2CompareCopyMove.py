@@ -4,10 +4,8 @@ import pandas as pd
 import numpy as np
 
 from utils import creates_multi_index
-from Logger import FDStatus
-
-from ObjectWithLogger2 import ObjectWithLogger
-from Logger import Logger
+from ObjectWithLogger import FDStatus, ObjectWithLogger
+from StorageBase import StorageBase
 
 #################################################################################
 class Action2(ObjectWithLogger):
@@ -30,10 +28,11 @@ class Action2(ObjectWithLogger):
 
     self.index_comp_df = pd.MultiIndex.from_tuples(creates_multi_index(self.index_listing_df, self.status_names))
 
-    errors = Logger._check_storage_or_type(storage=storage_from, StorageType=StorageFromType, kwargs=kwargs_from) \
-           + Logger._check_storage_or_type(storage=storage_to  , StorageType=StorageToType  , kwargs=kwargs_to)
+    errors = StorageBase._check_storage_or_type(storage=storage_from, StorageType=StorageFromType, kwargs=kwargs_from) \
+           + StorageBase._check_storage_or_type(storage=storage_to  , StorageType=StorageToType  , kwargs=kwargs_to)
 
-    assert not errors, '.\n'.join(['ERRORS:'] + errors)
+    if errors:
+      self.log_critical(errors)
 
     self.storage_from = storage_from if storage_from else None
     self.storage_to   = storage_to   if storage_to   else None
@@ -97,7 +96,7 @@ class Action2(ObjectWithLogger):
       if self.require_path_to:
         self.log_error(f"{str_to} does not exist")
       elif path_exist_is_dir_not_file_from is True:
-        self.storage_to.create_directory(self.root_path_to)
+        self.storage_to._create_directory(self.root_path_to)
         path_exist_is_dir_not_file_to = True
         
     if (path_exist_is_dir_not_file_from in [True, False]) and (path_exist_is_dir_not_file_to in [True, False]) and (path_exist_is_dir_not_file_from is not path_exist_is_dir_not_file_to):
@@ -242,7 +241,7 @@ class Action2(ObjectWithLogger):
           subdir_info_total = self._action_files_directories_recursive(common_dir_appendix=os.path.join(common_dir_appendix, basename_from))
           dir_info_total += subdir_info_total
         else:
-          subdir_list_total, _, _ = self._list_files_directories_recursive(storage=self.storage_from, dir_to_list=dir_from, message2=f"Exists in {_dir_from} but not in {_dir_to}", enforce_size_fetching=False) 
+          subdir_list_total, _, _ = self.storage_from._list_files_directories_recursive(dir_to_list=dir_from, message2=f"Exists in {_dir_from} but not in {_dir_to}", enforce_size_fetching=False) 
           dir_info_total[0] += subdir_list_total
         id_from += 1
       elif (id_from == 0) or (basename_to < basename_from):
@@ -252,7 +251,7 @@ class Action2(ObjectWithLogger):
           self.storage_to._delete_directory(dir_to)
           dir_info_first_level[1] += np.array([math.nan] * 3)
         else:
-          subdir_list_total, _, _ = self._list_files_directories_recursive(storage=self.storage_to, dir_to_list=dir_to, message2=f"Exists in {_dir_to} but not in {_dir_from}", enforce_size_fetching=False)
+          subdir_list_total, _, _ = self.storage_to._list_files_directories_recursive(dir_to_list=dir_to, message2=f"Exists in {_dir_to} but not in {_dir_from}", enforce_size_fetching=False)
           dir_info_total[1] += subdir_list_total
         id_to += 1  
       elif (basename_from == basename_to):

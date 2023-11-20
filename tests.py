@@ -5,7 +5,7 @@ from StorageSFTP import StorageSFTP
 from StorageGitHub import StorageGitHub
 from StoragePCloud import StoragePCloud
 
-from Action1 import list_directory, rename_file, delete_directory, rename_directory, delete_file
+from Action1 import list, rename, delete
 from Action2 import compare, synchronize, copy
 
 # with cProfile.Profile() as pr:
@@ -36,7 +36,7 @@ compare(StoragePCloud, 'My Pictures', StoragePCloud, 'aa/My_Pictures')
 compare(StoragePCloud, 'My Music', StoragePCloud, 'aa/My_Music')
 copy(StoragePCloud, 'My Music', StoragePCloud, 'aa/My_Music')
 
-list_directory(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/themes/')
+list(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/themes/')
 
 
 synchronize(StoragePCloud, 'aa', StorageGitHub, 'a')
@@ -46,14 +46,14 @@ dirs_with_files = [d for d in dirs if len(dirs[d][0]) >= 1]
 assert len(dirs_with_files) >= 3
 assert len(dirs[dirs_with_files[0]][0]) >=2
 
-delete_file(StoragePCloud, dirs[dirs_with_files[0]][0][1])
-delete_directory(StoragePCloud, dirs_with_files[2])
+delete(StoragePCloud, dirs[dirs_with_files[0]][0][1])
+delete(StoragePCloud, dirs_with_files[2])
 
 synchronize(StorageGitHub, 'a', StoragePCloud, 'aa')
 compare(StorageGitHub, 'a', StoragePCloud, 'aa')
 
-rename_file(StoragePCloud, dirs[dirs_with_files[0]][0][0], dirs[dirs_with_files[0]][0][1])
-rename_directory(StoragePCloud, dirs_with_files[1], dirs_with_files[2])
+rename(StoragePCloud, dirs[dirs_with_files[0]][0][0], dirs[dirs_with_files[0]][0][1])
+rename(StoragePCloud, dirs_with_files[1], dirs_with_files[2])
 
 synchronize(StorageGitHub, 'a', StoragePCloud, 'aa')
 compare(StorageGitHub, 'a', StoragePCloud, 'aa')
