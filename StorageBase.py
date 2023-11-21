@@ -420,7 +420,7 @@ class StorageBase(ObjectWithLogger):
 ###############################################################################
   def list(self, path, enforce_size_fetching):
     self.log_title(title=f'Listing {self.str(path)}')
-    self._list_path(path=path, enforce_size_fetching=enforce_size_fetching)
+    self._list(path=path, enforce_size_fetching=enforce_size_fetching)
 
 ###############################################################################
   def _delete(self, path):

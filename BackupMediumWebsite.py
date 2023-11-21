@@ -17,8 +17,7 @@ class BackupMediumWebsite:
 
     external_urls = swm.url_or_urls_to_fake_directory(url_or_urls=url_or_urls, path=path, do_same_root_urls=do_same_root_urls, check_other_urls=check_other_urls)
 
-    swm.list(path)
-    assert 5 > 6
+    swm.list(path, enforce_size_fetching=False)
 
     if check_other_urls:
       swm.check_urls(external_urls, print_ok=True)

@@ -82,7 +82,7 @@ class LoggerExtra:
   ###############################################################################
   def __to_at_now():
     now_ = datetime.now()
-    at_now = now_.strftime("%H:%M:%S")
+    at_now = now_.strftime("at %H:%M:%S")
     return now_, at_now
 
   ###############################################################################

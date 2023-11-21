@@ -88,6 +88,8 @@ class ObjectWithLogger:
 
   ###############################################################################
   def log_info(self, message):
+    #message_lines = message.split('\n')
+    #for ml in message_lines:
     self.__logger.info(message)
 
   ###############################################################################
@@ -103,17 +105,17 @@ class ObjectWithLogger:
 
   ###############################################################################
   def _df_to_str(self, df, extra_prefix, last_chars_last_prefix=''):
-    result = ''
     if (df is None) or df.index.empty:
-      return result
+      return ''
     df_str = df.to_string().split('\n')
     level = self.__logger_extra.get_level_depth()
-    prefix = '║' * (level - 1) + extra_prefix
+    prefix = '║' * level + extra_prefix
+    result = []
     for i, df_str_ in enumerate(df_str):
       if i == (len(df_str) - 1) and last_chars_last_prefix:
         prefix = prefix[:-len(last_chars_last_prefix)] + last_chars_last_prefix
-      result += prefix + df_str_
-    return result
+      result += [prefix + df_str_]
+    return '\n'.join(result)
 
   ###############################################################################
   def __log_print(self, message0, name, *args, dir_details_df=None):
@@ -124,12 +126,16 @@ class ObjectWithLogger:
     if 'dir' in message0:
       prefix = prefix.replace('─', '═')
       prefix = ('╚' if 'exit' in message0.lower() else ('╠' if 'DELETED' in message0 else '╔')) + prefix[1:]
-      if message0.lower().startswith('exited') and (dir_details_df is not None):
-        prefix = prefix[:-2] + '╦ ' 
+      if message0.lower().startswith('exited'):
+        level += 1
+        if (dir_details_df is not None):
+          prefix = prefix[:-2] + '╦ '
 
     # boxy symbols https://www.ncbi.nlm.nih.gov/staff/beck/charents/unicode/2500-257F.html
     string_ = '║' * (level - 1) + prefix + message0 + '`' + name + '` ' + ' '.join([str(a) for a in args if a])
-    string_ += self._df_to_str(df=dir_details_df, extra_prefix=' ' * (len(prefix) - 2) + '╠═ ', last_chars_last_prefix='╚═ ')
+    df_str = self._df_to_str(df=dir_details_df, extra_prefix=' ' * (len(prefix) - 2) + '╠═ ', last_chars_last_prefix='╚═ ')
+    if df_str:
+      string_ += '\n' + df_str
 
     self.log_info(string_)
 
@@ -142,5 +148,5 @@ class ObjectWithLogger:
       for row_ in data:
         row_[-1] = self.status_names[row_[-1].value]
     df_files = pd.DataFrame(data, columns=self.columns_files_df[how_many_columns])
-    df_str = self._df_to_str(df_files, extra_prefix='╟──── ')
+    df_str = self._df_to_str(df_files, extra_prefix='──── ')
     self.log_info(df_str)
