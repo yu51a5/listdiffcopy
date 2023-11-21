@@ -361,7 +361,7 @@ class StorageBase(ObjectWithLogger):
         return result
       except:
         self.log_error(f'Contents of {self.str(filename)} could not be set')
-        return FDStatus.Error
+        return math.nan
           
       return FDStatus.LeftOnly_or_New
       return FDStatus.RightOnly_or_Deleted

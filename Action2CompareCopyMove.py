@@ -231,10 +231,14 @@ class Action2(ObjectWithLogger):
       if id_from < 0:
         dir_from = dirs_from[id_from]
         basename_from = os.path.basename(dir_from)
+      else:
+        basename_from = None
       if id_to < 0:
         dir_to   = dirs_to[  id_to]
         basename_to   = os.path.basename(dir_to)
-      if (id_to == 0) or (basename_from < basename_to):
+      else:
+        basename_to = None
+      if (id_to == 0) or ((basename_from is not None) and (basename_to is not None) and (basename_from < basename_to)):
         dir_info_first_level[0][2] += 1
         if self.create_if_left_only:
           self.storage_to.create_directory_in_existing_directory(path=os.path.join(_dir_to, basename_from))
@@ -244,7 +248,7 @@ class Action2(ObjectWithLogger):
           subdir_list_total, _, _ = self.storage_from._list_files_directories_recursive(dir_to_list=dir_from, message2=f"Exists in {_dir_from} but not in {_dir_to}", enforce_size_fetching=False) 
           dir_info_total[0] += subdir_list_total
         id_from += 1
-      elif (id_from == 0) or (basename_to < basename_from):
+      elif (id_from == 0) or ((basename_from is not None) and (basename_to is not None) and (basename_to < basename_from)):
         dir_info_first_level[1][2] += 1
         if self.delete_if_right_only:
           self.log_mention_directory(dirname=dir_to, message_to_print="Deleting", message2=f"in {self.storage_to.str(_dir_to)}")
@@ -254,7 +258,7 @@ class Action2(ObjectWithLogger):
           subdir_list_total, _, _ = self.storage_to._list_files_directories_recursive(dir_to_list=dir_to, message2=f"Exists in {_dir_to} but not in {_dir_from}", enforce_size_fetching=False)
           dir_info_total[1] += subdir_list_total
         id_to += 1  
-      elif (basename_from == basename_to):
+      elif ((basename_from is not None) and (basename_to is not None) and (basename_from == basename_to)):
         id_from += 1
         id_to += 1
         
@@ -262,6 +266,8 @@ class Action2(ObjectWithLogger):
         dir_info_total += subdir_info_total
         is_identical = not any([any([c for c in s if c and c != math.nan]) for s in subdir_info_total[:-1]])
         dir_info_first_level[3 if is_identical else 2][2] += 1
+      else:
+        self.log_critical("Algo bug")
 
     dir_info_total += dir_info_first_level
   

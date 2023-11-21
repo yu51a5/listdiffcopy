@@ -7,7 +7,7 @@ BackupMediumWebsite(url_or_urls='https://medium.com/@real.zyxxy/about',
                     StorageType=StorageGitHub, 
                     path='medium', 
                     kwargs_storage={'secret_name':"medium_github_secret"}
-                    #, do_same_root_urls=False
+                    , do_same_root_urls=False
                     , check_other_urls=False
                    )
 

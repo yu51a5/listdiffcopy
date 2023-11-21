@@ -86,6 +86,11 @@ class LoggerExtra:
     return now_, at_now
 
   ###############################################################################
+  def get_at_now():
+    _, at_now = LoggerExtra.__to_at_now()
+    return at_now
+
+  ###############################################################################
   def log_enter_level(self, dirname):
     now_, at_now = LoggerExtra.__to_at_now()
     self.__level_start_times_dirnames.append((now_, dirname))

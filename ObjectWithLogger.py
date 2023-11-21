@@ -88,20 +88,23 @@ class ObjectWithLogger:
 
   ###############################################################################
   def log_info(self, message):
-    #message_lines = message.split('\n')
-    #for ml in message_lines:
     self.__logger.info(message)
 
   ###############################################################################
+  def log_mention_directory(self, dirname, message_to_print, message2):
+    at_now = LoggerExtra.get_at_now()
+    self.__log_print(f'{message_to_print} directory `{dirname}` {message2} {at_now}')
+  
+  ###############################################################################
   def log_enter_level(self, dirname, message_to_print, message2=''):
     at_now = self.__logger_extra.log_enter_level(dirname=dirname)
-    self.__log_print(message_to_print + ' directory ', dirname, message2, at_now)
+    self.__log_print(f'{message_to_print} directory `{dirname}` {message2} {at_now}')
 
   ###############################################################################
   def log_exit_level(self, dir_details_df=None):
     dirname_, at_now, time_elapsed = self.__logger_extra.log_exit_level()
-    self.__log_print('exited directory ', dirname_, at_now, 'time elapsed:', time_elapsed, 
-                   dir_details_df=dir_details_df)
+    self.__log_print(f'exited directory `{dirname_}` {at_now}, time elapsed: {time_elapsed}', 
+                       dir_details_df=dir_details_df)
 
   ###############################################################################
   def _df_to_str(self, df, extra_prefix, last_chars_last_prefix=''):
@@ -118,24 +121,22 @@ class ObjectWithLogger:
     return '\n'.join(result)
 
   ###############################################################################
-  def __log_print(self, message0, name, *args, dir_details_df=None):
+  def __log_print(self, message, dir_details_df=None):
 
     level = self.__logger_extra.get_level_depth()
 
-    prefix = '╟──── '
-    if 'dir' in message0:
-      prefix = prefix.replace('─', '═')
-      prefix = ('╚' if 'exit' in message0.lower() else ('╠' if 'DELETED' in message0 else '╔')) + prefix[1:]
-      if message0.lower().startswith('exited'):
-        level += 1
-        if (dir_details_df is not None):
-          prefix = prefix[:-2] + '╦ '
+    #prefix = '╟════ '
+
+    prefix = ('╚' if message.lower().startswith('exit') else ('╠' if message.lower().startswith('delet') else '╔')) + '════ '
+    if message.lower().startswith('exit'):
+      level += 1
+      if (dir_details_df is not None):
+        prefix = prefix[:-2] + '╦ '
 
     # boxy symbols https://www.ncbi.nlm.nih.gov/staff/beck/charents/unicode/2500-257F.html
-    string_ = '║' * (level - 1) + prefix + message0 + '`' + name + '` ' + ' '.join([str(a) for a in args if a])
-    df_str = self._df_to_str(df=dir_details_df, extra_prefix=' ' * (len(prefix) - 2) + '╠═ ', last_chars_last_prefix='╚═ ')
-    if df_str:
-      string_ += '\n' + df_str
+    string_ = '║' * (level - 1) + prefix + message
+    if dir_details_df is not None:
+      string_ += '\n' +  self._df_to_str(df=dir_details_df, extra_prefix=' ' * (len(prefix) - 2) + '╠═ ', last_chars_last_prefix='╚═ ')
 
     self.log_info(string_)
 
