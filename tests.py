@@ -40,7 +40,7 @@ list(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/themes/')
 
 
 synchronize(StoragePCloud, 'aa', StorageGitHub, 'a')
-_, files, dirs = list_directory(StoragePCloud, 'aa')
+_, files, dirs = list(StoragePCloud, 'aa')
 dirs_with_files = [d for d in dirs if len(dirs[d][0]) >= 1]
 
 assert len(dirs_with_files) >= 3

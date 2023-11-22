@@ -7,13 +7,16 @@ from StorageBase import StorageBase
 #################################################################################
 class StorageWeb(StorageBase):
 
-  __fake_directories = [{}, [], []]
-  __fake_files = {}
-  __name_content_type_is_content = {}
+  ###############################################################################
+  def reset(self):
+    self.__fake_directories = [{}, [], []]
+    self.__fake_files = {}
+    self.__name_content_type_is_content = {}
     
   ###############################################################################
   def __init__(self, logger_name=None, objects_to_sync_logger_with=[]):
     super().__init__(constructor_kwargs={}, logger_name=logger_name, objects_to_sync_logger_with=objects_to_sync_logger_with)
+    self.reset()
 
   ###############################################################################
   def get_response_code(url):
@@ -44,11 +47,11 @@ class StorageWeb(StorageBase):
     
   ###############################################################################
   def get_contents(self, filename, length=None, use_content_not_text=None): # filename is url
-    if filename in StorageWeb.__fake_files:
-      return StorageWeb.__fake_files[filename]
+    if filename in self.__fake_files:
+      return self.__fake_files[filename]
     with requests.get(filename) as response:
       if response.status_code == 200:
-        use_content = use_content_not_text if use_content_not_text is not None else StorageWeb.__name_content_type_is_content[filename]
+        use_content = use_content_not_text if use_content_not_text is not None else self.__name_content_type_is_content[filename]
         return response.content if use_content else (response.text[:length] if length else response.text)
       else:
         self.log_error(f'Downloading of {filename} failed, code {response.status_code}') 
@@ -73,6 +76,7 @@ class StorageWeb(StorageBase):
     
   ###############################################################################
   def url_or_urls_to_fake_directory(self, url_or_urls, path, do_same_root_urls=True, check_other_urls=True):
+    self.reset()
     urls = [url_or_urls] if isinstance(url_or_urls, str) else [s for s in url_or_urls]
     # removing duplicates
     urls = remove_duplicates(urls)
@@ -101,10 +105,10 @@ class StorageWeb(StorageBase):
       assets_urls = remove_duplicates(assets_urls)
       fake_filename_contents_text = {'source_'+backup_name+'.txt' : back_up_content}
 
-      StorageWeb.__fake_files.update({os.path.join(path, backup_name, k) : v for k, v in fake_filename_contents_text.items()})
+      self.__fake_files.update({os.path.join(path, backup_name, k) : v for k, v in fake_filename_contents_text.items()})
 
       root_folders = StorageBase.split_path_into_dirs_filename(path=os.path.join(path, backup_name))
-      dict_to_use = StorageWeb.__fake_directories
+      dict_to_use = self.__fake_directories
       for rf in root_folders:
         if rf not in dict_to_use[0]:
           dict_to_use[0][rf] = [{}, [], []]
@@ -113,8 +117,8 @@ class StorageWeb(StorageBase):
       dict_to_use[1] = assets_urls
       dict_to_use[2] = fake_filename_contents_text.keys()      
 
-      StorageWeb.__name_content_type_is_content.update({k: True for k in assets_urls})
-      StorageWeb.__name_content_type_is_content.update({k: False for k in fake_filename_contents_text})
+      self.__name_content_type_is_content.update({k: True for k in assets_urls})
+      self.__name_content_type_is_content.update({k: False for k in fake_filename_contents_text})
       
     return external_urls
 

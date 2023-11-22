@@ -3,10 +3,10 @@ import math
 import pandas as pd
 import numpy as np
 
-from ObjectWithLogger import ObjectWithLogger, FDStatus
+from LoggerObj import LoggerObj, FDStatus
 
 #################################################################################
-class StorageBase(ObjectWithLogger):
+class StorageBase(LoggerObj):
 
   __txt_chrs = set([chr(i) for i in range(32, 127)] + list("\n\r\t\b"))
 
@@ -283,7 +283,7 @@ class StorageBase(ObjectWithLogger):
     ffse = getattr(self, '_fetch_file_size_efficiently', None)
     if ffse is not None:
       my_contents = None
-      my_file_size = self.fetch_file_size(filename)
+      my_file_size = self._fetch_file_size_efficiently(filename)
     else:
       my_contents = self.get_contents(filename)
       my_file_size = len(my_contents)
@@ -346,28 +346,28 @@ class StorageBase(ObjectWithLogger):
       else: # it's a folder or both
         self.log_error(f'{self.str(filename)} exists, and it is a directory')
         return FDStatus.Error
-    except:
-      self.log_error(f'Contents of {self.str(filename)} could not be set')
+    except Exception as e:
+      self.log_error(f'Contents of {self.str(filename)} could not be set: {e}')
       return FDStatus.Error
     
-    ###############################################################################
-    def fetch_file_size(self, filename):
-      try:
-        ffse = getattr(self, '_fetch_file_size_efficiently', None)
-        if ffse:
-          result = ffse(filename=filename)
-        else:
-          result = len(self.get_contents(filename=filename))
-        return result
-      except:
-        self.log_error(f'Contents of {self.str(filename)} could not be set')
-        return math.nan
-          
-      return FDStatus.LeftOnly_or_New
-      return FDStatus.RightOnly_or_Deleted
-      return FDStatus.Different_or_Updated
-      return FDStatus.Identical
-      return FDStatus.Error
+  ###############################################################################
+  def fetch_file_size(self, filename):
+    try:
+      ffse = getattr(self, '_fetch_file_size_efficiently', None)
+      if ffse:
+        result = ffse(filename=filename)
+      else:
+        result = len(self.get_contents(filename=filename))
+      return result
+    except:
+      self.log_error(f'Contents of {self.str(filename)} could not be set')
+      return math.nan
+        
+    return FDStatus.LeftOnly_or_New
+    return FDStatus.RightOnly_or_Deleted
+    return FDStatus.Different_or_Updated
+    return FDStatus.Identical
+    return FDStatus.Error
 
   ###############################################################################
   def _list_files_directories_recursive(self, dir_to_list, enforce_size_fetching, message2=''):
@@ -376,8 +376,10 @@ class StorageBase(ObjectWithLogger):
 
     files_, dirs_ = self.get_filenames_and_directories(dir_to_list)
 
-    df =  [[os.path.basename(f), self.fetch_file_size(f)] for f in files_] if enforce_size_fetching \
-    else [[os.path.basename(f)] for f in files_]
+    if enforce_size_fetching:
+      df = [[os.path.basename(f), self.fetch_file_size(f)] for f in files_]
+    else:
+      df = [[os.path.basename(f)                         ] for f in files_]
     self.print_files_df(data =df)
 
     total_size_first_level = sum([dfr[1] for dfr in df]) if enforce_size_fetching else math.nan

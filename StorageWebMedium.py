@@ -74,4 +74,3 @@ class StorageWebMedium(StorageWeb):
       return back_up_content, assets_urls, urls_to_add, backup_name
     except Exception as e:
       raise Exception(f"Cannot back up '{url}': {e}")
-    

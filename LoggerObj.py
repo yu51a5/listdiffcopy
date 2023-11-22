@@ -1,7 +1,7 @@
 import pandas as pd
 from enum import Enum
 
-from utils import creates_multi_index, put_together_framed_message
+from utils import put_together_framed_message
 from logging_config import get_logger, LoggerExtra
 
 #################################################################################
@@ -13,35 +13,37 @@ class FDStatus(Enum):
   Error = 4
 
 #################################################################################
-class ObjectWithLogger:
+class LoggerObj:
 
   status_names = None
   columns_df = pd.MultiIndex.from_tuples([["Files",  "Size"],  ["Files", "How Many"], ["Directories", "How Many"]])
   columns_files_df = {i : ['File Name'] + ['File Size' + j for j in ([''] * (i - 2) if (i < 4) else [' L', ' R'])]+ (['File Status'] if i > 1 else []) for i in (1, 2, 3, 4)}
   index_listing_df = ["First level", "Total"]
 
+  default_logger_extra = (get_logger(name="log"), LoggerExtra())
+
 ###################################################################################
   def __init__(self, logger_name=None, objects_to_sync_logger_with=[], title=None):
-    assert bool(logger_name) or bool(objects_to_sync_logger_with), "You must specify either a logger name or objects to sync it with"
-
+    
     if logger_name is not None:
       self.__logger = get_logger(name=logger_name)
       self.__logger_extra = LoggerExtra()
+    elif not objects_to_sync_logger_with:
+      self.__logger = LoggerObj.default_logger_extra[0]
+      self.__logger_extra = LoggerObj.default_logger_extra[1]
     else:
       self.__logger = None
       self.__logger_extra = None
     
-    ObjectWithLogger.sync_loggers(*([self] + objects_to_sync_logger_with))
+    LoggerObj.sync_loggers(*([self] + objects_to_sync_logger_with))
 
     if title:
       self.log_title(title)
-    if self.status_names:
-      self.index_totals_df = pd.MultiIndex.from_tuples(creates_multi_index(self.index_listing_df, self.status_names))
 
   #################################################################################
   def sync_loggers(*args):
-    not_owl = [arg for arg in args if not isinstance(arg, ObjectWithLogger)]
-    assert not not_owl, f"{not_owl} don't derive from ObjectWithLogger"
+    not_owl = [arg for arg in args if not isinstance(arg, LoggerObj)]
+    assert not not_owl, f"{not_owl} don't derive from LoggerObj"
     existing_loggers = [i for i, arg in enumerate(args) if arg.has_logger()]
     assert existing_loggers
     first_with_logger = args[existing_loggers[0]]
@@ -59,7 +61,7 @@ class ObjectWithLogger:
 
   #################################################################################
   def is_my_logger_same_as(self, another_logger):
-    assert isinstance(self, ObjectWithLogger)
+    assert isinstance(self, LoggerObj)
     l = self.__logger
     return l is another_logger, f'{l} {another_logger}'
 
@@ -125,8 +127,6 @@ class ObjectWithLogger:
 
     level = self.__logger_extra.get_level_depth()
 
-    #prefix = '╟════ '
-
     prefix = ('╚' if message.lower().startswith('exit') else ('╠' if message.lower().startswith('delet') else '╔')) + '════ '
     if message.lower().startswith('exit'):
       level += 1
@@ -147,7 +147,7 @@ class ObjectWithLogger:
     how_many_columns = len(data[0])
     if isinstance(data[0][-1], FDStatus):
       for row_ in data:
-        row_[-1] = self.status_names[row_[-1].value]
+        row_[-1] = self.status_names_complete[row_[-1].value]
     df_files = pd.DataFrame(data, columns=self.columns_files_df[how_many_columns])
     df_str = self._df_to_str(df_files, extra_prefix='──── ')
     self.log_info(df_str)

@@ -22,6 +22,7 @@ class ConsoleFormatter(logging.Formatter):
   reset = "\x1b[0m"
 
   format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+  format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
   FORMATS = {
     logging.DEBUG: yellow + format + reset,
@@ -52,7 +53,7 @@ def get_logger(name, add_date=True, add_uuid=True, log_dir='logs'):
   logger.addHandler(ch)
 
   # create console handler with a higher log level
-  for fname, level in (('log', logging.INFO), ('error', logging.WARNING)):
+  for fname, level in (('all', logging.INFO), ('errors', logging.WARNING)):
     filename = name + filename_date + '_' + fname + filename_uuid + '.log'
     if log_dir:
       filename = os.path.join(log_dir, filename)
@@ -77,7 +78,7 @@ class LoggerExtra:
   ###############################################################################
   def increment_errors_count(self):
     self.__error_count += 1
-    #assert "stopping here to show the full call stack"
+    #assert not "stopping here to show the full call stack"
 
   ###############################################################################
   def __to_at_now():

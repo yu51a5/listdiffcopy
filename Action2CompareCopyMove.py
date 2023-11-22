@@ -4,11 +4,11 @@ import pandas as pd
 import numpy as np
 
 from utils import creates_multi_index
-from ObjectWithLogger import FDStatus, ObjectWithLogger
+from LoggerObj import FDStatus, LoggerObj
 from StorageBase import StorageBase
 
 #################################################################################
-class Action2(ObjectWithLogger):
+class Action2(LoggerObj):
 
   create_if_left_only = None
   delete_if_right_only = None
@@ -26,7 +26,8 @@ class Action2(ObjectWithLogger):
     self.root_path_from = path_from
     self.root_path_to = path_to
 
-    self.index_comp_df = pd.MultiIndex.from_tuples(creates_multi_index(self.index_listing_df, self.status_names))
+    self.status_names_complete = self.status_names + ['Error']
+    self.index_comp_df = pd.MultiIndex.from_tuples(creates_multi_index(self.index_listing_df, self.status_names_complete))
 
     errors = StorageBase._check_storage_or_type(storage=storage_from, StorageType=StorageFromType, kwargs=kwargs_from) \
            + StorageBase._check_storage_or_type(storage=storage_to  , StorageType=StorageToType  , kwargs=kwargs_to)
@@ -178,8 +179,8 @@ class Action2(ObjectWithLogger):
     _dir_to = os.path.join(self.root_path_to, common_dir_appendix) if common_dir_appendix else self.root_path_to
     files_to  , dirs_to   = self.storage_to.get_filenames_and_directories(_dir_to)
   
-    dir_info_first_level = np.zeros((4, 3), float)
-    dir_info_total = np.zeros((4, 3), float)
+    dir_info_first_level = np.zeros((5, 3), float)
+    dir_info_total = np.zeros((5, 3), float)
     # dir_info_first_level[3][0] = math.nan # no information about deleted files' size 
     
     if_from = -len(files_from)
@@ -371,5 +372,5 @@ class Synchronize(Action2):
 
 #################################################################################
 def synchronize(*args, **kwargs):
-  Synchronize(*args, **kwargs)
-  
+  s = Synchronize(*args, **kwargs)
+  return s.storage_from, s.storage_to 
