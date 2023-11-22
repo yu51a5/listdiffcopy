@@ -1,5 +1,5 @@
 from StorageWebMedium import StorageWebMedium
-from Action2CompareCopyMove import synchronize
+from StorageAction2 import synchronize
 from StorageBase import StorageBase
 from LoggerObj import LoggerObj
 

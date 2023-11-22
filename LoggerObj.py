@@ -4,6 +4,7 @@ from enum import Enum
 from utils import put_together_framed_message
 from logging_config import get_logger, LoggerExtra
 
+
 #################################################################################
 class FDStatus(Enum):
   LeftOnly_or_New = 0
@@ -13,11 +14,12 @@ class FDStatus(Enum):
   Error = 4
 
 #################################################################################
-class LoggerObj:
+_size_plus = {4: [' L', ' R'], 3: [''], 2: [''], 1: []}
 
+class LoggerObj:
   status_names = None
   columns_df = pd.MultiIndex.from_tuples([["Files",  "Size"],  ["Files", "How Many"], ["Directories", "How Many"]])
-  columns_files_df = {i : ['File Name'] + ['File Size' + j for j in ([''] * (i - 2) if (i < 4) else [' L', ' R'])]+ (['File Status'] if i > 1 else []) for i in (1, 2, 3, 4)}
+  columns_files_df = {i : ['File Name'] + ['File Size' + j for j in _size_plus[i]] + (['File Status'] if i > 2 else []) for i in (1, 2, 3, 4)}
   index_listing_df = ["First level", "Total"]
 
   default_logger_extra = (get_logger(name="log"), LoggerExtra())

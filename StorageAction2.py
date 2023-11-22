@@ -8,7 +8,7 @@ from LoggerObj import FDStatus, LoggerObj
 from StorageBase import StorageBase
 
 #################################################################################
-class Action2(LoggerObj):
+class StorageAction2(LoggerObj):
 
   create_if_left_only = None
   delete_if_right_only = None
@@ -279,7 +279,7 @@ class Action2(LoggerObj):
 
 
 #################################################################################
-class Compare(Action2):
+class Compare(StorageAction2):
 
   create_if_left_only = False
   delete_if_right_only = False
@@ -299,7 +299,7 @@ def compare(*args, **kwargs):
   Compare(*args, **kwargs)
 
 #################################################################################
-class Copy(Action2):
+class Copy(StorageAction2):
 
   create_if_left_only = True
   delete_if_right_only = False
@@ -357,7 +357,7 @@ def move_directory_and_rename(*args, **kwargs):
   Copy(*args, **kwargs)
 
 #################################################################################
-class Synchronize(Action2):
+class Synchronize(StorageAction2):
 
   create_if_left_only = True
   delete_if_right_only = True

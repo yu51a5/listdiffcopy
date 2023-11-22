@@ -5,8 +5,8 @@ from StorageSFTP import StorageSFTP
 from StorageGitHub import StorageGitHub
 from StoragePCloud import StoragePCloud
 
-from Action1 import list, rename, delete
-from Action2 import compare, synchronize, copy
+from storage_actions import list, rename, delete
+from StorageAction2 import compare, synchronize, copy
 
 # with cProfile.Profile() as pr:
 #with create_logging_object() as ll:

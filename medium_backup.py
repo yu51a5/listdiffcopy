@@ -5,7 +5,7 @@ from StorageGitHub import StorageGitHub
 from StorageBase import StorageBase
 
 kwargs = dict(url_or_urls='https://medium.com/@real.zyxxy/about', 
-             StorageType=StoragePCloud, 
+             StorageType=StorageLocal, 
              path='medium' 
              #, kwargs_storage={'secret_name': "default_pcloud_secret"}
              ) #  medium_github_secret
@@ -20,4 +20,3 @@ if False:
   backup_a_Medium_website(**kwargs, do_same_root_urls=False)
   backup_a_Medium_website(**kwargs)
   
-
