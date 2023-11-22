@@ -70,6 +70,8 @@ class Action2(LoggerObj):
 
     super().__init__(title = self._put_title_together(), objects_to_sync_logger_with=[self.storage_from, self.storage_to])
 
+    self.clear_errors_count()
+
     str_from = self.storage_from.str(self.root_path_from)
     str_to = self.storage_to.str(self.root_path_to)
     
@@ -164,8 +166,8 @@ class Action2(LoggerObj):
             if cont_to is None:
               cont_to = self.storage_to.get_contents(file_to_2) 
             status = FDStatus.Different_or_Updated if cont_from != cont_to else FDStatus.Identical
-    except:
-      self.log_error(f'{self.enter_123[0]} {self.enter_123[1]} {self.storage_from.str(file_from)} {self.storage_to.str(file_to)} {self.enter_123[1]} failed')
+    except Exception as e:
+      self.log_error(f'{self.enter_123[0]} {self.enter_123[1]} {self.storage_from.str(file_from)} {self.storage_to.str(file_to)} {self.enter_123[1]} failed, {e}')
     
     return [basename, size_from, size_to, status]
     

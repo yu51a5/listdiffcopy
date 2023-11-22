@@ -104,7 +104,7 @@ class StoragePCloud(StorageBase):
     contents_ = self.__post(url_addon='file_read', param_dict=dict(fd=id, count=size_))
     return contents_
     
-  def get_contents(self, filename, length=None):
+  def _get_contents(self, filename, length=None):
     contents_ = self._wrapper_with_id(filename=filename, func=self.__get_contents_inner, length=length)
     return contents_
 

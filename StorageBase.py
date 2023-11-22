@@ -154,7 +154,7 @@ class StorageBase(LoggerObj):
     self.__cached_directories_flat[dirname].update(param_dict)
     
   ###############################################################################
-  def get_contents(self, filename, length=None):
+  def _get_contents(self, filename, length=None):
     self.__please_override()
 
   ###############################################################################
@@ -262,8 +262,8 @@ class StorageBase(LoggerObj):
   
       return files_, directories_
   
-    except:
-      self.log_error(f'Filenames and directories in {self.str(dir_name)} could not be identified')
+    except Exception as e:
+      self.log_error(f'Filenames and directories in {self.str(dir_name)} could not be identified, {e}')
       return FDStatus.Error
       
   ###############################################################################
@@ -297,8 +297,8 @@ class StorageBase(LoggerObj):
                                                       source=self, 
                                                       source_filename=my_filename)
       return size_contents
-    except:
-      self.log_error(f'{self.str(my_filename)} could not be created from {source.str(source_filename)}')
+    except Exception as e:
+      self.log_error(f'{self.str(my_filename)} could not be created from {source.str(source_filename)}, {e}')
       return math.nan
   
   ###############################################################################
@@ -310,8 +310,8 @@ class StorageBase(LoggerObj):
       else:
         self.log_warning(f'{self.str(filename)} not found')
         return FDStatus.Error
-    except:
-      self.log_error(f'{self.str(filename)} could not be deleted')
+    except Exception as e:
+      self.log_error(f'{self.str(filename)} could not be deleted, {e}')
       return FDStatus.Error
     
   ###############################################################################
@@ -323,8 +323,8 @@ class StorageBase(LoggerObj):
       else:
         self.log_warning(f'{self.str(dirname)} not found')
         return FDStatus.Error
-    except:
-      self.log_error(f'{self.str(dirname)} could not be deleted')
+    except Exception as e:
+      self.log_error(f'{self.str(dirname)} could not be deleted, {e}')
       return FDStatus.Error
 
   ###############################################################################
@@ -349,7 +349,17 @@ class StorageBase(LoggerObj):
     except Exception as e:
       self.log_error(f'Contents of {self.str(filename)} could not be set: {e}')
       return FDStatus.Error
-    
+
+
+  ###############################################################################
+  def get_contents(self, filename):
+    try:
+      result = self._get_contents(filename=filename)
+      return result
+    except Exception as e:
+      self.log_error(f'Contents of {self.str(filename)} could not be obtained, {e}')
+      return math.nan
+  
   ###############################################################################
   def fetch_file_size(self, filename):
     try:
@@ -359,8 +369,8 @@ class StorageBase(LoggerObj):
       else:
         result = len(self.get_contents(filename=filename))
       return result
-    except:
-      self.log_error(f'Contents of {self.str(filename)} could not be set')
+    except Exception as e:
+      self.log_error(f'Contents of {self.str(filename)} could not be set, {e}')
       return math.nan
         
     return FDStatus.LeftOnly_or_New

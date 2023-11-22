@@ -17,14 +17,14 @@ class StorageGitHub(StorageBase):
 
     try:
       github_object = Github(self.token)
-    except:
-      raise Exception(f"Secret {secret_name} contains invalid GitHub token")
+    except Exception as e:
+      raise Exception(f"Secret {secret_name} contains invalid GitHub token, {e}")
     github_user = github_object.get_user()
     self.owner = github_user.login
     try:
       self.repo = github_user.get_repo(self.repo_name)
-    except GithubException:
-      raise Exception(f'ERROR! Repository {self.owner}/{self.repo_name} does not exist')
+    except GithubException as e:
+      raise Exception(f'ERROR! Repository {self.owner}/{self.repo_name} does not exist, {e}')
 
     self.headers = CaseInsensitiveDict()
     self.headers["Accept"] = "application/vnd.github.v3.raw"
@@ -61,7 +61,7 @@ class StorageGitHub(StorageBase):
     return all_files, all_directories
 
   ###############################################################################
-  def get_contents(self, filename, length=None):
+  def _get_contents(self, filename, length=None):
 
     if length:
       return bytes(b'')

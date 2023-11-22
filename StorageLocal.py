@@ -24,7 +24,7 @@ class StorageLocal(StorageBase):
     return files_, directories_
 
 ###############################################################################
-  def get_contents(self, filename, length=None):
+  def _get_contents(self, filename, length=None):
     f = open(filename, "r")
     return f.read()
 
@@ -34,7 +34,7 @@ class StorageLocal(StorageBase):
 
   ###############################################################################
   def _delete_directory(self, dirname):
-    shutil.rmtree(dirname=dirname)
+    shutil.rmtree(path=dirname)
 
   ###############################################################################
   def _create_directory(self, dirname):

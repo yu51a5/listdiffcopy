@@ -75,6 +75,10 @@ class LoggerObj:
     return self.__logger_extra.get_errors_count()
 
   ###############################################################################
+  def clear_errors_count(self):
+    self.__logger_extra.clear_errors_count()
+
+  ###############################################################################
   def log_critical(self, message):
     self.__logger.critical(message)
     self.__logger_extra.increment_errors_count()

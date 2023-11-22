@@ -76,6 +76,10 @@ class LoggerExtra:
     return self.__error_count
 
   ###############################################################################
+  def clear_errors_count(self):
+    self.__error_count = 0
+
+  ###############################################################################
   def increment_errors_count(self):
     self.__error_count += 1
     #assert not "stopping here to show the full call stack"
