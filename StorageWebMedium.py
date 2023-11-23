@@ -29,7 +29,7 @@ class StorageWebMedium(StorageWeb):
       backup_name = StorageWebMedium.transformer_for_comparison(os.path.basename(url))
       main_tag = 'article' if backup_name.lower() != 'about' else 'main'
       
-      response_text = self.get_contents(filename=url, use_content_not_text=False)
+      response_text = self.get_content(filename=url, use_content_not_text=False)
       soup = bs4.BeautifulSoup(response_text, 'html.parser')
       article_html = soup.find(main_tag)
   

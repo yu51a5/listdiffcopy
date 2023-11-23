@@ -46,7 +46,7 @@ class StorageWeb(StorageBase):
         self.log_error(f"URL check failed (code {code}):\n" + "\n".join([("\n" + u + ": this URL is referenced in:\n" + "\n".join(p)) for u, p in urls_pages]))
     
   ###############################################################################
-  def get_contents(self, filename, length=None, use_content_not_text=None): # filename is url
+  def get_content(self, filename, length=None, use_content_not_text=None): # filename is url
     if filename in self.__fake_files:
       return self.__fake_files[filename]
     with requests.get(filename) as response:

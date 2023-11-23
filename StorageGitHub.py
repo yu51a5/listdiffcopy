@@ -61,7 +61,7 @@ class StorageGitHub(StorageBase):
     return all_files, all_directories
 
   ###############################################################################
-  def _get_contents(self, filename, length=None):
+  def _get_content(self, filename, length=None):
 
     if length:
       return bytes(b'')
@@ -76,7 +76,7 @@ class StorageGitHub(StorageBase):
     #contents = [content, content_2]
     #print("checking contents", contents[0] == contents[1], filename)
     
-    #cont_raw = self.repo.get_contents(filename)
+    #cont_raw = self.repo.get_content(filename)
     #if not cont_raw.content:
     #  return cont_raw.content
     #content_ref = cont_raw.decoded_content # bytes
@@ -128,9 +128,9 @@ class StorageGitHub(StorageBase):
       #else:
         #print(f"total count is 0, filename is {filename}, sha is {sha}")
         #commits2 = self.repo.get_commits(path=filename)
-        #contents = self.repo.get_contents(filename)
+        #contents = self.repo.get_content(filename)
         #print(f"total count 2 is {commits2.totalCount}, filename is {filename}, sha is {sha}, {sha==contents.sha}")
-    #self.get_contents(filename=filename)
+    #self.get_content(filename=filename)
     #result = self.get_file_info(filename, 'size')
     #return result
 

@@ -1,8 +1,38 @@
+import math
+
 from StorageWebMedium import StorageWebMedium
-from StorageAction2 import synchronize
+from StorageAction2 import Compare, Synchronize, Copy
 from StorageBase import StorageBase
 from LoggerObj import LoggerObj
 
+#################################################################################
+def get_content(filename, storage=None, StorageType=None, kwargs_storage={}):
+  logger = LoggerObj()
+  errors = StorageBase._check_storage_or_type(storage=storage, StorageType=StorageType, kwargs=kwargs_storage)
+  if errors:
+    logger.log_critical(errors)
+    return None
+
+  if storage:
+    return storage.get_content(filename=filename)
+  else:
+    with StorageType(**kwargs_storage) as storage_:
+      return storage_.get_content(filename=filename)
+
+#################################################################################
+def get_size(path, storage=None, StorageType=None, kwargs_storage={}):
+  logger = LoggerObj()
+  errors = StorageBase._check_storage_or_type(storage=storage, StorageType=StorageType, kwargs=kwargs_storage)
+  if errors:
+    logger.log_critical(errors)
+    return math.nan
+
+  if storage:
+    return storage.get_size(path=path)
+  else:
+    with StorageType(**kwargs_storage) as storage_:
+      return storage_.get_size(path=path)
+  
 #################################################################################
 def list(path, enforce_size_fetching=False, storage=None, StorageType=None, kwargs_storage={}):
 
@@ -59,12 +89,64 @@ def backup_a_Medium_website(url_or_urls, path, storage=None, StorageType=None, k
     swm.log_title(f"Checking {len(external_urls)} URLs")
     swm.check_urls(external_urls, print_ok=True)
 
-  _, storage_to = synchronize(path_from=path, path_to=path, storage_from=swm, StorageToType=StorageType, kwargs_to=kwargs_storage)
+  s = synchronize(path_from=path, path_to=path, storage_from=swm, StorageToType=StorageType, kwargs_to=kwargs_storage)
 
-  storage_to.list(path, enforce_size_fetching=True)
+  s.storage_to.list(path, enforce_size_fetching=True)
   if storage:
     storage._close()
     
   swm._close()
+
+#################################################################################
+def compare(*args, **kwargs):
+  c = Compare(*args, **kwargs)
+  return c
+
+#################################################################################
+def synchronize(*args, **kwargs):
+  s = Synchronize(*args, **kwargs)
+  return s
+
+#################################################################################
+def copy(*args, **kwargs):
+  Copy(*args, **kwargs)
+
+def copy_and_rename(*args, **kwargs):
+  Copy(*args, **kwargs)
+
+def move(*args, **kwargs):
+  Copy(*args, **kwargs)
+
+def move_and_rename(*args, **kwargs):
+  Copy(*args, **kwargs)
+
+#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.
+
+def copy_file(*args, **kwargs):
+  Copy(*args, **kwargs)
+
+def copy_file_and_rename(*args, **kwargs):
+  Copy(*args, **kwargs)
+
+def move_file(*args, **kwargs):
+  Copy(*args, **kwargs)
+
+def move_file_and_rename(*args, **kwargs):
+  Copy(*args, **kwargs)
+
+#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.
+
+def copy_directory(*args, **kwargs):
+  with Copy(*args, **kwargs) as _:
+    pass
+
+def copy_directory_and_rename(*args, **kwargs):
+  Copy(*args, **kwargs)
+
+def move_directory(*args, **kwargs):
+  Copy(*args, **kwargs)
+
+def move_directory_and_rename(*args, **kwargs):
+  Copy(*args, **kwargs)
 
  

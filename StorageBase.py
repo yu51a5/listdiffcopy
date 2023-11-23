@@ -154,7 +154,7 @@ class StorageBase(LoggerObj):
     self.__cached_directories_flat[dirname].update(param_dict)
     
   ###############################################################################
-  def _get_contents(self, filename, length=None):
+  def _get_content(self, filename, length=None):
     self.__please_override()
 
   ###############################################################################
@@ -268,24 +268,24 @@ class StorageBase(LoggerObj):
       
   ###############################################################################
   def file_contents_is_text(self, filename):
-    file_beginning = self.get_contents(filename=filename, length=2048)
+    file_beginning = self.get_content(filename=filename, length=2048)
     result = StorageBase._file_contents_is_text(file_beginning=file_beginning)
     return result
         
   ###############################################################################
   def _create_file_in_another_source(self, my_filename, source, source_filename):
-    my_contents = self.get_contents(my_filename)
+    my_contents = self.get_content(my_filename)
     source.create_file_given_content(filename=source_filename, content=my_contents)
     return len(my_contents)
 
   ###############################################################################
-  def get_file_size_or_contents(self, filename):
+  def get_file_size_or_content(self, filename):
     ffse = getattr(self, '_fetch_file_size_efficiently', None)
     if ffse is not None:
       my_contents = None
       my_file_size = self._fetch_file_size_efficiently(filename)
     else:
-      my_contents = self.get_contents(filename)
+      my_contents = self.get_content(filename)
       my_file_size = len(my_contents)
 
     return my_file_size, my_contents
@@ -336,7 +336,7 @@ class StorageBase(LoggerObj):
       path_exist_is_dir_not_file_to = self.check_path_exist_is_dir_not_file(filename)
       if path_exist_is_dir_not_file_to is False: # it's a file
         if check_if_contents_is_the_same_before_writing:
-          if content == self.get_contents(filename):
+          if content == self.get_content(filename):
             return FDStatus.Identical
         self._update_file_given_content(filename=filename, content=content)
         return FDStatus.Different_or_Updated
@@ -350,11 +350,10 @@ class StorageBase(LoggerObj):
       self.log_error(f'Contents of {self.str(filename)} could not be set: {e}')
       return FDStatus.Error
 
-
   ###############################################################################
-  def get_contents(self, filename):
+  def get_content(self, filename):
     try:
-      result = self._get_contents(filename=filename)
+      result = self._get_content(filename=filename)
       return result
     except Exception as e:
       self.log_error(f'Contents of {self.str(filename)} could not be obtained, {e}')
@@ -367,7 +366,7 @@ class StorageBase(LoggerObj):
       if ffse:
         result = ffse(filename=filename)
       else:
-        result = len(self.get_contents(filename=filename))
+        result = len(self.get_content(filename=filename))
       return result
     except Exception as e:
       self.log_error(f'Contents of {self.str(filename)} could not be set, {e}')
@@ -379,6 +378,22 @@ class StorageBase(LoggerObj):
     return FDStatus.Identical
     return FDStatus.Error
 
+
+  ###############################################################################
+  def get_size(self, path):
+    path_exist_is_dir_not_file = self.check_path_exist_is_dir_not_file(path)
+    if path_exist_is_dir_not_file is True:
+      files_, directories_ = self._get_filenames_and_directories(dir_name=path)
+      result = sum([self.fetch_file_size(f) for f in files_]) \
+             + sum([self.get_size(path=d) for d in directories_])
+      return result
+    elif path_exist_is_dir_not_file is False:
+      return self.fetch_file_size(filename=path)  
+    elif path_exist_is_dir_not_file == "both":
+      self.log_error(f"{self.str(path)} is both a file and a directory")
+    else:
+      self.log_error(f"{self.str(path)} does not exist")  
+  
   ###############################################################################
   def _list_files_directories_recursive(self, dir_to_list, enforce_size_fetching, message2=''):
 

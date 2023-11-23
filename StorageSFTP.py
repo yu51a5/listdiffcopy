@@ -112,7 +112,7 @@ class StorageSFTP(StorageBase):
     return '.'
 
   ###############################################################################
-  def _get_contents(self, filename, length=None):
+  def _get_content(self, filename, length=None):
     with self.sftp_client.open(filename) as sftp_file:
       sftp_contents = sftp_file.read(size=length)
     return sftp_contents

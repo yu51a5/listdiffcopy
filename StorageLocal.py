@@ -24,7 +24,7 @@ class StorageLocal(StorageBase):
     return files_, directories_
 
 ###############################################################################
-  def _get_contents(self, filename, length=None):
+  def _get_content(self, filename, length=None):
     f = open(filename, "r")
     return f.read()
 

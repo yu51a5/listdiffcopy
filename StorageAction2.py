@@ -133,12 +133,12 @@ class StorageAction2(LoggerObj):
       if file_to_doesnt_exist:
         status = FDStatus.LeftOnly_or_New
         if self.create_if_left_only:
-          from_contents = self.storage_from.get_contents(file_from) 
+          from_contents = self.storage_from.get_content(file_from) 
           self.storage_to.create_file_given_content(filename=file_to_2, content=from_contents) 
           size_from = len(from_contents)
           size_to = size_from
         else:
-          size_from, _ = self.storage_from.get_file_size_or_contents(filename=file_from)
+          size_from, _ = self.storage_from.get_file_size_or_content(filename=file_from)
           size_to   = 0
       elif file_from_doesnt_exist:
         status = FDStatus.RightOnly_or_Deleted
@@ -147,24 +147,24 @@ class StorageAction2(LoggerObj):
           size_from, size_to = 0, 0
         else:
           size_from = 0
-          size_to, _ = self.storage_to.get_file_size_or_contents(filename=file_to_2)
+          size_to, _ = self.storage_to.get_file_size_or_content(filename=file_to_2)
       else:
         if self.change_if_both_exist:
-          from_contents = self.storage_from.get_contents(file_from) 
+          from_contents = self.storage_from.get_content(file_from) 
           assert file_to_2 is not None
           status = self.storage_to.create_file_given_content(filename=file_to_2, content=from_contents) 
           size_from = len(from_contents)
           size_to = size_from
         else:
-          size_from, cont_from = self.storage_from.get_file_size_or_contents(filename=file_from)
-          size_to, cont_to = self.storage_to.get_file_size_or_contents(filename=file_to_2)
+          size_from, cont_from = self.storage_from.get_file_size_or_content(filename=file_from)
+          size_to, cont_to = self.storage_to.get_file_size_or_content(filename=file_to_2)
           if size_from != size_to:
             status = FDStatus.Different_or_Updated
           else:
             if cont_from is None:
-              cont_from = self.storage_from.get_contents(file_from) 
+              cont_from = self.storage_from.get_content(file_from) 
             if cont_to is None:
-              cont_to = self.storage_to.get_contents(file_to_2) 
+              cont_to = self.storage_to.get_content(file_to_2) 
             status = FDStatus.Different_or_Updated if cont_from != cont_to else FDStatus.Identical
     except Exception as e:
       self.log_error(f'{self.enter_123[0]} {self.enter_123[1]} {self.storage_from.str(file_from)} {self.storage_to.str(file_to)} {self.enter_123[1]} failed, {e}')
@@ -295,10 +295,6 @@ class Compare(StorageAction2):
     super().__init__(*args, **kwargs)
 
 #################################################################################
-def compare(*args, **kwargs):
-  Compare(*args, **kwargs)
-
-#################################################################################
 class Copy(StorageAction2):
 
   create_if_left_only = True
@@ -313,48 +309,6 @@ class Copy(StorageAction2):
   #################################################################################
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
-    
-#################################################################################
-def copy(*args, **kwargs):
-  Copy(*args, **kwargs)
-
-def copy_and_rename(*args, **kwargs):
-  Copy(*args, **kwargs)
-
-def move(*args, **kwargs):
-  Copy(*args, **kwargs)
-
-def move_and_rename(*args, **kwargs):
-  Copy(*args, **kwargs)
-    
-#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.
-
-def copy_file(*args, **kwargs):
-  Copy(*args, **kwargs)
-
-def copy_file_and_rename(*args, **kwargs):
-  Copy(*args, **kwargs)
-
-def move_file(*args, **kwargs):
-  Copy(*args, **kwargs)
-
-def move_file_and_rename(*args, **kwargs):
-  Copy(*args, **kwargs)
-
-#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.
-
-def copy_directory(*args, **kwargs):
-  with Copy(*args, **kwargs) as _:
-    pass
-
-def copy_directory_and_rename(*args, **kwargs):
-  Copy(*args, **kwargs)
-
-def move_directory(*args, **kwargs):
-  Copy(*args, **kwargs)
-
-def move_directory_and_rename(*args, **kwargs):
-  Copy(*args, **kwargs)
 
 #################################################################################
 class Synchronize(StorageAction2):
@@ -371,8 +325,3 @@ class Synchronize(StorageAction2):
   #################################################################################
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
-
-#################################################################################
-def synchronize(*args, **kwargs):
-  s = Synchronize(*args, **kwargs)
-  return s.storage_from, s.storage_to 
