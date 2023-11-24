@@ -32,3 +32,17 @@ def creates_multi_index(index_1, index_2):
   index_2_expanded = index_2 * len(index_1)
   result = list(map(list, zip(index_1_expanded, index_2_expanded)))
   return result
+
+#################################################################################
+def partial_with_moving_back(func, func_for_args_to_move_back, kwargnames_to_move_back, /, *args, **keywords):
+  def newfunc(*fargs, **fkeywords):
+    keywords_to_move_back = {a : keywords.pop(a) for a in keywords if a in kwargnames_to_move_back}
+    newkeywords = {**keywords, **fkeywords, **keywords_to_move_back}
+
+    args_to_move_back = [a for a in args if func_for_args_to_move_back(a)]
+    args0 = [a for a in args if not func_for_args_to_move_back(a)]
+
+    return func(*args0, *fargs, *args_to_move_back, **newkeywords)
+
+  return newfunc
+  

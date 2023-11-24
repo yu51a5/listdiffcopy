@@ -135,7 +135,10 @@ class StorageBase(LoggerObj):
     
   ###############################################################################
   def get_file_info(self, filename, info_name):
-    return self.__cached_filenames_flat[filename][info_name]
+    print(filename, info_name, self.__cached_filenames_flat)
+    result = self.__cached_filenames_flat[filename][info_name]
+    print(result)
+    return result
 
   ###############################################################################
   def set_file_info(self, filename, param_dict):
@@ -329,8 +332,6 @@ class StorageBase(LoggerObj):
 
   ###############################################################################
   def create_file_given_content(self, filename, content, check_if_contents_is_the_same_before_writing=True):
-    if filename is None:
-      assert False, filename
     try:
       assert filename is not None
       path_exist_is_dir_not_file_to = self.check_path_exist_is_dir_not_file(filename)

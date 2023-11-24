@@ -1,71 +1,51 @@
 import math
 
+from utils import partial_with_moving_back
 from StorageWebMedium import StorageWebMedium
 from StorageAction2 import Compare, Synchronize, Copy
 from StorageBase import StorageBase
-from LoggerObj import LoggerObj
+from LoggerObj import LoggerObj, FDStatus
 
 #################################################################################
-def get_content(filename, storage=None, StorageType=None, kwargs_storage={}):
-  logger = LoggerObj()
+def one_storage_func(*args, storage=None, StorageType=None, kwargs_storage={}, logger=None, return_if_error=None, attr_name=None, **kwargs):
+  if logger is None:
+    logger = LoggerObj() if storage is None else storage
+  elif storage:
+    LoggerObj.sync_loggers([logger, storage])
+    
   errors = StorageBase._check_storage_or_type(storage=storage, StorageType=StorageType, kwargs=kwargs_storage)
   if errors:
     logger.log_critical(errors)
-    return None
+    return return_if_error
 
   if storage:
-    return storage.get_content(filename=filename)
+    return getattr(storage, attr_name)(*args, **kwargs)
   else:
-    with StorageType(**kwargs_storage) as storage_:
-      return storage_.get_content(filename=filename)
+    with StorageType(objects_to_sync_logger_with=[logger], **kwargs_storage) as storage_:
+      return getattr(storage_, attr_name)(*args, **kwargs)
 
 #################################################################################
-def get_size(path, storage=None, StorageType=None, kwargs_storage={}):
-  logger = LoggerObj()
-  errors = StorageBase._check_storage_or_type(storage=storage, StorageType=StorageType, kwargs=kwargs_storage)
-  if errors:
-    logger.log_critical(errors)
-    return math.nan
-
-  if storage:
-    return storage.get_size(path=path)
-  else:
-    with StorageType(**kwargs_storage) as storage_:
-      return storage_.get_size(path=path)
+def func_for_args_of_one_storage_func_to_move_back(a):
+  if isinstance(a, type) and issubclass(a, StorageBase):
+    return True
+  return isinstance(a, (StorageBase, dict, LoggerObj))
   
 #################################################################################
-def list(path, enforce_size_fetching=False, storage=None, StorageType=None, kwargs_storage={}):
-
-  logger = LoggerObj()
-  errors = StorageBase._check_storage_or_type(storage=storage, StorageType=StorageType, kwargs=kwargs_storage)
-  if errors:
-    logger.log_critical(errors)
-    return
-    
-  if storage:
-    storage.list(path=path, enforce_size_fetching=enforce_size_fetching)
-  else:
-    with StorageType(**kwargs_storage) as storage_:
-      storage_.list(path=path, enforce_size_fetching=enforce_size_fetching)
+def alt_partial_one_storage_func(*args, **keywords):
+  result = partial_with_moving_back(one_storage_func, func_for_args_of_one_storage_func_to_move_back, 
+                                    ('storage', 'StorageType', 'kwargs_storage', 'logger'), *args, **keywords) 
+  return result
 
 #################################################################################
-def delete(path, storage=None, StorageType=None, kwargs_storage={}):
-
-  logger = LoggerObj()
-  errors = StorageBase._check_storage_or_type(storage=storage, StorageType=StorageType, kwargs=kwargs_storage)
-  if errors:
-    logger.log_critical(errors)
-    return
-
-  if storage:
-    storage.delete(path=path)
-  else:
-    with StorageType(**kwargs_storage) as storage_:
-      storage_.delete(path=path)
-      
 #################################################################################
-def rename(existing_path, new_path, storage=None, StorageType=None, kwargs_storage={}):
-  pass
+for name_return_if_error in ("get_content", ("get_size", math.nan), "list", "delete", 
+                             "rename", "create_directory", "check_path_exist_is_dir_not_file", 
+                             ("create_file_given_content", FDStatus.Error)):
+  if isinstance(name_return_if_error, str):
+    name, return_if_error = name_return_if_error, None
+  else:
+    name, return_if_error = name_return_if_error[0], name_return_if_error[1]
+  globals()[name] = alt_partial_one_storage_func(return_if_error=return_if_error, attr_name=name)
 
 #################################################################################
 # inspirations: https://gist.github.com/bgoonz/217ba804d2b3aabe8415c9c99d8f9224

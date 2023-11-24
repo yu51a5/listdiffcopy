@@ -50,12 +50,17 @@ class LoggerObj:
     assert existing_loggers
     first_with_logger = args[existing_loggers[0]]
 
-    for arg in args:
+    errors = []
+    for i, arg in enumerate(args):
       if arg.__logger is None:
         arg.__logger = first_with_logger.__logger 
         arg.__logger_extra = first_with_logger.__logger_extra 
       else:
-        assert first_with_logger.is_my_logger_same_as(arg.__logger)
+        if not first_with_logger.is_my_logger_same_as(arg.__logger):
+          errors.append(f"Loggers in argument {existing_loggers[0]}, {first_with_logger} and argument {i}, {arg}, are not the same")
+
+    assert not errors, '/n'.join(errors)
+    #return errors
 
   #################################################################################
   def has_logger(self):
@@ -65,7 +70,7 @@ class LoggerObj:
   def is_my_logger_same_as(self, another_logger):
     assert isinstance(self, LoggerObj)
     l = self.__logger
-    return l is another_logger, f'{l} {another_logger}'
+    return l is another_logger
 
   #################################################################################
   def log_title(self, title):

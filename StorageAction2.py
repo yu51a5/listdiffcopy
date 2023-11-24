@@ -200,22 +200,20 @@ class StorageAction2(LoggerObj):
           file_to = None
         if os.path.basename(file_from) > basename:
           file_from = None
-      elif (file_from is not None) and (file_to is None):
+      elif (file_from is not None) and (file_to is     None):
         basename = os.path.basename(file_from)
-      elif (file_from is None) and (file_to is not None):
+      elif (file_from is     None) and (file_to is not None):
         basename = os.path.basename(file_to)
       else:
-        basename = None
+        assert 1, 'bug'
 
       if (file_from is not None):
         if_from += 1      
       if (file_to is not None):
         if_to   += 1  
-      else:
-        file_to = os.path.join(_dir_from, basename)
 
       this_file_result = self._action_files(file_from=file_from, 
-                                            file_to=file_to, 
+                                            file_to=file_to if file_to is not None else os.path.join(_dir_to, basename), 
                                             file_from_doesnt_exist=(file_from is None), 
                                             file_to_doesnt_exist=(file_to is None), 
                                             add_basename=False)
