@@ -1,5 +1,6 @@
 from github import Github, ContentFile, GithubException
 import requests
+import os
 from requests.structures import CaseInsensitiveDict
 
 from StorageBase import StorageBase
@@ -56,9 +57,20 @@ class StorageGitHub(StorageBase):
           all_directories.append(content_item.path)
         else:
           all_files.append(content_item.path)
-          self.set_file_info(content_item.path, {'sha' : content_item.sha})
+          #self.set_file_info(content_item.path, {'sha' : content_item.sha})
 
     return all_files, all_directories
+
+  ###############################################################################
+  def get_file_id(self, path):
+    dir_name = os.path.dirname(path)
+    exists = self.check_directory_exists(path=dir_name)
+    if exists:
+      contents = self.repo.get_contents(dir_name)
+      for content_item in contents:
+        if path == content_item.path:
+          return content_item.sha if content_item.type != "dir" else None
+    return None
 
   ###############################################################################
   def _get_content(self, filename, length=None):
@@ -86,7 +98,7 @@ class StorageGitHub(StorageBase):
   def _delete_file(self, filename):
     self.repo.delete_file(filename,
                           "removing " + filename,
-                          sha=self.get_file_info(filename, 'sha'))
+                          sha=self.get_file_id(filename))
 
   def _create_file_given_content(self, filename, content):
     assert isinstance(content, (str, bytes)), f'Type of contents is {type(content)}'
@@ -98,7 +110,7 @@ class StorageGitHub(StorageBase):
     self.repo.update_file(filename,
                           message="updating " + filename,
                           content=content,
-                          sha=self.get_file_info(filename, 'sha'))
+                          sha=self.get_file_id(filename))
 
   ###############################################################################
   def _create_directory(self, dirname):

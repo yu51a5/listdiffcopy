@@ -25,7 +25,6 @@ class StorageBase(LoggerObj):
 
   #################################################################################
   def __init__(self, constructor_kwargs, logger_name=None, objects_to_sync_logger_with=[]):
-    self.__cached_filenames_flat, self.__cached_directories_flat = {}, self._get_default_root_dir_info()
     self.__constructor_kwargs = {k : v for k, v in constructor_kwargs.items()}
     super().__init__(logger_name=logger_name, objects_to_sync_logger_with=objects_to_sync_logger_with)
 
@@ -135,29 +134,6 @@ class StorageBase(LoggerObj):
     self.__please_override()
     
   ###############################################################################
-  def get_file_info(self, filename, info_name):
-    print(filename, info_name, self.__cached_filenames_flat)
-    result = self.__cached_filenames_flat[filename][info_name]
-    print(result)
-    return result
-
-  ###############################################################################
-  def set_file_info(self, filename, param_dict):
-    if filename not in self.__cached_filenames_flat:
-      self.__cached_filenames_flat[filename] = {}
-    self.__cached_filenames_flat[filename].update(param_dict)
-
-  ###############################################################################
-  def get_dir_info(self, dirname, info_name):
-    return self.__cached_directories_flat[dirname][info_name]
-
-  ###############################################################################
-  def set_dir_info(self, dirname, param_dict):
-    if dirname not in self.__cached_directories_flat:
-      self.__cached_directories_flat[dirname] = {}
-    self.__cached_directories_flat[dirname].update(param_dict)
-    
-  ###############################################################################
   def _get_content(self, filename, length=None):
     self.__please_override()
 
@@ -169,30 +145,25 @@ class StorageBase(LoggerObj):
   def get_init_path(self):
     return ''    
 
-  ###############################################################################  
-  def _get_default_root_dir_info(self):
-    return {}
-
   ###############################################################################
-  def split_path_into_dirs_filename(path):
+  def split_path_into_dirs_filename(self, path):
     result = []
     while path:
       path, tail = os.path.split(path)
       result = [tail] + result   
+    if (len(result) > 1) and (not result[-1]):
+      result.pop(-1)
+    if (len(result) > 1) and (result[0] == self.get_init_path()):
+      result.pop(0)
     return result
 
   ###############################################################################
   def create_directory_in_existing_directory(self, path):
-    info = self._create_directory(path)
-    if info is None:
-      info = {}
-    self.set_dir_info(path, info)
+    self._create_directory(path)
     
   ###############################################################################
   def _check_directory_exists_or_create(self, path, create_if_doesnt_exist):
-    root_folders = StorageBase.split_path_into_dirs_filename(path=path)
-    if (len(root_folders) > 1) and (not root_folders[-1]):
-      root_folders.pop(-1)
+    root_folders = self.split_path_into_dirs_filename(path=path)
     path_so_far = self.get_init_path() 
     was_created = False
     for rf in root_folders:
@@ -430,18 +401,13 @@ class StorageBase(LoggerObj):
     return totals, files_, dirs_dict
 
 ###############################################################################
-  def _list_a_file(self, file_path, enforce_size_fetching):
-    file_info = self.fetch_file_info(filename=file_path, enforce_size_fetching=enforce_size_fetching)
-    self.print_files_df(data = [[os.path.basename(file_path), file_info['size']]] if enforce_size_fetching 
-                          else [[os.path.basename(file_path)] ])
-
-###############################################################################
   def _list(self, path, enforce_size_fetching):
     path_exist_is_dir_not_file = self.check_path_exist_is_dir_not_file(path)
     if path_exist_is_dir_not_file is True:
       self._list_files_directories_recursive(dir_to_list=path, enforce_size_fetching=enforce_size_fetching)
     elif path_exist_is_dir_not_file is False:
-      self._list_a_file(file_path=path, enforce_size_fetching=enforce_size_fetching)  
+      size = self.get_size(path=path)
+      self.print_files_df(data = [[os.path.basename(path)] + ([size] if enforce_size_fetching else [])])
     elif path_exist_is_dir_not_file == "both":
       self.log_error(f"{self.str(path)} is both a file and a directory")
     else:

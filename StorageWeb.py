@@ -62,7 +62,7 @@ class StorageWeb(StorageBase):
     if not dir_name:
       directories_, urls, fake_filename_contents = self.__fake_directories
     else:
-      root_folders = StorageBase.split_path_into_dirs_filename(path=dir_name)
+      root_folders = self.split_path_into_dirs_filename(path=dir_name)
       what = self.__fake_directories
       for rf in root_folders:
         if rf not in what[0]:
@@ -107,7 +107,7 @@ class StorageWeb(StorageBase):
 
       self.__fake_files.update({os.path.join(path, backup_name, k) : v for k, v in fake_filename_contents_text.items()})
 
-      root_folders = StorageBase.split_path_into_dirs_filename(path=os.path.join(path, backup_name))
+      root_folders = self.split_path_into_dirs_filename(path=os.path.join(path, backup_name))
       dict_to_use = self.__fake_directories
       for rf in root_folders:
         if rf not in dict_to_use[0]:

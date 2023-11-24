@@ -60,20 +60,45 @@ class StoragePCloud(StorageBase):
 
   #############################################################
   def __post_fileid(self, url_addon, filename, param_dict={}, files=None):
-    param_dict['fileid'] = self.get_file_info(filename, 'id')
+    param_dict['fileid'] = self._get_file_id(filename)
+    if param_dict['fileid'] is None:
+      return
     return self.__post(url_addon=url_addon, param_dict=param_dict, files=files)
 
   def __post_folderid(self, url_addon, dirname, param_dict={}, files=None):
-    param_dict['folderid'] = self.get_dir_info(dirname, 'id')
+    param_dict['folderid'] = self._get_dir_id(dirname)
+    if param_dict['folderid'] is None:
+      return
     return self.__post(url_addon=url_addon, param_dict=param_dict, files=files)
     
   ###############################################################################
   # filenames and their sha's are needed to be able to update existing files, see
   # https://stackoverflow.com/questions/63435987/python-pygithub-if-file-exists-then-update-else-create
-  ###############################################################################  
-  def _get_default_root_dir_info(self):
-    return {'' : {'id' : 0}}
-    
+  ###############################################################################
+  def __get_id(self, name, isfolder, id_name):
+    if not name:
+      return 0, None
+    basename = os.path.basename(name)
+    parent_dirname = os.path.dirname(name)
+      
+    contents_ = self.__post_folderid(url_addon='listfolder', dirname=parent_dirname)['metadata']['contents']
+    for c in contents_:
+      if (c['isfolder'] == isfolder) and c['name'] == basename:
+        return c[id_name], None
+    return None, name
+
+  def _get_dir_id(self, name):
+    result, whats_broken = self.__get_id(name=name, isfolder=True, id_name='folderid')
+    if result is None:
+      self.log_error(f'Cannot find the id of {whats_broken}')
+    return result
+
+  def _get_file_id(self, name):
+    result, whats_broken = self.__get_id(name=name, isfolder=False, id_name='fileid')
+    if result is None:
+      self.log_error(f'Cannot find the id of {whats_broken}')
+    return result
+  
   ###############################################################################
   def _get_filenames_and_directories(self, dir_name : str):
     contents_ = self.__post_folderid(url_addon='listfolder', dirname=dir_name)['metadata']['contents']
@@ -81,11 +106,11 @@ class StoragePCloud(StorageBase):
     for c in contents_:
       full_name = os.path.join(dir_name, c['name'])
       if c['isfolder']:
-        self.set_dir_info(full_name, {'id' : c['folderid']})
+        #self.set_dir_info(full_name, {'id' : c['folderid']})
         directories_.append(full_name)
       else:
         files_.append(full_name)
-        self.set_file_info(full_name, {'id' : c['fileid']})
+        #self.set_file_info(full_name, {'id' : c['fileid']})
         
     return files_, directories_
 
@@ -132,7 +157,7 @@ class StoragePCloud(StorageBase):
                                    dirname=os.path.dirname(filename), 
                                    param_dict={'filename' : os.path.basename(filename)}, 
                                    files=files)
-    self.set_file_info(filename, {'id' : result["fileids"][0]})
+    # self.set_file_info(filename, {'id' : result["fileids"][0]})
     
   ###############################################################################
   def _update_file_given_content(self, filename, content):
@@ -149,7 +174,7 @@ class StoragePCloud(StorageBase):
   ###############################################################################
   # using https://docs.pcloud.com/methods/file/renamefile.html
   def _rename_file(self, path_to_existing_file, path_to_new_file):
-    param_dict = {'tofolderid' : self.get_dir_info(os.path.dirname(path_to_new_file), 'id'),
+    param_dict = {'tofolderid' : self._get_dir_id(os.path.dirname(path_to_new_file)),
                   'toname' : os.path.basename(path_to_new_file)}
     result = self.__post_fileid(url_addon='renamefile', 
                                 filename=path_to_existing_file, 
@@ -158,7 +183,7 @@ class StoragePCloud(StorageBase):
     
   ###############################################################################
   def _rename_directory(self, path_to_existing_dir, path_to_new_dir):
-    param_dict = {'tofolderid' : self.get_dir_info(os.path.dirname(path_to_new_file), 'id'),
+    param_dict = {'tofolderid' : self._get_dir_id(os.path.dirname(path_to_new_dir)),
                   'toname' : os.path.basename(path_to_new_dir)}
     result = self.__post_folderid(url_addon='renamefolder', 
                                   dirname=path_to_existing_dir,
