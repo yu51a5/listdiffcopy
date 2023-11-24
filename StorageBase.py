@@ -3,6 +3,7 @@ import math
 import pandas as pd
 import numpy as np
 
+from utils import is_equal_str_bytes
 from LoggerObj import LoggerObj, FDStatus
 
 #################################################################################
@@ -337,7 +338,8 @@ class StorageBase(LoggerObj):
       path_exist_is_dir_not_file_to = self.check_path_exist_is_dir_not_file(filename)
       if path_exist_is_dir_not_file_to is False: # it's a file
         if check_if_contents_is_the_same_before_writing:
-          if content == self.get_content(filename):
+          current_contents = self.get_content(filename)
+          if is_equal_str_bytes(content, current_contents):
             return FDStatus.Identical
         self._update_file_given_content(filename=filename, content=content)
         return FDStatus.Different_or_Updated

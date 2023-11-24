@@ -1,4 +1,25 @@
+import typing as typ
 
+###############################################################################
+# source: https://stackoverflow.com/questions/73498143/checking-for-equality-if-either-input-can-be-str-or-bytes
+###############################################################################
+def is_equal_str_bytes(
+    a: typ.Union[str, bytes],
+    b: typ.Union[str, bytes],
+) -> bool:
+    if len(a) != len(b):
+        return False
+    if hash(a) != hash(b):
+        return False
+    if type(a) is type(b):
+        return a == b
+    if isinstance(a, bytes):  # make a=str, b=bytes
+        a, b = b, a
+    if a[:1000] != b[:1000].decode():
+        return False
+    if a[::1000] != b[::1000].decode():
+        return False
+    return a == b.decode()
 
 ###############################################################################
 def put_together_framed_message(message, char='*', max_chars=60):
