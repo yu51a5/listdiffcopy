@@ -35,7 +35,6 @@ swm = StorageWebMedium()
 swm.url_or_urls_to_fake_directory(url_or_urls=med_url_1, path=d1)
 swm.list(d1, enforce_size_fetching=False)
 cont = {}
-#cont = {str(StorageWebMedium) : swm.get_content(s)}
 for t, di in ((StorageLocal, {}), 
               (StorageGitHub, {'secret_name': "medium_github_secret"}), 
               (StoragePCloud, {'secret_name': "default_pcloud_secret"})):
@@ -49,21 +48,13 @@ d2 = 'medium2'
 swm.url_or_urls_to_fake_directory(url_or_urls=med_url_2, path=d2)
 swm.list(d2, enforce_size_fetching=False)
 
-kwargs = dict(url_or_urls=med_url_2, 
-             StorageType=StorageLocal, 
-             path=d2
-             #, kwargs_storage={'secret_name': "default_pcloud_secret"}
-             ) #  medium_github_secret
+kwargs = dict(url_or_urls=med_url_2, path=d2)
 
-#delete('medium', StorageType=StorageLocal)
-for d in ('medium2/about', 'medium2/about/contents_about.txt'):
-  print(d, swm.get_size(d))
-  for t, di in ((StorageLocal, {}), 
-                (StoragePCloud, {'secret_name': "default_pcloud_secret"}), 
-                (StorageGitHub, {'secret_name': "medium_github_secret"}), ):
-    print(str(t), (d, t, di))
-    print(str(t), get_size(d, StorageType=t, kwargs_storage=di))
-
+for t, di in ((StoragePCloud, {'secret_name': "default_pcloud_secret"}), 
+              (StorageGitHub, {'secret_name': "medium_github_secret"}), 
+              (StorageLocal, {}), ):
+  kwargs['StorageType'] = t
+  backup_a_Medium_website(**kwargs)
 
 for _ in range(3):
   backup_a_Medium_website(**kwargs, do_same_root_urls=False, check_other_urls=False)

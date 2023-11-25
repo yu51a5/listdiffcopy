@@ -108,15 +108,20 @@ class StorageWeb(StorageBase):
     backup_names_so_far = set()
     while urls:
       url = urls.pop(0)
+      tu =  self.transformer_for_comparison(url)
+      if tu in completed_urls:
+        continue
+      completed_urls.add(tu)
+      
       source, contents, assets_urls, urls_to_add, backup_name = self.url_to_backup_content_hrefs(url)
       if backup_name in backup_names_so_far:
         self.log_error(f"URL {url} has duplicate backup name {backup_name}")
         continue
       backup_names_so_far.add(backup_name)
       self.log_info(f'Analysing "{url}".\nResults saved as directory "{backup_name}"\n')
-      completed_urls.add(self.transformer_for_comparison(url))
+      
       for u in urls_to_add:
-        if do_same_root_urls and (u.startswith(root_url)) and (self.transformer_for_comparison(u) not in completed_urls):
+        if do_same_root_urls and (u.startswith(root_url)):
           urls.append(u)
         if check_other_urls and (not u.startswith(root_url)):
           external_urls.add(u)
