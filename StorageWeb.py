@@ -104,7 +104,7 @@ class StorageWeb(StorageBase):
     faulty_urls = [u for u in urls if not u.startswith(os.path.dirname(urls[0]))]
     urls = [u for u in urls if u not in faulty_urls]
     completed_urls = set()
-    external_urls = {}
+    external_urls = set()
     backup_names_so_far = set()
     while urls:
       url = urls.pop(0)
@@ -114,19 +114,12 @@ class StorageWeb(StorageBase):
         continue
       backup_names_so_far.add(backup_name)
       self.log_info(f'Analysing "{url}".\nResults saved as directory "{backup_name}"\n')
-      if do_same_root_urls:
-        completed_urls.add(self.transformer_for_comparison(url))
-        for u in urls_to_add:
-          self.log_debug(f'{self.transformer_for_comparison(u)} {completed_urls} {u}')
-          if (self.transformer_for_comparison(u) not in completed_urls) and u.startswith(root_url):
-            urls.append(u)  
-      if check_other_urls:
-        for u in urls_to_add:
-          if not u.startswith(root_url):
-            if u in external_urls:
-              external_urls[u].append(url)
-            else:
-              external_urls[u] = [url]
+      completed_urls.add(self.transformer_for_comparison(url))
+      for u in urls_to_add:
+        if do_same_root_urls and (u.startswith(root_url)) and (self.transformer_for_comparison(u) not in completed_urls):
+          urls.append(u)
+        if check_other_urls and (not u.startswith(root_url)):
+          external_urls.add(u)
 
       assets_urls = remove_duplicates(assets_urls)
       fake_filename_contents_text = {'contents_'+backup_name+'.txt' : contents,
