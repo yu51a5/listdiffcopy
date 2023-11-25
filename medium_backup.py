@@ -7,6 +7,14 @@ from StorageGitHub import StorageGitHub
 from StorageWebMedium import StorageWebMedium
 from LoggerObj import LoggerObj
 
+t, di = (StoragePCloud, {'secret_name': "default_pcloud_secret"})
+filename = os.path.join('test', "testfile.txt")
+content = "Test line"
+create_file_given_content(filename, content=content, StorageType=t, kwargs_storage=di)
+create_file_given_content(filename, content=content, StorageType=t, kwargs_storage=di)
+
+assert 5 < 1
+
 if False:
   logger = LoggerObj("another")
   content = "Test line"
