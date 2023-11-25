@@ -12,11 +12,20 @@ class StorageWeb(StorageBase):
     self.__fake_directories = [{}, [], []]
     self.__fake_files = {}
     self.__name_content_type_is_content = {}
+    self.__fake_paths_to_urls = {}
     
   ###############################################################################
   def __init__(self, logger_name=None, objects_to_sync_logger_with=[]):
     super().__init__(constructor_kwargs={}, logger_name=logger_name, objects_to_sync_logger_with=objects_to_sync_logger_with)
     self.reset()
+
+  ###############################################################################
+  def path_to_str(self, path):
+    return self.__fake_paths_to_urls[path] if path in self.__fake_paths_to_urls else path
+
+  ###############################################################################
+  def transformer_for_comparison(self, s):
+    return s
 
   ###############################################################################
   def get_response_code(url):
@@ -26,24 +35,29 @@ class StorageWeb(StorageBase):
   ###############################################################################
   def check_urls(self, urls, print_ok=False):
     by_resp_code = {}
-    for url, pages_where_referenced in urls.items():
+    for url in urls:
       try:
         response_code = StorageWeb.get_response_code(url)
       except:
         response_code = 418
       if response_code in by_resp_code:
-        by_resp_code[response_code].append([url, pages_where_referenced])
+        by_resp_code[response_code].append(url)#[url, pages_where_referenced])
       else:
-        by_resp_code[response_code] = [[url, pages_where_referenced]]
+        by_resp_code[response_code] = [url]#[url, pages_where_referenced]]
 
-    for code, urls_pages in by_resp_code.items():
+    self.log_debug(by_resp_code)
+
+    for code, urls_ in by_resp_code.items():
       if code == 200:
         if print_ok:
-          self.log_info("OK URL:\n" + "\n".join([u for u, p in urls_pages]))
+          self.log_info("OK URL:\n" + "\n".join(urls_))
       elif code == 403:
-        self.log_warning("URL that cannot be automatically checked (code 403):\n" + "\n".join([("\n" + u + ": this URL is referenced in:\n" + "\n".join(p)) for u, p in urls_pages]))
+        self.log_warning("URL that cannot be automatically checked (code 403):\n" + "\n".join(urls_))
       else:
-        self.log_error(f"URL check failed (code {code}):\n" + "\n".join([("\n" + u + ": this URL is referenced in:\n" + "\n".join(p)) for u, p in urls_pages]))
+        self.log_error(f"URL check failed (code {code}):\n" + "\n".join(urls_))
+
+
+      # [("\n" + u + ": this URL is referenced in:\n" + "\n".join(p)) for u, p in
     
   ###############################################################################
   def get_content(self, filename, length=None, use_content_not_text=None): # filename is url
@@ -76,24 +90,36 @@ class StorageWeb(StorageBase):
     
   ###############################################################################
   def url_or_urls_to_fake_directory(self, url_or_urls, path, do_same_root_urls=True, check_other_urls=True):
-    self.reset()
+    #self.reset()
+    
     urls = [url_or_urls] if isinstance(url_or_urls, str) else [s for s in url_or_urls]
+
+    self.log_title(f"Analysing {len(urls)} URL{'' if {len(urls)==1} else 's'} {'and other linked URLs' if do_same_root_urls else ''}")
+    
     # removing duplicates
-    urls = remove_duplicates(urls)
+    comp_dict = { self.transformer_for_comparison(u) : u for u in urls} 
+    urls = [u for u in comp_dict.values()]
     # making sure the root is the same
     root_url = os.path.dirname(urls[0])
     faulty_urls = [u for u in urls if not u.startswith(os.path.dirname(urls[0]))]
     urls = [u for u in urls if u not in faulty_urls]
-    completed_urls = []
+    completed_urls = set()
     external_urls = {}
+    backup_names_so_far = set()
     while urls:
       url = urls.pop(0)
-      back_up_content, assets_urls, urls_to_add, backup_name = self.url_to_backup_content_hrefs(url)
+      source, contents, assets_urls, urls_to_add, backup_name = self.url_to_backup_content_hrefs(url)
+      if backup_name in backup_names_so_far:
+        self.log_error(f"URL {url} has duplicate backup name {backup_name}")
+        continue
+      backup_names_so_far.add(backup_name)
       self.log_info(f'Analysing "{url}".\nResults saved as directory "{backup_name}"\n')
       if do_same_root_urls:
-        completed_urls.append(url)
-        urls += [u for u in urls_to_add if u not in completed_urls and u.startswith(root_url)]
-        urls = remove_duplicates(urls)    
+        completed_urls.add(self.transformer_for_comparison(url))
+        for u in urls_to_add:
+          self.log_debug(f'{self.transformer_for_comparison(u)} {completed_urls} {u}')
+          if (self.transformer_for_comparison(u) not in completed_urls) and u.startswith(root_url):
+            urls.append(u)  
       if check_other_urls:
         for u in urls_to_add:
           if not u.startswith(root_url):
@@ -103,9 +129,11 @@ class StorageWeb(StorageBase):
               external_urls[u] = [url]
 
       assets_urls = remove_duplicates(assets_urls)
-      fake_filename_contents_text = {'source_'+backup_name+'.txt' : back_up_content}
+      fake_filename_contents_text = {'contents_'+backup_name+'.txt' : contents,
+                                       'source_'+backup_name+'.txt' : str(source)}
 
       self.__fake_files.update({os.path.join(path, backup_name, k) : v for k, v in fake_filename_contents_text.items()})
+      self.__fake_paths_to_urls[os.path.join(path, backup_name)] = url
 
       root_folders = self.split_path_into_dirs_filename(path=os.path.join(path, backup_name))
       dict_to_use = self.__fake_directories

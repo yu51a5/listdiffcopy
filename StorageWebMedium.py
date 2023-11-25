@@ -16,7 +16,7 @@ class StorageWebMedium(StorageWeb):
   __start_ing_url = 'https://miro.medium.com/v2/'
 
   ###############################################################################
-  def transformer_for_comparison(s):
+  def transformer_for_comparison(self, s):
     return remove_char_and_after(s=s, c='?')
 
   ###############################################################################
@@ -26,15 +26,15 @@ class StorageWebMedium(StorageWeb):
   ###############################################################################
   def url_to_backup_content_hrefs(self, url):
     try:
-      backup_name = StorageWebMedium.transformer_for_comparison(os.path.basename(url))
+      backup_name = self.transformer_for_comparison(os.path.basename(url))
       main_tag = 'article' if backup_name.lower() != 'about' else 'main'
       
       response_text = self.get_content(filename=url, use_content_not_text=False)
       soup = bs4.BeautifulSoup(response_text, 'html.parser')
-      article_html = soup.find(main_tag)
+      source = soup.find(main_tag)
   
       captions_images = []
-      all_divs = article_html.find_all("div")
+      all_divs = source.find_all("div")
       assets_urls = []
       for ad in all_divs:
         figcaptions = ad.find_all("figcaption")
@@ -56,21 +56,21 @@ class StorageWebMedium(StorageWeb):
           captions_images[-1][1].append(os.path.basename(url_pic))
           assets_urls.append(url_pic)
   
-      article_text = h.handle(str(article_html))
+      article_text = h.handle(str(source))
       article_text = article_text[:article_text.find('\n[![')] + article_text[article_text.find('Share\n')+6:] 
-      back_up_content = (put_together_framed_message(message='Backing up ' + url)
+      contents = (put_together_framed_message(message='Backing up ' + url)
                          + article_text
                          + put_together_framed_message(message='Pictures')
                          + ''.join([f'{i+1}. {ci[0]} : {ci[1]}\n' for i, ci in enumerate(captions_images)]))
-      all_as = article_html.find_all("a")
+      all_as = source.find_all("a")
       urls_to_add = [a_tag['href'] for a_tag in all_as]
       for i, u in enumerate(urls_to_add):
         if u.startswith('/@'):
           urls_to_add[i] = "https://medium.com" + u
 
       url_following = os.path.join(os.path.dirname(url), 'following')
-      urls_to_add = [u for u in urls_to_add if not (u.startswith(url_following) or os.path.dirname(url).startswith(StorageWebMedium.transformer_for_comparison(u)) or (u.startswith('/m/signin')))]
+      urls_to_add = [u for u in urls_to_add if not (u.startswith(url_following) or os.path.dirname(url).startswith(self.transformer_for_comparison(u)) or (u.startswith('/m/signin')))]
   
-      return back_up_content, assets_urls, urls_to_add, backup_name
+      return source, contents, assets_urls, urls_to_add, backup_name
     except Exception as e:
       raise Exception(f"Cannot back up '{url}': {e}")

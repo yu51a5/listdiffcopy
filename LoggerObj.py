@@ -104,6 +104,10 @@ class LoggerObj:
     self.__logger.info(message)
 
   ###############################################################################
+  def log_debug(self, message):
+    self.__logger.debug(message)
+    
+  ###############################################################################
   def log_mention_directory(self, dirname, message_to_print, message2):
     at_now = LoggerExtra.get_at_now()
     self.__log_print(f'{message_to_print} directory `{dirname}` {message2} {at_now}')

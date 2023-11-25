@@ -55,9 +55,7 @@ for name_return_if_error in ("get_content", ("get_size", math.nan), "list", "del
 def backup_a_Medium_website(url_or_urls, path, storage=None, StorageType=None, kwargs_storage={}, do_same_root_urls=True, check_other_urls=True):
 
   swm = StorageWebMedium()
-  only_one_url = isinstance(url_or_urls, str)
 
-  swm.log_title(f"Analysing {1 if only_one_url else len(url_or_urls)} URL {'' if only_one_url else 's'} {'and other linked URLs' if do_same_root_urls else '' }")
   external_urls = swm.url_or_urls_to_fake_directory(url_or_urls=url_or_urls, path=path, do_same_root_urls=do_same_root_urls, check_other_urls=check_other_urls)
 
   swm.list(path, enforce_size_fetching=False)

@@ -45,8 +45,11 @@ class StorageBase(LoggerObj):
     return secret_components
 
   #################################################################################
-  def str(self, dir_name):
-    result = f'{type(self).__name__}(`{dir_name}`)'
+  def path_to_str(self, path):
+    return path
+  
+  def str(self, path):
+    result = f'{type(self).__name__}(`{self.path_to_str(path)}`)'
     return result
 
   #################################################################################
