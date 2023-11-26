@@ -7,9 +7,8 @@ from StorageGitHub import StorageGitHub
 from StorageWebMedium import StorageWebMedium
 from LoggerObj import LoggerObj
 
+
 backup_a_Medium_website(url_or_urls='https://medium.com/@real.zyxxy/about', path="medium3", StorageType=StorageGitHub, kwargs_storage={'secret_name': "medium_github_secret"}, do_same_root_urls=True, check_other_urls=True)
-
-
 
 if 1:
   t, di = (StoragePCloud, {'secret_name': "default_pcloud_secret"})
