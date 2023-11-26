@@ -13,8 +13,6 @@ mb_kwargs = dict(url_or_urls='https://medium.com/@real.zyxxy/about', path="mediu
 backup_a_Medium_website(**mb_kwargs, StorageType=StorageGitHub, kwargs_storage={'secret_name': github_secret_name}, check_other_urls=True, save_texts=True, save_assets=False)
 backup_a_Medium_website(**mb_kwargs, StorageType=StoragePCloud, kwargs_storage={'secret_name': "default_pcloud_secret"}, check_other_urls=False, save_texts=False, save_assets=True)
 
-
-
 if 1:
   t, di = (StoragePCloud, {'secret_name': "default_pcloud_secret"})
   filename = os.path.join('test', "testfile.txt")

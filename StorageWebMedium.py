@@ -75,7 +75,7 @@ class StorageWebMedium(StorageWeb):
                            + article_text
                            + put_together_framed_message(message='Pictures')
                            + ''.join([f'{i+1}. {ci[0]} : {ci[1]}\n' for i, ci in enumerate(captions_images)]))
-        
+
       all_as = source.find_all("a")
       urls_to_add = [a_tag['href'] for a_tag in all_as]
       for i, u in enumerate(urls_to_add):
