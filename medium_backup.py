@@ -7,15 +7,17 @@ from StorageGitHub import StorageGitHub
 from StorageWebMedium import StorageWebMedium
 from LoggerObj import LoggerObj
 
-t, di = (StoragePCloud, {'secret_name': "default_pcloud_secret"})
-filename = os.path.join('test', "testfile.txt")
-content = "Test line"
-create_file_given_content(filename, content=content, StorageType=t, kwargs_storage=di)
-create_file_given_content(filename, content=content, StorageType=t, kwargs_storage=di)
+backup_a_Medium_website(url_or_urls='https://medium.com/@real.zyxxy/about', path="medium3", StorageType=StorageGitHub, kwargs_storage={'secret_name': "medium_github_secret"}, do_same_root_urls=True, check_other_urls=True)
 
-assert 5 < 1
 
-if False:
+
+if 1:
+  t, di = (StoragePCloud, {'secret_name': "default_pcloud_secret"})
+  filename = os.path.join('test', "testfile.txt")
+  content = "Test line 22"
+  create_file_given_content(filename, content=content, StorageType=t, kwargs_storage=di)
+  create_file_given_content(filename, content=content + "ho ho", StorageType=t, kwargs_storage=di)
+  
   logger = LoggerObj("another")
   content = "Test line"
   
@@ -27,29 +29,29 @@ if False:
       check_path_exist_is_dir_not_file(d, StorageType=t, kwargs_storage=di)
       list(d, StorageType=t, kwargs_storage=di, enforce_size_fetching=True)
       filename = os.path.join(d, "testfile.txt")
-      create_file_given_content(filename, content=content, StorageType=t, kwargs_storage=di)
+      create_file_given_content(filename, content=content, StorageType=t, kwargs_storage=di) 
       list(d, StorageType=t, kwargs_storage=di, enforce_size_fetching=True)
       assert len(content) == get_size(filename, StorageType=t, kwargs_storage=di)
       if t != StorageLocal:
         synchronize(path_from=d, path_to=d, StorageFromType=StorageLocal, StorageToType=t, kwargs_to=di)
         list(d, StorageType=t, kwargs_storage=di, enforce_size_fetching=True)
         assert len(content) == (get_size(filename, StorageType=t, kwargs_storage=di))
+    
   
+  med_url_1 = 'https://medium.com/@yu51a5/123-1332f629e146?source=friends_link&sk=6a7033b41578929ffc6569bbb25283f9'
+  d1 = 'medium1'
+  
+  swm = StorageWebMedium()
+  swm.url_or_urls_to_fake_directory(url_or_urls=med_url_1, path=d1)
+  swm.list(d1, enforce_size_fetching=False)
+  cont = {}
+  for t, di in ((StorageLocal, {}), 
+                (StorageGitHub, {'secret_name': "medium_github_secret"}), 
+                (StoragePCloud, {'secret_name': "default_pcloud_secret"})):
+    synchronize(path_from=d1, path_to=d1, storage_from=swm, StorageToType=t, kwargs_to=di)
+    cont[str(t)] = get_size(d1, StorageType=t, kwargs_storage=di)
 
-med_url_1 = 'https://medium.com/@yu51a5/123-1332f629e146?source=friends_link&sk=6a7033b41578929ffc6569bbb25283f9'
-d1 = 'medium1'
-
-swm = StorageWebMedium()
-swm.url_or_urls_to_fake_directory(url_or_urls=med_url_1, path=d1)
-swm.list(d1, enforce_size_fetching=False)
-cont = {}
-for t, di in ((StorageLocal, {}), 
-              (StorageGitHub, {'secret_name': "medium_github_secret"}), 
-              (StoragePCloud, {'secret_name': "default_pcloud_secret"})):
-  synchronize(path_from=d1, path_to=d1, storage_from=swm, StorageToType=t, kwargs_to=di)
-  cont[str(t)] = get_size(d1, StorageType=t, kwargs_storage=di)
-
-print(cont)
+  print(cont)
 
 med_url_2 = 'https://medium.com/@real.zyxxy/about'
 d2 = 'medium2'

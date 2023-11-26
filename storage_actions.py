@@ -7,33 +7,28 @@ from StorageBase import StorageBase
 from LoggerObj import LoggerObj, FDStatus
 
 #################################################################################
-def one_storage_func(*args, storage=None, StorageType=None, kwargs_storage={}, logger=None, return_if_error=None, attr_name=None, **kwargs):
+def one_storage_func(*args, StorageType=None, kwargs_storage={}, logger=None, return_if_error=None, attr_name=None, **kwargs):
   if logger is None:
-    logger = LoggerObj() if storage is None else storage
-  elif storage:
-    LoggerObj.sync_loggers([logger, storage])
-    
-  errors = StorageBase._check_storage_or_type(storage=storage, StorageType=StorageType, kwargs=kwargs_storage)
+    logger = LoggerObj() 
+  
+  errors = StorageBase._check_storage_or_type(storage=None, StorageType=StorageType, kwargs=kwargs_storage)
   if errors:
     logger.log_critical(errors)
     return return_if_error
 
-  if storage:
-    return getattr(storage, attr_name)(*args, **kwargs)
-  else:
-    with StorageType(objects_to_sync_logger_with=[logger], **kwargs_storage) as storage_:
-      return getattr(storage_, attr_name)(*args, **kwargs)
+  with StorageType(objects_to_sync_logger_with=[logger], **kwargs_storage) as storage_:
+    return getattr(storage_, attr_name)(*args, **kwargs)
 
 #################################################################################
 def func_for_args_of_one_storage_func_to_move_back(a):
   if isinstance(a, type) and issubclass(a, StorageBase):
     return True
-  return isinstance(a, (StorageBase, dict, LoggerObj))
+  return isinstance(a, (dict, LoggerObj))
   
 #################################################################################
 def alt_partial_one_storage_func(*args, **keywords):
   result = partial_with_moving_back(one_storage_func, func_for_args_of_one_storage_func_to_move_back, 
-                                    ('storage', 'StorageType', 'kwargs_storage', 'logger'), *args, **keywords) 
+                                    ('StorageType', 'kwargs_storage', 'logger'), *args, **keywords) 
   return result
 
 #################################################################################

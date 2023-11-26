@@ -45,8 +45,6 @@ class StorageWeb(StorageBase):
       else:
         by_resp_code[response_code] = [url]#[url, pages_where_referenced]]
 
-    self.log_debug(by_resp_code)
-
     for code, urls_ in by_resp_code.items():
       if code == 200:
         if print_ok:
@@ -85,7 +83,7 @@ class StorageWeb(StorageBase):
       directories_, urls, fake_filename_contents = what
       
     directories_ = [os.path.join(dir_name, k) for k in directories_.keys()]
-    files_ = urls + [os.path.join(dir_name, k) for k in fake_filename_contents]
+    files_ = [u for u in urls] + [os.path.join(dir_name, k) for k in fake_filename_contents]
     return files_, directories_
     
   ###############################################################################
@@ -126,7 +124,6 @@ class StorageWeb(StorageBase):
         if check_other_urls and (not u.startswith(root_url)):
           external_urls.add(u)
 
-      assets_urls = remove_duplicates(assets_urls)
       fake_filename_contents_text = {'contents_'+backup_name+'.txt' : contents,
                                        'source_'+backup_name+'.txt' : str(source)}
 

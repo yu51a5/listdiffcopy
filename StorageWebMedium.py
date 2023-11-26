@@ -24,6 +24,16 @@ class StorageWebMedium(StorageWeb):
     super().__init__(logger_name=logger_name, objects_to_sync_logger_with=objects_to_sync_logger_with)
 
   ###############################################################################
+  def __get_url_pic(p):
+    splints = str(p).split(', ')
+    splints = [s[:s.find(' ')] for s in splints if s.startswith(StorageWebMedium.__start_ing_url)]
+    splints = [StorageWebMedium.__start_ing_url + s[s.rfind('/')+1:] for s in splints]
+    divergent = [s for s in splints if s != splints[0]]
+    assert not divergent, splints
+    url_pic = splints[0]
+    return url_pic
+
+  ###############################################################################
   def url_to_backup_content_hrefs(self, url):
     try:
       backup_name = self.transformer_for_comparison(os.path.basename(url))
@@ -35,7 +45,7 @@ class StorageWebMedium(StorageWeb):
   
       captions_images = []
       all_divs = source.find_all("div")
-      assets_urls = []
+      assets_urls = set()
       for ad in all_divs:
         figcaptions = ad.find_all("figcaption")
         all_figures = ad.find_all("figure")
@@ -47,14 +57,13 @@ class StorageWebMedium(StorageWeb):
         captions_images.append((figcaption, []))
         pictures = ad.find_all('picture')
         for p in pictures:
-          splints = str(p).split(', ')
-          splints = [s[:s.find(' ')] for s in splints if s.startswith(StorageWebMedium.__start_ing_url)]
-          splints = [StorageWebMedium.__start_ing_url + s[s.rfind('/')+1:] for s in splints]
-          divergent = [s for s in splints if s != splints[0]]
-          assert not divergent, splints
-          url_pic = splints[0]
+          url_pic = StorageWebMedium.__get_url_pic(p)
           captions_images[-1][1].append(os.path.basename(url_pic))
-          assets_urls.append(url_pic)
+          
+      pictures = source.find_all('picture')
+      for p in pictures:
+        url_pic = StorageWebMedium.__get_url_pic(p)
+        assets_urls.add(url_pic)
   
       article_text = h.handle(str(source))
       article_text = article_text[:article_text.find('\n[![')] + article_text[article_text.find('Share\n')+6:] 
