@@ -72,8 +72,7 @@ class StoragePCloud(StorageBase):
     return self.__post(url_addon=url_addon, param_dict=param_dict, files=files)
     
   ###############################################################################
-  # filenames and their sha's are needed to be able to update existing files, see
-  # https://stackoverflow.com/questions/63435987/python-pygithub-if-file-exists-then-update-else-create
+  # filenames and their id's are needed to be able to update existing files, see
   ###############################################################################
   def __get_id(self, name, isfolder, id_name):
     if not name:
@@ -161,7 +160,8 @@ class StoragePCloud(StorageBase):
     
   ###############################################################################
   def _update_file_given_content(self, filename, content):
-    self.__post_fileid(url_addon='file_write', filename=filename)
+    self._create_file_given_content(filename=filename, content=content)
+    #self.__post_fileid(url_addon='file_write', filename=filename)
 
   ###############################################################################
   def _fetch_file_size_efficiently(self, filename):

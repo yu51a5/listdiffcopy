@@ -34,15 +34,18 @@ class StorageBase(LoggerObj):
     
   #################################################################################
   def _find_secret_components(self, how_many, secret_name=None):
-    if secret_name is None:
-      secret_name = 'default_' + type(self).__name__[len('Storage'):].lower() + '_secret'
-    secret = os.getenv(secret_name)
-    secret_components = secret.split('|') if secret else []
-    if isinstance(how_many, int):
-      assert len(secret_components) == how_many, f"There should be {how_many} {type(self).__name__} secret components in environment variable {secret_name}, but {len(secret_components)} are provided"
-    else:
-      assert len(secret_components) in how_many, f"There should be {' or '.join([str(h) for h in how_many])} {type(self).__name__} secret components in environment variable {secret_name}, but {len(secret_components)} are provided"
-    return secret_components
+    try:
+      if secret_name is None:
+        secret_name = 'default_' + type(self).__name__[len('Storage'):].lower() + '_secret'
+      secret = os.getenv(secret_name)
+      secret_components = secret.split('|') if secret else []
+      if isinstance(how_many, int):
+        assert len(secret_components) == how_many, f"There should be {how_many} {type(self).__name__} secret components in environment variable {secret_name}, but {len(secret_components)} are provided"
+      else:
+        assert len(secret_components) in how_many, f"There should be {' or '.join([str(h) for h in how_many])} {type(self).__name__} secret components in environment variable {secret_name}, but {len(secret_components)} are provided"
+      return secret_components
+    except Exception as e:
+      self.log_error(f"Failed to find secret components for {type(self).__name__}, {e}")
 
   #################################################################################
   def path_to_str(self, path):
@@ -249,12 +252,6 @@ class StorageBase(LoggerObj):
     file_beginning = self.get_content(filename=filename, length=2048)
     result = StorageBase._file_contents_is_text(file_beginning=file_beginning)
     return result
-        
-  ###############################################################################
-  def _create_file_in_another_source(self, my_filename, source, source_filename):
-    my_contents = self.get_content(my_filename)
-    source.create_file_given_content(filename=source_filename, content=my_contents)
-    return len(my_contents)
 
   ###############################################################################
   def get_file_size_or_content(self, filename):
@@ -267,17 +264,6 @@ class StorageBase(LoggerObj):
       my_file_size = len(my_contents)
 
     return my_file_size, my_contents
-    
-  ###############################################################################
-  def create_file(self, my_filename, source, source_filename):
-    try:
-      size_contents = source._create_file_in_another_source(my_filename=source_filename, 
-                                                      source=self, 
-                                                      source_filename=my_filename)
-      return size_contents
-    except Exception as e:
-      self.log_error(f'{self.str(my_filename)} could not be created from {source.str(source_filename)}, {e}')
-      return math.nan
   
   ###############################################################################
   def delete_file(self, filename):
@@ -308,7 +294,7 @@ class StorageBase(LoggerObj):
   ###############################################################################
   def create_file_given_content(self, filename, content, check_if_contents_is_the_same_before_writing=True):
     try:
-      assert filename is not None
+      assert filename, "Filename is not defined"
       path_exist_is_dir_not_file_to = self.check_path_exist_is_dir_not_file(filename)
       if path_exist_is_dir_not_file_to is False: # it's a file
         if check_if_contents_is_the_same_before_writing:
@@ -318,6 +304,8 @@ class StorageBase(LoggerObj):
         self._update_file_given_content(filename=filename, content=content)
         return FDStatus.Different_or_Updated
       elif path_exist_is_dir_not_file_to is None: # it does not exist
+        self._check_directory_exists_or_create(path=os.path.dirname(filename), 
+                                               create_if_doesnt_exist=True)
         self._create_file_given_content(filename=filename, content=content)
         return FDStatus.LeftOnly_or_New
       else: # it's a folder or both

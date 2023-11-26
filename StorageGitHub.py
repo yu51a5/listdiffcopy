@@ -9,8 +9,15 @@ from StorageBase import StorageBase
 class StorageGitHub(StorageBase):
   file_size_limit = 100 << 20
   
-  # github_token secret structure: OWNER|REPO|TOKEN . For Github token, see
+  # github_token secret structure: REPO_NAME|TOKEN . For Github token, see
   # https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens
+  # shortcut: https://github.com/settings/tokens?type=beta
+  # expiration: 1 year
+  # repositories - select one where the contents will be stored
+  # repo permissions: read metadata (default); read and write contents
+  # "API rate limit exceeded for user ID 123456789. 
+  # If you reach out to GitHub Support for help, please include the request ID 123:123:123:123:123.
+  # documentation_url": "https://docs.github.com/rest/overview/rate-limits-for-the-rest-api"
   def __init__(self, secret_name=None, logger_name=None, objects_to_sync_logger_with=[]):
     super().__init__(constructor_kwargs=dict(secret_name=secret_name), logger_name=logger_name, objects_to_sync_logger_with=objects_to_sync_logger_with)
 
