@@ -85,10 +85,13 @@ class StorageWeb(StorageBase):
     directories_ = [os.path.join(dir_name, k) for k in directories_.keys()]
     files_ = [u for u in urls] + [os.path.join(dir_name, k) for k in fake_filename_contents]
     return files_, directories_
+
+  ###############################################################################
+  def _get_root_url_other(self, url):
+    return os.path.dirname(url), os.path.basename(url)
     
   ###############################################################################
   def url_or_urls_to_fake_directory(self, url_or_urls, path, do_same_root_urls=True, check_other_urls=True):
-    #self.reset()
     
     urls = [url_or_urls] if isinstance(url_or_urls, str) else [s for s in url_or_urls]
 
@@ -98,31 +101,41 @@ class StorageWeb(StorageBase):
     comp_dict = { self.transformer_for_comparison(u) : u for u in urls} 
     urls = [u for u in comp_dict.values()]
     # making sure the root is the same
-    root_url = os.path.dirname(urls[0])
-    faulty_urls = [u for u in urls if not u.startswith(os.path.dirname(urls[0]))]
+    root_url, _ = self._get_root_url_other(urls[0])
+    faulty_urls = [u for u in urls if not u.startswith(root_url)]
     urls = [u for u in urls if u not in faulty_urls]
     completed_urls = set()
     external_urls = set()
     backup_names_so_far = set()
     while urls:
       url = urls.pop(0)
+      if StorageWeb.get_response_code(url) != 200:
+        external_urls.add(url)
+        continue
+
       tu =  self.transformer_for_comparison(url)
       if tu in completed_urls:
         continue
       completed_urls.add(tu)
       
       source, contents, assets_urls, urls_to_add, backup_name = self.url_to_backup_content_hrefs(url)
+
+      for u in urls_to_add:
+        if do_same_root_urls and (u.startswith(root_url)):
+          urls.append(u)
+        if check_other_urls and (not u.startswith(root_url)):
+          external_urls.add(u)
+
+      if not backup_name:
+        continue
+        
       if backup_name in backup_names_so_far:
         self.log_error(f"URL {url} has duplicate backup name {backup_name}")
         continue
       backup_names_so_far.add(backup_name)
       self.log_info(f'Analysing "{url}".\nResults saved as directory "{backup_name}"\n')
       
-      for u in urls_to_add:
-        if do_same_root_urls and (u.startswith(root_url)):
-          urls.append(u)
-        if check_other_urls and (not u.startswith(root_url)):
-          external_urls.add(u)
+
 
       fake_filename_contents_text = {'contents_'+backup_name+'.txt' : contents,
                                        'source_'+backup_name+'.txt' : str(source)}

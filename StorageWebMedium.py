@@ -14,6 +14,7 @@ from StorageWeb import StorageWeb
 class StorageWebMedium(StorageWeb):
 
   __start_ing_url = 'https://miro.medium.com/v2/'
+  __medium_dot_com = 'medium.com'
 
   ###############################################################################
   def transformer_for_comparison(self, s):
@@ -34,14 +35,73 @@ class StorageWebMedium(StorageWeb):
     return url_pic
 
   ###############################################################################
+  def _get_root_url_other(self, url):
+    
+    __medium_dot_com_at = 'https://medium.com/@'
+    
+    if ('.' + StorageWebMedium.__medium_dot_com) in url:
+      root_url = url[:url.find('.' + StorageWebMedium.__medium_dot_com)+len(StorageWebMedium.__medium_dot_com)+1]
+    elif url.startswith(__medium_dot_com_at):
+      next_slash = url.find('/', len(__medium_dot_com_at))
+      root_url = url if next_slash < 0 else url[:next_slash]
+
+    other = url[len(root_url):]
+    if other.startswith('/'):
+      other = other[1:]
+    
+    return root_url, other
+
+  ###############################################################################
+  def __url_to_part_of_source(self, url, main_tag):
+    response_text = self.get_content(filename=url, use_content_not_text=False)
+    soup = bs4.BeautifulSoup(response_text, 'html.parser')
+    source = soup.find(main_tag)
+    return source
+
+  ###############################################################################
+  def __find_all_linked_urls(self, source, root_url):
+    all_as = source.find_all("a")
+    urls_to_add = [a_tag['href'] for a_tag in all_as]
+
+    for i, u in enumerate(urls_to_add):
+      if u.startswith('/@'):
+        urls_to_add[i] = os.path.join('https://' + StorageWebMedium.__medium_dot_com, u[1:])
+      elif u.startswith('/'):
+        urls_to_add[i] = os.path.join(root_url, u[1:])    
+
+    wrong_starts = [os.path.join(a, b) for a in ['', 'https://medium.com', root_url] for b in ['m/signin', 'tag']] + [os.path.join(root_url, a) for a in ('following', 'followers', 'lists', 'list/')]
+    
+    urls_to_add = [u for u in urls_to_add if not (self.transformer_for_comparison(u) in (root_url, root_url+'/')
+                    or any([u.startswith(s) for s in wrong_starts]))]
+
+    return urls_to_add
+
+  ###############################################################################
   def url_to_backup_content_hrefs(self, url):
     try:
-      backup_name = self.transformer_for_comparison(os.path.basename(url))
+
+      errors = []
+      if not url.startswith('https://'):
+        errors.append(f'{url} does not start with "https://"')
+      if StorageWebMedium.__medium_dot_com not in url:
+        errors.append(f'{url} does not containt "{StorageWebMedium.__medium_dot_com}"')
+      assert not errors, f'{url} is not valid: ' + ', '.join(errors)
+
+      root_url, other = self._get_root_url_other(url)
+      if not other:
+        # home page
+        source = self.__url_to_part_of_source(url=url, main_tag='main')
+        all_articles = source.find_all("article")
+        urls_to_add = [root_url+'/about']
+        for aa in all_articles:
+          urls_to_add += self.__find_all_linked_urls(source=aa, root_url=root_url)
+        return None, None, None, urls_to_add, None
+    
+      
+      backup_name = self.transformer_for_comparison(other)
       main_tag = 'article' if backup_name.lower() != 'about' else 'main'
       
-      response_text = self.get_content(filename=url, use_content_not_text=False)
-      soup = bs4.BeautifulSoup(response_text, 'html.parser')
-      source = soup.find(main_tag)
+      source = self.__url_to_part_of_source(url=url, main_tag=main_tag)
   
       captions_images = []
       all_divs = source.find_all("div")
@@ -71,15 +131,9 @@ class StorageWebMedium(StorageWeb):
                          + article_text
                          + put_together_framed_message(message='Pictures')
                          + ''.join([f'{i+1}. {ci[0]} : {ci[1]}\n' for i, ci in enumerate(captions_images)]))
-      all_as = source.find_all("a")
-      urls_to_add = [a_tag['href'] for a_tag in all_as]
-      for i, u in enumerate(urls_to_add):
-        if u.startswith('/@'):
-          urls_to_add[i] = "https://medium.com" + u
 
-      url_following = os.path.join(os.path.dirname(url), 'following')
-      urls_to_add = [u for u in urls_to_add if not (u.startswith(url_following) or os.path.dirname(url).startswith(self.transformer_for_comparison(u)) or (u.startswith('/m/signin')))]
-  
+      urls_to_add = self.__find_all_linked_urls(source=source, root_url=root_url)
+      
       return source, contents, assets_urls, urls_to_add, backup_name
     except Exception as e:
       raise Exception(f"Cannot back up '{url}': {e}")
