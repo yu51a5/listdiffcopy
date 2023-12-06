@@ -77,7 +77,7 @@ class StorageWebMedium(StorageWeb):
     return urls_to_add
 
   ###############################################################################
-  def url_to_backup_content_hrefs(self, url):
+  def _url_to_backup_content_hrefs(self, url, save_texts, save_assets):
     try:
 
       errors = []
@@ -100,37 +100,42 @@ class StorageWebMedium(StorageWeb):
       
       backup_name = self.transformer_for_comparison(other)
       main_tag = 'article' if backup_name.lower() != 'about' else 'main'
-      
       source = self.__url_to_part_of_source(url=url, main_tag=main_tag)
   
-      captions_images = []
-      all_divs = source.find_all("div")
       assets_urls = set()
-      for ad in all_divs:
-        figcaptions = ad.find_all("figcaption")
-        all_figures = ad.find_all("figure")
-        divs_inside_figures_qty = sum([len(f.find_all("div"))  for f in all_figures])
-        divs_qty = len(ad.find_all("div")) 
-        if (len(figcaptions) > 1) or (not all_figures) or (divs_inside_figures_qty != divs_qty):
-          continue
-        figcaption = figcaptions[0].text if figcaptions else ''
-        captions_images.append((figcaption, []))
-        pictures = ad.find_all('picture')
+      if save_assets:
+        pictures = source.find_all('picture')
         for p in pictures:
           url_pic = StorageWebMedium.__get_url_pic(p)
-          captions_images[-1][1].append(os.path.basename(url_pic))
-          
-      pictures = source.find_all('picture')
-      for p in pictures:
-        url_pic = StorageWebMedium.__get_url_pic(p)
-        assets_urls.add(url_pic)
-  
-      article_text = h.handle(str(source))
-      article_text = article_text[:article_text.find('\n[![')] + article_text[article_text.find('Share\n')+6:] 
-      contents = (put_together_framed_message(message='Backing up ' + url)
-                         + article_text
-                         + put_together_framed_message(message='Pictures')
-                         + ''.join([f'{i+1}. {ci[0]} : {ci[1]}\n' for i, ci in enumerate(captions_images)]))
+          assets_urls.add(url_pic)
+
+      contents = None
+      if save_texts:
+        captions_images = []
+        all_divs = source.find_all("div")
+        
+        for ad in all_divs:
+          figcaptions = ad.find_all("figcaption")
+          all_figures = ad.find_all("figure")
+          divs_inside_figures_qty = sum([len(f.find_all("div"))  for f in all_figures])
+          divs_qty = len(ad.find_all("div")) 
+          if (len(figcaptions) > 1) or (not all_figures) or (divs_inside_figures_qty != divs_qty):
+            continue
+          figcaption = figcaptions[0].text if figcaptions else ''
+          captions_images.append((figcaption, []))
+          pictures = ad.find_all('picture')
+          for p in pictures:
+            url_pic = StorageWebMedium.__get_url_pic(p)
+            captions_images[-1][1].append(os.path.basename(url_pic))
+
+        article_text = h.handle(str(source))
+        article_text = article_text[:article_text.find('\n[![')] + article_text[article_text.find('Share\n')+6:] 
+        contents = (put_together_framed_message(message='Backing up ' + url)
+                           + article_text
+                           + put_together_framed_message(message='Pictures')
+                           + ''.join([f'{i+1}. {ci[0]} : {ci[1]}\n' for i, ci in enumerate(captions_images)]))
+
+
 
       urls_to_add = self.__find_all_linked_urls(source=source, root_url=root_url)
       

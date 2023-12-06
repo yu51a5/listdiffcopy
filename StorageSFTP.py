@@ -137,13 +137,6 @@ class StorageSFTP(StorageBase):
     self.sftp_client.mkdir(dirname)
 
   ###############################################################################
-  def _create_file_in_another_source(self, my_filename, source, source_filename):
-    with self.sftp_client.open(my_filename) as sftp_file:
-      sftp_contents = sftp_file.read()
-      source._create_file_given_content(filename=source_filename, content=sftp_contents)
-      return len(sftp_contents)
-
-  ###############################################################################
   def _rename_file(self, path_to_existing_file, path_to_new_file):
     self.sftp_client.rename(path_to_existing_file, path_to_new_file)
     

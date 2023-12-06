@@ -252,12 +252,6 @@ class StorageBase(LoggerObj):
     file_beginning = self.get_content(filename=filename, length=2048)
     result = StorageBase._file_contents_is_text(file_beginning=file_beginning)
     return result
-        
-  ###############################################################################
-  def _create_file_in_another_source(self, my_filename, source, source_filename):
-    my_contents = self.get_content(my_filename)
-    source.create_file_given_content(filename=source_filename, content=my_contents)
-    return len(my_contents)
 
   ###############################################################################
   def get_file_size_or_content(self, filename):
@@ -270,17 +264,6 @@ class StorageBase(LoggerObj):
       my_file_size = len(my_contents)
 
     return my_file_size, my_contents
-    
-  ###############################################################################
-  def create_file(self, my_filename, source, source_filename):
-    try:
-      size_contents = source._create_file_in_another_source(my_filename=source_filename, 
-                                                      source=self, 
-                                                      source_filename=my_filename)
-      return size_contents
-    except Exception as e:
-      self.log_error(f'{self.str(my_filename)} could not be created from {source.str(source_filename)}, {e}')
-      return math.nan
   
   ###############################################################################
   def delete_file(self, filename):

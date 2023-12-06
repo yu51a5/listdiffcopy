@@ -7,8 +7,11 @@ from StorageGitHub import StorageGitHub
 from StorageWebMedium import StorageWebMedium
 from LoggerObj import LoggerObj
 
+github_secret_name = "medium_github_2" #  medium_github_secret
 
-backup_a_Medium_website(url_or_urls='https://medium.com/@real.zyxxy/about', path="medium3", StorageType=StorageGitHub, kwargs_storage={'secret_name': "medium_github_secret"}, do_same_root_urls=True, check_other_urls=True)
+mb_kwargs = dict(url_or_urls='https://medium.com/@real.zyxxy/about', path="medium55", do_same_root_urls=True)
+backup_a_Medium_website(**mb_kwargs, StorageType=StorageGitHub, kwargs_storage={'secret_name': github_secret_name}, check_other_urls=True, save_texts=True, save_assets=False)
+backup_a_Medium_website(**mb_kwargs, StorageType=StoragePCloud, kwargs_storage={'secret_name': "default_pcloud_secret"}, check_other_urls=False, save_texts=False, save_assets=True)
 
 if 1:
   t, di = (StoragePCloud, {'secret_name': "default_pcloud_secret"})
@@ -22,7 +25,7 @@ if 1:
   
   for t, di in ((StorageLocal, {}), 
                 (StoragePCloud, {'secret_name': "default_pcloud_secret"}), 
-                (StorageGitHub, {'secret_name': "medium_github_secret"})):
+                (StorageGitHub, {'secret_name': github_secret_name})):
     for d in ["test_test_test", "test_test_test2"]:
       create_directory(d, logger=logger, StorageType=t, kwargs_storage=di)
       check_path_exist_is_dir_not_file(d, StorageType=t, kwargs_storage=di)
@@ -45,7 +48,7 @@ if 1:
   swm.list(d1, enforce_size_fetching=False)
   cont = {}
   for t, di in ((StorageLocal, {}), 
-                (StorageGitHub, {'secret_name': "medium_github_secret"}), 
+                (StorageGitHub, {'secret_name': github_secret_name}), 
                 (StoragePCloud, {'secret_name': "default_pcloud_secret"})):
     synchronize(path_from=d1, path_to=d1, storage_from=swm, StorageToType=t, kwargs_to=di)
     cont[str(t)] = get_size(d1, StorageType=t, kwargs_storage=di)
@@ -60,7 +63,7 @@ swm.list(d2, enforce_size_fetching=False)
 kwargs = dict(url_or_urls=med_url_2, path=d2)
 
 for t, di in ((StoragePCloud, {'secret_name': "default_pcloud_secret"}), 
-              (StorageGitHub, {'secret_name': "medium_github_secret"}), 
+              (StorageGitHub, {'secret_name': github_secret_name}), 
               (StorageLocal, {}), ):
   kwargs['StorageType'] = t
   backup_a_Medium_website(**kwargs)

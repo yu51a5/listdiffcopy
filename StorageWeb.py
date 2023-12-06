@@ -91,8 +91,11 @@ class StorageWeb(StorageBase):
     return os.path.dirname(url), os.path.basename(url)
     
   ###############################################################################
-  def url_or_urls_to_fake_directory(self, url_or_urls, path, do_same_root_urls=True, check_other_urls=True):
-    
+  def url_or_urls_to_fake_directory(self, url_or_urls, path, 
+                                          do_same_root_urls=True, 
+                                          check_other_urls=True,
+                                          save_texts=True,
+                                          save_assets=True):
     urls = [url_or_urls] if isinstance(url_or_urls, str) else [s for s in url_or_urls]
 
     self.log_title(f"Analysing {len(urls)} URL{'' if {len(urls)==1} else 's'} {'and other linked URLs' if do_same_root_urls else ''}")
@@ -118,7 +121,7 @@ class StorageWeb(StorageBase):
         continue
       completed_urls.add(tu)
       
-      source, contents, assets_urls, urls_to_add, backup_name = self.url_to_backup_content_hrefs(url)
+      source, contents, assets_urls, urls_to_add, backup_name = self._url_to_backup_content_hrefs(url=url, save_texts=save_texts, save_assets=save_assets)
 
       for u in urls_to_add:
         if do_same_root_urls and (u.startswith(root_url)):
@@ -150,15 +153,17 @@ class StorageWeb(StorageBase):
           dict_to_use[0][rf] = [{}, [], []]
         dict_to_use = dict_to_use[0][rf]
 
-      dict_to_use[1] = assets_urls
-      dict_to_use[2] = fake_filename_contents_text.keys()      
+      if save_assets:
+        dict_to_use[1] = assets_urls
+        self.__name_content_type_is_content.update({k: True for k in assets_urls})
 
-      self.__name_content_type_is_content.update({k: True for k in assets_urls})
-      self.__name_content_type_is_content.update({k: False for k in fake_filename_contents_text})
+      if save_texts:
+        dict_to_use[2] = fake_filename_contents_text.keys()      
+        self.__name_content_type_is_content.update({k: False for k in fake_filename_contents_text})
       
     return external_urls
 
   ###############################################################################
-  def url_to_backup_content_hrefs(self, url):
+  def _url_to_backup_content_hrefs(self, url, save_texts, save_assets):
     self.__please_override()
     

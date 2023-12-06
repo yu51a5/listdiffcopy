@@ -47,11 +47,11 @@ for name_return_if_error in ("get_content", ("get_size", math.nan), "list", "del
 # inspirations: https://gist.github.com/bgoonz/217ba804d2b3aabe8415c9c99d8f9224
 # and           https://github.com/gunar/medium-parser/blob/master/src/processElement.js
 #################################################################################
-def backup_a_Medium_website(url_or_urls, path, storage=None, StorageType=None, kwargs_storage={}, do_same_root_urls=True, check_other_urls=True):
+def backup_a_Medium_website(url_or_urls, path, storage=None, StorageType=None, kwargs_storage={}, do_same_root_urls=True, check_other_urls=True, save_texts=True, save_assets=True):
 
   swm = StorageWebMedium()
 
-  external_urls = swm.url_or_urls_to_fake_directory(url_or_urls=url_or_urls, path=path, do_same_root_urls=do_same_root_urls, check_other_urls=check_other_urls)
+  external_urls = swm.url_or_urls_to_fake_directory(url_or_urls=url_or_urls, path=path, do_same_root_urls=do_same_root_urls, check_other_urls=check_other_urls, save_texts=save_texts, save_assets=save_assets)
 
   swm.list(path, enforce_size_fetching=False)
   if storage:
