@@ -48,11 +48,11 @@ class StorageWeb(StorageBase):
     for code, urls_ in by_resp_code.items():
       if code == 200:
         if print_ok:
-          self.log_info("OK URL:\n" + "\n".join(urls_))
+          self.log_info("\nOK URL:\n" + "\n".join(urls_) + "\n\n")
       elif code == 403:
-        self.log_warning("URL that cannot be automatically checked (code 403):\n" + "\n".join(urls_))
+        self.log_warning("\nURL that cannot be automatically checked (code 403):\n" + "\n".join(urls_) + "\n\n")
       else:
-        self.log_error(f"URL check failed (code {code}):\n" + "\n".join(urls_))
+        self.log_error(f"\nURL check failed (code {code}):\n" + "\n".join(urls_) + "\n\n")
 
 
       # [("\n" + u + ": this URL is referenced in:\n" + "\n".join(p)) for u, p in
@@ -112,6 +112,7 @@ class StorageWeb(StorageBase):
     backup_names_so_far = set()
     while urls:
       url = urls.pop(0)
+
       if StorageWeb.get_response_code(url) != 200:
         external_urls.add(url)
         continue

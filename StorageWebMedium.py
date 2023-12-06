@@ -60,16 +60,16 @@ class StorageWebMedium(StorageWeb):
 
   ###############################################################################
   def __find_all_linked_urls(self, source, root_url):
+    what_to_add = {1 : root_url, 2 :  'https://medium.com'}
+    
     all_as = source.find_all("a")
     urls_to_add = [a_tag['href'] for a_tag in all_as]
 
     for i, u in enumerate(urls_to_add):
-      if u.startswith('/@'):
-        urls_to_add[i] = os.path.join('https://' + StorageWebMedium.__medium_dot_com, u[1:])
-      elif u.startswith('/'):
-        urls_to_add[i] = os.path.join(root_url, u[1:])    
+      if (u[0] == '/') and (u.count('/') in (1, 2)):
+        urls_to_add[i] = os.path.join(what_to_add[2 if '@' in u else u.count('/')], u[1:])
 
-    wrong_starts = [os.path.join(a, b) for a in ['', 'https://medium.com', root_url] for b in ['m/signin', 'tag']] + [os.path.join(root_url, a) for a in ('following', 'followers', 'lists', 'list/')]
+    wrong_starts = [os.path.join(a, b) for a in ('', 'https://medium.com', root_url, '/') for b in ('m/signin', 'tag', 'following', 'followers', 'lists', 'list/')]
     
     urls_to_add = [u for u in urls_to_add if not (self.transformer_for_comparison(u) in (root_url, root_url+'/')
                     or any([u.startswith(s) for s in wrong_starts]))]
