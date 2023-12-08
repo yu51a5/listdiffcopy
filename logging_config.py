@@ -10,6 +10,9 @@ import uuid
 import os
 import logging
 
+if not os.path.isdir('logs'):
+  os.mkdir('logs')
+
 class ConsoleFormatter(logging.Formatter):
   """Logging Formatter to add colors and count warning / errors"""
 
