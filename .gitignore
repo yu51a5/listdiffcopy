@@ -3,6 +3,8 @@ poetry.lock
 replit.nix
 pyproject.toml
 .breakpoints
+.local
+.upm
 *.txt
 *.log
 
