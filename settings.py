@@ -5,3 +5,5 @@ default_ignore_wp_scaled_images = True
 log_file = 'log.txt'
 list_directories_that_exist_in_one_storage_only = True
 list_identical_files = True
+
+log_dirname = 'logs'

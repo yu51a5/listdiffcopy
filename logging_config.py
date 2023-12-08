@@ -10,8 +10,10 @@ import uuid
 import os
 import logging
 
-if not os.path.isdir('logs'):
-  os.mkdir('logs')
+from settings import log_dirname
+
+if log_dirname and (not os.path.isdir(log_dirname)):
+  os.mkdir(log_dirname)
 
 class ConsoleFormatter(logging.Formatter):
   """Logging Formatter to add colors and count warning / errors"""
@@ -41,7 +43,7 @@ class ConsoleFormatter(logging.Formatter):
     return formatter.format(record)
 
 
-def get_logger(name, add_date=True, add_uuid=True, log_dir='logs'):
+def get_logger(name, add_date=True, add_uuid=True):
   logger = logging.getLogger(name)
   logger.propagate = False
   logger.setLevel(logging.DEBUG) # the least offensive level that will be taken into account
@@ -58,8 +60,8 @@ def get_logger(name, add_date=True, add_uuid=True, log_dir='logs'):
   # create console handler with a higher log level
   for fname, level in (('all', logging.INFO), ('errors', logging.WARNING)):
     filename = name + filename_date + '_' + fname + filename_uuid + '.log'
-    if log_dir:
-      filename = os.path.join(log_dir, filename)
+    if log_dirname:
+      filename = os.path.join(log_dirname, filename)
     ch = logging.FileHandler(filename=filename, mode='a')
     ch.setLevel(level)
     logger.addHandler(ch)

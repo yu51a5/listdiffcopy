@@ -1,6 +1,7 @@
 import os
 import requests
 import math
+import time
 
 #################################################################################
 #In Shell,
@@ -21,9 +22,18 @@ class StorageWeb(StorageBase):
 
   ###############################################################################
   def get_browser_options():
-    chrome_options = Options()
-    chrome_options.add_argument('--no-sandbox')
-    chrome_options.add_argument('--disable-dev-shm-usage')
+    options = Options()
+    options.add_argument('--no-sandbox')
+    options.add_argument('--headless')
+    options.add_argument('--disable-dev-shm-usage')
+
+    options.add_argument("start-maximized"); 
+    options.add_argument("disable-infobars"); 
+    options.add_argument("--disable-extensions"); 
+    options.add_argument("--disable-gpu"); 
+    options.add_argument("--disable-dev-shm-usage"); 
+
+    return options
 
   chrome_options = get_browser_options()
 

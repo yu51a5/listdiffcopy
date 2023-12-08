@@ -1,4 +1,5 @@
 import os
+from settings import log_dirname
 from storage_actions import backup_a_Medium_website, delete, get_size, get_content, synchronize, create_directory,\
                             list, check_path_exist_is_dir_not_file, create_file_given_content, get_filenames_and_directories
 from StorageLocal import StorageLocal
@@ -79,6 +80,6 @@ if True:
 # cleanup
 _, dirs = get_filenames_and_directories("", StorageType=StorageLocal)
 for d in dirs:
-  if (os.path.basename(d) not in ['logs', 'venv']) and ("a" <= os.path.basename(d)[0] <= 'z'):
+  if (os.path.basename(d) not in [log_dirname, 'venv']) and ("a" <= os.path.basename(d)[0] <= 'z'):
     delete(d, StorageType=StorageLocal)
   
