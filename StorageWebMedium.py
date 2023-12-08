@@ -88,16 +88,14 @@ class StorageWebMedium(StorageWeb):
       assert not errors, f'{url} is not valid: ' + ', '.join(errors)
 
       root_url, other = self._get_root_url_other(url)
-      if not other:
-        # home page
-        source_string = StorageWeb._get_page_source_with_scrolling(url=url)
+      if not other: # home page
+        _, source_string = StorageWeb._get_page_source_with_scrolling(url=url)
         source = bs4.BeautifulSoup(source_string, "html.parser")
         all_articles = source.find_all("article")
         urls_to_add = [root_url+'/about']
         for aa in all_articles:
           urls_to_add += self.__find_all_linked_urls(source=aa, root_url=root_url)
         return None, None, None, urls_to_add, None
-
 
       backup_name = self.transformer_for_comparison(other)
       main_tag = 'article' if backup_name.lower() != 'about' else 'main'

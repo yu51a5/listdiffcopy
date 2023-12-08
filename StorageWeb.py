@@ -212,12 +212,13 @@ class StorageWeb(StorageBase):
     while (screen_height) * i <= scroll_height:
       # scroll one screen height each time
       driver.execute_script("window.scrollTo(0, {screen_height}*{i});".format(screen_height=screen_height, i=i))  
-      i += 1
+      
       time.sleep(scroll_pause_time)
       # update scroll height each time after scrolled, as the scroll height can change after we scrolled the page
       scroll_height = driver.execute_script("return document.body.scrollHeight;")  
       # Break the loop when the height we need to scroll to is larger than the total scroll height
-      print(i)
+      print(f'Completed {i} scroll{"s" if i > 1 else ""} of {url}')
+      i += 1
 
     html = driver.page_source
     driver.quit()
