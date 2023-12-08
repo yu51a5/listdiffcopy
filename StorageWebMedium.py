@@ -36,9 +36,9 @@ class StorageWebMedium(StorageWeb):
 
   ###############################################################################
   def _get_root_url_other(self, url):
-    
+
     __medium_dot_com_at = 'https://medium.com/@'
-    
+
     if ('.' + StorageWebMedium.__medium_dot_com) in url:
       root_url = url[:url.find('.' + StorageWebMedium.__medium_dot_com)+len(StorageWebMedium.__medium_dot_com)+1]
     elif url.startswith(__medium_dot_com_at):
@@ -48,7 +48,7 @@ class StorageWebMedium(StorageWeb):
     other = url[len(root_url):]
     if other.startswith('/'):
       other = other[1:]
-    
+
     return root_url, other
 
   ###############################################################################
@@ -61,7 +61,7 @@ class StorageWebMedium(StorageWeb):
   ###############################################################################
   def __find_all_linked_urls(self, source, root_url):
     what_to_add = {1 : root_url, 2 :  'https://medium.com'}
-    
+
     all_as = source.find_all("a")
     urls_to_add = [a_tag['href'] for a_tag in all_as]
 
@@ -70,7 +70,7 @@ class StorageWebMedium(StorageWeb):
         urls_to_add[i] = os.path.join(what_to_add[2 if '@' in u else u.count('/')], u[1:])
 
     wrong_starts = [os.path.join(a, b) for a in ('', 'https://medium.com', root_url, '/') for b in ('m/signin', 'tag', 'following', 'followers', 'lists', 'list/')]
-    
+
     urls_to_add = [u for u in urls_to_add if not (self.transformer_for_comparison(u) in (root_url, root_url+'/')
                     or any([u.startswith(s) for s in wrong_starts]))]
 
@@ -90,18 +90,19 @@ class StorageWebMedium(StorageWeb):
       root_url, other = self._get_root_url_other(url)
       if not other:
         # home page
-        source = self.__url_to_part_of_source(url=url, main_tag='main')
+        source_string = StorageWeb._get_page_source_with_scrolling(url=url)
+        source = bs4.BeautifulSoup(source_string, "html.parser")
         all_articles = source.find_all("article")
         urls_to_add = [root_url+'/about']
         for aa in all_articles:
           urls_to_add += self.__find_all_linked_urls(source=aa, root_url=root_url)
         return None, None, None, urls_to_add, None
-    
-      
+
+
       backup_name = self.transformer_for_comparison(other)
       main_tag = 'article' if backup_name.lower() != 'about' else 'main'
       source = self.__url_to_part_of_source(url=url, main_tag=main_tag)
-  
+
       assets_urls = set()
       if save_assets:
         pictures = source.find_all('picture')
@@ -113,7 +114,7 @@ class StorageWebMedium(StorageWeb):
       if save_texts:
         captions_images = []
         all_divs = source.find_all("div")
-        
+
         for ad in all_divs:
           figcaptions = ad.find_all("figcaption")
           all_figures = ad.find_all("figure")
@@ -138,7 +139,7 @@ class StorageWebMedium(StorageWeb):
 
 
       urls_to_add = self.__find_all_linked_urls(source=source, root_url=root_url)
-      
+
       return source, contents, assets_urls, urls_to_add, backup_name
     except Exception as e:
       raise Exception(f"Cannot back up '{url}': {e}")

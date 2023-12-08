@@ -1,5 +1,17 @@
 import os
 import requests
+import math
+
+#################################################################################
+#In Shell,
+# 1. run chromedriver --help - this will add chromedriver to your replit.nix;
+# 2. run chromium --help - this will add chromium to your replit.nix. 
+# There are two installation options, ungoogled-chromium.out and chromium.out. I have chosen ungoogled-chromium.out
+
+# sources: https://medium.com/analytics-vidhya/using-python-and-selenium-to-scrape-infinite-scroll-web-pages-825d12c24ec7
+# and # https://stackoverflow.com/questions/71201650/how-to-use-selenium-on-repl-it/77616859
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
 from utils import remove_duplicates
 from StorageBase import StorageBase
@@ -8,12 +20,20 @@ from StorageBase import StorageBase
 class StorageWeb(StorageBase):
 
   ###############################################################################
+  def get_browser_options():
+    chrome_options = Options()
+    chrome_options.add_argument('--no-sandbox')
+    chrome_options.add_argument('--disable-dev-shm-usage')
+
+  chrome_options = get_browser_options()
+
+  ###############################################################################
   def reset(self):
     self.__fake_directories = [{}, [], []]
     self.__fake_files = {}
     self.__name_content_type_is_content = {}
     self.__fake_paths_to_urls = {}
-    
+
   ###############################################################################
   def __init__(self, logger_name=None, objects_to_sync_logger_with=[]):
     super().__init__(constructor_kwargs={}, logger_name=logger_name, objects_to_sync_logger_with=objects_to_sync_logger_with)
@@ -56,7 +76,7 @@ class StorageWeb(StorageBase):
 
 
       # [("\n" + u + ": this URL is referenced in:\n" + "\n".join(p)) for u, p in
-    
+
   ###############################################################################
   def get_content(self, filename, length=None, use_content_not_text=None): # filename is url
     if filename in self.__fake_files:
@@ -81,7 +101,7 @@ class StorageWeb(StorageBase):
           return [], []
         what = what[0][rf]
       directories_, urls, fake_filename_contents = what
-      
+
     directories_ = [os.path.join(dir_name, k) for k in directories_.keys()]
     files_ = [u for u in urls] + [os.path.join(dir_name, k) for k in fake_filename_contents]
     return files_, directories_
@@ -89,7 +109,7 @@ class StorageWeb(StorageBase):
   ###############################################################################
   def _get_root_url_other(self, url):
     return os.path.dirname(url), os.path.basename(url)
-    
+
   ###############################################################################
   def url_or_urls_to_fake_directory(self, url_or_urls, path, 
                                           do_same_root_urls=True, 
@@ -99,7 +119,7 @@ class StorageWeb(StorageBase):
     urls = [url_or_urls] if isinstance(url_or_urls, str) else [s for s in url_or_urls]
 
     self.log_title(f"Analysing {len(urls)} URL{'' if {len(urls)==1} else 's'} {'and other linked URLs' if do_same_root_urls else ''}")
-    
+
     # removing duplicates
     comp_dict = { self.transformer_for_comparison(u) : u for u in urls} 
     urls = [u for u in comp_dict.values()]
@@ -121,7 +141,7 @@ class StorageWeb(StorageBase):
       if tu in completed_urls:
         continue
       completed_urls.add(tu)
-      
+
       source, contents, assets_urls, urls_to_add, backup_name = self._url_to_backup_content_hrefs(url=url, save_texts=save_texts, save_assets=save_assets)
 
       for u in urls_to_add:
@@ -132,13 +152,13 @@ class StorageWeb(StorageBase):
 
       if not backup_name:
         continue
-        
+
       if backup_name in backup_names_so_far:
         self.log_error(f"URL {url} has duplicate backup name {backup_name}")
         continue
       backup_names_so_far.add(backup_name)
       self.log_info(f'Analysing "{url}".\nResults saved as directory "{backup_name}"\n')
-      
+
 
 
       fake_filename_contents_text = {'contents_'+backup_name+'.txt' : contents,
@@ -161,10 +181,35 @@ class StorageWeb(StorageBase):
       if save_texts:
         dict_to_use[2] = fake_filename_contents_text.keys()      
         self.__name_content_type_is_content.update({k: False for k in fake_filename_contents_text})
-      
+
     return external_urls
 
   ###############################################################################
   def _url_to_backup_content_hrefs(self, url, save_texts, save_assets):
     self.__please_override()
-    
+
+  ###############################################################################
+  def _get_page_source_with_scrolling(url, init_sleep=2, scroll_pause_time=1):
+
+    driver = webdriver.Chrome(options=StorageWeb.chrome_options)
+
+    driver.get(url)
+    time.sleep(init_sleep)  # Allow init_sleep seconds for the web page to open
+    screen_height = driver.execute_script("return window.screen.height;")   # get the screen height of the web
+    i = 1
+
+    scroll_height = math.inf
+    while (screen_height) * i <= scroll_height:
+      # scroll one screen height each time
+      driver.execute_script("window.scrollTo(0, {screen_height}*{i});".format(screen_height=screen_height, i=i))  
+      i += 1
+      time.sleep(scroll_pause_time)
+      # update scroll height each time after scrolled, as the scroll height can change after we scrolled the page
+      scroll_height = driver.execute_script("return document.body.scrollHeight;")  
+      # Break the loop when the height we need to scroll to is larger than the total scroll height
+      print(i)
+
+    html = driver.page_source
+    driver.quit()
+
+    return i, html
