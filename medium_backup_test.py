@@ -54,8 +54,6 @@ if 1:
     synchronize(path_from=d1, path_to=d1, storage_from=swm, StorageToType=t, kwargs_to=di)
     cont[str(t)] = get_size(d1, StorageType=t, kwargs_storage=di)
 
-  print(cont)
-
 med_url_2 = 'https://medium.com/@real.zyxxy/about'
 d2 = 'medium2'
 swm.url_or_urls_to_fake_directory(url_or_urls=med_url_2, path=d2)

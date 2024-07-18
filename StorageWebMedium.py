@@ -25,6 +25,11 @@ class StorageWebMedium(StorageWeb):
     super().__init__(logger_name=logger_name, objects_to_sync_logger_with=objects_to_sync_logger_with)
 
   ###############################################################################
+  @classmethod
+  def get_headers(cls):
+    return {'User-Agent': "Mozilla/5.0 (compatible; Rigor/1.0.0; http://rigor.com)"}
+    
+  ###############################################################################
   def __get_url_pic(p):
     splints = str(p).split(', ')
     splints = [s[:s.find(' ')] for s in splints if s.startswith(StorageWebMedium.__start_ing_url)]
@@ -50,13 +55,6 @@ class StorageWebMedium(StorageWeb):
       other = other[1:]
 
     return root_url, other
-
-  ###############################################################################
-  def __url_to_part_of_source(self, url, main_tag):
-    response_text = self.get_content(filename=url, use_content_not_text=False)
-    soup = bs4.BeautifulSoup(response_text, 'html.parser')
-    source = soup.find(main_tag)
-    return source
 
   ###############################################################################
   def __find_all_linked_urls(self, source, root_url):
@@ -99,7 +97,7 @@ class StorageWebMedium(StorageWeb):
 
       backup_name = self.transformer_for_comparison(other)
       main_tag = 'article' if backup_name.lower() != 'about' else 'main'
-      source = self.__url_to_part_of_source(url=url, main_tag=main_tag)
+      source = self._url_to_part_of_source(url=url, tag=main_tag)
 
       assets_urls = set()
       if save_assets:
@@ -141,3 +139,11 @@ class StorageWebMedium(StorageWeb):
       return source, contents, assets_urls, urls_to_add, backup_name
     except Exception as e:
       raise Exception(f"Cannot back up '{url}': {e}")
+
+  ###############################################################################
+  def generate_toc(self, url):
+    cont = self._url_to_part_of_source(url=url, tag='article')
+    headers = cont.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
+    result = [f'#{ c["id"] } {"--" * int(c.name[1])} {c.text}' for c in headers]
+    #[f'<a href="#{ c["id"] }"> {"-" * int(c.name[1])} {c.text} </a>' for c in headers]
+    return result

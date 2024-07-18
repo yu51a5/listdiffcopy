@@ -11,6 +11,8 @@ import time
 
 # sources: https://medium.com/analytics-vidhya/using-python-and-selenium-to-scrape-infinite-scroll-web-pages-825d12c24ec7
 # and # https://stackoverflow.com/questions/71201650/how-to-use-selenium-on-repl-it/77616859
+import bs4
+
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
@@ -50,6 +52,20 @@ class StorageWeb(StorageBase):
     self.reset()
 
   ###############################################################################
+  @classmethod
+  def get_headers(cls):
+    return {}
+
+  ###############################################################################
+  def _open(self):
+    self.requests_session = requests.Session()
+    self.requests_session.headers.update(self.get_headers())
+
+  ###############################################################################
+  def _close(self):
+    self.requests_session.close()
+
+  ###############################################################################
   def path_to_str(self, path):
     return self.__fake_paths_to_urls[path] if path in self.__fake_paths_to_urls else path
 
@@ -58,8 +74,8 @@ class StorageWeb(StorageBase):
     return s
 
   ###############################################################################
-  def get_response_code(url):
-    with requests.get(url) as response:
+  def get_response_code(self, url):
+    with self.requests_session.get(url) as response:
       return response.status_code
 
   ###############################################################################
@@ -67,7 +83,7 @@ class StorageWeb(StorageBase):
     by_resp_code = {}
     for url in urls:
       try:
-        response_code = StorageWeb.get_response_code(url)
+        response_code = self.get_response_code(url)
       except:
         response_code = 418
       if response_code in by_resp_code:
@@ -91,7 +107,7 @@ class StorageWeb(StorageBase):
   def get_content(self, filename, length=None, use_content_not_text=None): # filename is url
     if filename in self.__fake_files:
       return self.__fake_files[filename]
-    with requests.get(filename) as response:
+    with self.requests_session.get(filename) as response:
       if response.status_code == 200:
         use_content = use_content_not_text if use_content_not_text is not None else self.__name_content_type_is_content[filename]
         return response.content if use_content else (response.text[:length] if length else response.text)
@@ -143,7 +159,7 @@ class StorageWeb(StorageBase):
     while urls:
       url = urls.pop(0)
 
-      if StorageWeb.get_response_code(url) != 200:
+      if self.get_response_code(url) != 200:
         external_urls.add(url)
         continue
 
@@ -224,3 +240,14 @@ class StorageWeb(StorageBase):
     driver.quit()
 
     return i, html
+
+  ###############################################################################
+  def _url_to_part_of_source(self, url, tag):
+    response_text = self.get_content(filename=url, use_content_not_text=False)
+    soup = bs4.BeautifulSoup(response_text, 'html.parser')
+    if isinstance(tag, str):
+      result = soup.find(tag)
+    else: # list
+      result = soup.find_all(tag)
+    return result
+    
