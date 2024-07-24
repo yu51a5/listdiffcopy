@@ -5,8 +5,7 @@ from StorageSFTP import StorageSFTP
 from StorageGitHub import StorageGitHub
 from StoragePCloud import StoragePCloud
 
-from storage_actions import list, rename, delete
-from StorageAction2 import compare, synchronize, copy
+from storage_actions import list, rename, delete, compare, synchronize, copy
 
 # with cProfile.Profile() as pr:
 #with create_logging_object() as ll:
@@ -28,7 +27,6 @@ from StorageAction2 import compare, synchronize, copy
 #list_contents(StorageGitHub, 'w1')
 
 copy(StoragePCloud, 'My Music/GotJoy.mp3', StoragePCloud, 'aa/My_Music/GotJoy.mp3')
-assert 6 > 7
 
 copy(StoragePCloud, 'My Pictures', StoragePCloud, 'aa/My_Pictures')
 

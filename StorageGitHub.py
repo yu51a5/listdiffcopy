@@ -1,4 +1,3 @@
-from github import Github, ContentFile, GithubException
 import requests
 import os
 from requests.structures import CaseInsensitiveDict
@@ -21,18 +20,21 @@ class StorageGitHub(StorageBase):
   def __init__(self, secret_name=None, logger_name=None, objects_to_sync_logger_with=[]):
     super().__init__(constructor_kwargs=dict(secret_name=secret_name), logger_name=logger_name, objects_to_sync_logger_with=objects_to_sync_logger_with)
 
-    self.repo_name, self.token = self._find_secret_components(2, secret_name=secret_name)
+    repo_name, self.token = self._find_secret_components(2, secret_name=secret_name)
 
     try:
       github_object = Github(self.token)
     except Exception as e:
       raise Exception(f"Secret {secret_name} contains invalid GitHub token, {e}")
     github_user = github_object.get_user()
-    self.owner = github_user.login
+    owner = github_user.login
     try:
-      self.repo = github_user.get_repo(self.repo_name)
-    except GithubException as e:
-      raise Exception(f'ERROR! Repository {self.owner}/{self.repo_name} does not exist, {e}')
+      self.repo = github_user.get_repo(repo_name)
+    except Exception as e:
+      raise Exception(f'ERROR! Repository {owner}/{repo_name} does not exist, {e}')
+
+    self.url_head =  f"https://api.github.com/repos/{owner}/{repo_name}"
+    self.branch_name = "MASTER"
 
     self.headers = CaseInsensitiveDict()
     self.headers["Accept"] = "application/vnd.github.v3.raw"
@@ -54,7 +56,9 @@ class StorageGitHub(StorageBase):
     exists = self.check_directory_exists(path=dir_name)
 
     if exists:
-    
+
+      url = f"{self.url_head}/git/trees/({self.branch_name}):({dir_name})"
+      
       contents = self.repo.get_contents(dir_name)
       if isinstance(contents, ContentFile.ContentFile):
         contents = [contents]
@@ -85,7 +89,7 @@ class StorageGitHub(StorageBase):
     if length:
       return bytes(b'')
 
-    url = f"https://api.github.com/repos/{self.owner}/{self.repo_name}/contents/{filename}"
+    url = f"{self.url_head}/contents/{filename}"
     #url2 = f'https://raw.githubusercontent.com/{self.owner}/{self.repo_name}/main/{filename}'
     response = requests.get(url, headers=self.headers)
     content = response.content

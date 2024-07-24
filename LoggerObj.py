@@ -25,7 +25,7 @@ class LoggerObj:
   default_logger_extra = (get_logger(name="log"), LoggerExtra())
 
 ###################################################################################
-  def __init__(self, logger_name=None, objects_to_sync_logger_with=[], title=None):
+  def __init__(self, logger_name=None, objects_to_sync_logger_with=[]):
     
     if logger_name is not None:
       self.__logger = get_logger(name=logger_name)
@@ -38,9 +38,6 @@ class LoggerObj:
       self.__logger_extra = None
     
     LoggerObj.sync_loggers(*([self] + objects_to_sync_logger_with))
-
-    if title:
-      self.log_title(title)
 
   #################################################################################
   def sync_loggers(*args):
