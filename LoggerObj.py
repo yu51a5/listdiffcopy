@@ -106,7 +106,7 @@ class LoggerObj:
     
   ###############################################################################
   def log_mention_directory(self, dirname, message_to_print, message2):
-    at_now = LoggerExtra.get_at_now()
+    at_now = LoggerExtra.get_time_now()
     self.__log_print(f'{message_to_print} directory `{dirname}` {message2} {at_now}')
   
   ###############################################################################
@@ -139,7 +139,8 @@ class LoggerObj:
 
     level = self.__logger_extra.get_level_depth()
 
-    prefix = ('╚' if message.lower().startswith('exit') else ('╠' if message.lower().startswith('delet') else '╔')) + '════ '
+    prefix = ('╚' if (message.lower().startswith('exit') or message.lower().startswith('completed'))
+                      else ('╠' if message.lower().startswith('delet') else '╔')) + '════ '
     if message.lower().startswith('exit'):
       level += 1
       if (dir_details_df is not None):
@@ -153,13 +154,29 @@ class LoggerObj:
     self.log_info(string_)
 
   ###############################################################################
+  def start_file(self, path, message_to_print, message2=''):
+    at_now, at_now_str = LoggerExtra.get_time_now2()
+    self.__log_print(f'{message_to_print} file `{path}` {(message2 + " ") if message2 else ""}{at_now_str}')
+    return at_now
+
+  ###############################################################################
+  def print_complete_file(self, data, when_started):
+    self.print_files_df(data=data)
+    at_now, at_now_str = LoggerExtra.get_time_now2()
+    self.__log_print(f'Completed {at_now_str}, time elapsed {at_now - when_started}')
+
+  ###############################################################################
   def print_files_df(self, data):
     if not data:
       return
-    how_many_columns = len(data[0])
-    if isinstance(data[0][-1], FDStatus):
-      for row_ in data:
+    
+    _data = data if isinstance(data[0], list) else [data]
+    extra_prefix = '──── ' if isinstance(data[0], list) else '║ '
+    
+    how_many_columns = len(_data[0])
+    if isinstance(_data[0][-1], FDStatus):
+      for row_ in _data:
         row_[-1] = self.status_names_complete[row_[-1].value]
-    df_files = pd.DataFrame(data, columns=self.columns_files_df[how_many_columns])
-    df_str = self._df_to_str(df_files, extra_prefix='──── ')
+    df_files = pd.DataFrame(_data, columns=self.columns_files_df[how_many_columns])
+    df_str = self._df_to_str(df_files, extra_prefix=extra_prefix)
     self.log_info(df_str)

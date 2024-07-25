@@ -90,25 +90,25 @@ class LoggerExtra:
     #assert not "stopping here to show the full call stack"
 
   ###############################################################################
-  def __to_at_now():
+  def get_time_now2():
     now_ = datetime.now()
     at_now = now_.strftime("at %H:%M:%S")
     return now_, at_now
 
   ###############################################################################
-  def get_at_now():
-    _, at_now = LoggerExtra.__to_at_now()
+  def get_time_now():
+    _, at_now = LoggerExtra.get_time_now2()
     return at_now
 
   ###############################################################################
   def log_enter_level(self, dirname):
-    now_, at_now = LoggerExtra.__to_at_now()
+    now_, at_now = LoggerExtra.get_time_now2()
     self.__level_start_times_dirnames.append((now_, dirname))
     return at_now
 
   ###############################################################################
   def log_exit_level(self):
-    now_, at_now = LoggerExtra.__to_at_now()
+    now_, at_now = LoggerExtra.get_time_now2()
     start_time, dirname_ = self.__level_start_times_dirnames.pop(-1)
     time_elapsed = now_ - start_time
     return dirname_, at_now, time_elapsed

@@ -105,14 +105,13 @@ class StorageAction2(LoggerObj):
           with StorageToType(**kwargs_to, objects_to_sync_logger_with=[self.storage_from]) as self.storage_to: 
             self.__common_part_of_constructor(**kwargs)
 
-    title = f'{self.enter_123[0]} {self.storage_from.str(path=self.root_path_from)} {self.enter_123[2]} {self.storage_to.str(path=self.root_path_to)}'
-    self.log_title(title = title)
-
   ###############################################################################
   def __common_part_of_constructor(self):
 
     str_from = self.storage_from.str(self.root_path_from)
     str_to = self.storage_to.str(self.root_path_to)
+
+    self.log_title(title = f'{self.enter_123[0]} {str_from} {self.enter_123[2]} {str_to}')
     
     path_exist_is_dir_not_file_from = self.storage_from.check_path_exist_is_dir_not_file(self.root_path_from)
     path_exist_is_dir_not_file_to = self.storage_to.check_path_exist_is_dir_not_file(self.root_path_to)
@@ -146,16 +145,23 @@ class StorageAction2(LoggerObj):
 
     if self.get_errors_count():
       return
-    
+
     if path_exist_is_dir_not_file_from:
       self._action_files_directories_recursive(common_dir_appendix='')
     else:
-      self._action_files(file_from=self.root_path_from, file_to=self.root_path_to, 
-                         file_from_doesnt_exist=(path_exist_is_dir_not_file_from is None), 
-                         file_to_doesnt_exist  =(path_exist_is_dir_not_file_to   is None), add_basename=False)
+      when_started = self.start_file(path=(self.root_path_from + " -> " + self.root_path_to), 
+                                     message_to_print=self.enter_123[0], 
+                                     message2=self.enter_123[2])
+      
+      this_file_result = self._action_files(file_from=self.root_path_from, file_to=self.root_path_to, 
+         file_from_doesnt_exist=(path_exist_is_dir_not_file_from is None), 
+         file_to_doesnt_exist  =(path_exist_is_dir_not_file_to   is None), add_basename=False)
+      
+      self.print_complete_file(data=this_file_result, when_started=when_started)
 
   ###############################################################################
   def _action_files(self, file_from, file_to, file_from_doesnt_exist, file_to_doesnt_exist, add_basename):
+
     basename = os.path.basename(file_from if file_from is not None else file_to)
     size_from, size_to, status = math.nan, math.nan, FDStatus.Error
     try:
@@ -244,7 +250,7 @@ class StorageAction2(LoggerObj):
       elif (file_from is     None) and (file_to is not None):
         basename = os.path.basename(file_to)
       else:
-        assert 1, 'bug'
+        assert 0, 'bug'
 
       if (file_from is not None):
         if_from += 1      
