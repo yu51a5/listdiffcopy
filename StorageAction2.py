@@ -3,6 +3,7 @@ import math
 import pandas as pd
 import numpy as np
 
+from settings import ENFORCE_SIZE_FETCHING_WHEN_COMPARING
 from utils import creates_multi_index
 from LoggerObj import FDStatus, LoggerObj
 from StorageBase import StorageBase
@@ -38,7 +39,7 @@ class StorageAction2(LoggerObj):
 
     for type_, arg_name in args_inputs:
       arg_names = arg_name if type_ is None else [f'{arg_name}_{prefix}' for prefix in ('from', 'to')]
-      constr_args.update({an : kwargs[an] for an in arg_names if an in kwargs if kwargs[an] is not None})
+      constr_args.update({an : kwargs[an] for an in arg_names if ((an in kwargs) and (kwargs[an] is not None))})
 
     for type_, arg_name in args_inputs:
       if type_ is None:
@@ -291,7 +292,7 @@ class StorageAction2(LoggerObj):
           subdir_info_total = self._action_files_directories_recursive(common_dir_appendix=os.path.join(common_dir_appendix, basename_from))
           dir_info_total += subdir_info_total
         else:
-          subdir_list_total, _, _ = self.storage_from._list_files_directories_recursive(dir_to_list=dir_from, message2=f"Exists in {_dir_from} but not in {_dir_to}", enforce_size_fetching=False) 
+          subdir_list_total, _, _ = self.storage_from._list_files_directories_recursive(dir_to_list=dir_from, message2=f"Exists in {_dir_from} but not in {_dir_to}", enforce_size_fetching=ENFORCE_SIZE_FETCHING_WHEN_COMPARING) 
           dir_info_total[0] += subdir_list_total
         id_from += 1
       elif (id_from == 0) or ((basename_from is not None) and (basename_to is not None) and (basename_to < basename_from)):
@@ -301,7 +302,7 @@ class StorageAction2(LoggerObj):
           self.storage_to._delete_directory(dir_to)
           dir_info_first_level[1] += np.array([math.nan] * 3)
         else:
-          subdir_list_total, _, _ = self.storage_to._list_files_directories_recursive(dir_to_list=dir_to, message2=f"Exists in {_dir_to} but not in {_dir_from}", enforce_size_fetching=False)
+          subdir_list_total, _, _ = self.storage_to._list_files_directories_recursive(dir_to_list=dir_to, message2=f"Exists in {_dir_to} but not in {_dir_from}", enforce_size_fetching=ENFORCE_SIZE_FETCHING_WHEN_COMPARING)
           dir_info_total[1] += subdir_list_total
         id_to += 1  
       elif ((basename_from is not None) and (basename_to is not None) and (basename_from == basename_to)):

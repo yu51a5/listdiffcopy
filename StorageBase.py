@@ -3,6 +3,7 @@ import math
 import pandas as pd
 import numpy as np
 
+from settings import ENFORCE_SIZE_FETCHING_WHEN_LISTING
 from utils import is_equal_str_bytes
 from LoggerObj import LoggerObj, FDStatus
 
@@ -391,23 +392,19 @@ class StorageBase(LoggerObj):
 
     return totals, files_, dirs_dict
 
-###############################################################################
-  def _list(self, path, enforce_size_fetching):
+  ###############################################################################
+  def list(self, path, enforce_size_fetching=ENFORCE_SIZE_FETCHING_WHEN_LISTING):
+    self.log_title(title=f'Listing {self.str(path)}')
     path_exist_is_dir_not_file = self.check_path_exist_is_dir_not_file(path)
     if path_exist_is_dir_not_file is True:
       self._list_files_directories_recursive(dir_to_list=path, enforce_size_fetching=enforce_size_fetching)
     elif path_exist_is_dir_not_file is False:
-      size = self.get_size(path=path)
-      self.print_files_df(data = [[os.path.basename(path)] + ([size] if enforce_size_fetching else [])])
+      size_arr = [self.get_size(path=path)] if enforce_size_fetching else []
+      self.print_files_df(data = [[os.path.basename(path)] + size_arr])
     elif path_exist_is_dir_not_file == "both":
       self.log_error(f"{self.str(path)} is both a file and a directory")
     else:
       self.log_error(f"{self.str(path)} does not exist")  
-
-###############################################################################
-  def list(self, path, enforce_size_fetching):
-    self.log_title(title=f'Listing {self.str(path)}')
-    self._list(path=path, enforce_size_fetching=enforce_size_fetching)
 
 ###############################################################################
   def _delete(self, path):

@@ -8,17 +8,51 @@ from StorageBase import StorageBase
 from LoggerObj import LoggerObj, FDStatus
 
 #################################################################################
-def one_storage_func(*args, StorageType=None, kwargs_storage={}, logger=None, return_if_error=None, attr_name=None, **kwargs):
-  if logger is None:
-    logger = LoggerObj() 
+def one_storage_func(*args, return_if_error=None, attr_name=None, **kwargs):
+
+  print(attr_name, *args, **kwargs)
+
+  args_inputs = ((LoggerObj, 'logger'),
+                 (StorageBase, 'storage'),
+                 (None, 'StorageType'),
+                 (dict, 'kwargs_storage'))
+
+  constr_args = {an : kwargs[an] for type_, an in args_inputs if an in kwargs and kwargs[an] is not None}
+  args2 = [a for a in args]
+
+  if 'kwargs_storage' not in constr_args:
+    constr_args['kwargs_storage'] = {}
+
+  for type_, an in args_inputs:
+    if an in constr_args:
+      continue
+    if type_ is None:
+      _args = [a for a in args if isinstance(a, type) and issubclass(a, StorageBase)]
+    else:
+      _args = [a for a in args if isinstance(a, type_)]
+
+    if len(_args) > 1:
+      self.log_critical(f"{an} argument ambiguity: there are {len(_args)} unnamed arguments of type {type_} in the function call")
+    elif len(_args) == 1:
+      if (type_ is not dict) or ('StorageType' in constr_args):
+        constr_args[an] = _args[0]
+        args2 = [a for a in args2 if a != _args[0]] 
+        
+  logger = constr_args['logger'] if 'logger' in constr_args else LoggerObj() 
   
-  errors = StorageBase._check_storage_or_type(storage=None, StorageType=StorageType, kwargs=kwargs_storage)
+  errors = StorageBase._check_storage_or_type(storage=constr_args['storage'] if 'storage' in constr_args else None, 
+                                              StorageType=constr_args['StorageType'] if 'StorageType' in constr_args else None, 
+                                              kwargs=constr_args['kwargs_storage'] if 'kwargs_storage' in constr_args else {})
   if errors:
     logger.log_critical(errors)
     return return_if_error
 
-  with StorageType(objects_to_sync_logger_with=[logger], **kwargs_storage) as storage_:
-    return getattr(storage_, attr_name)(*args, **kwargs)
+  if 'storage' in constr_args:
+    return getattr(constr_args['storage'], attr_name)(*args2, **kwargs)
+    
+  with constr_args['StorageType'](objects_to_sync_logger_with=[logger], 
+                                  **constr_args['kwargs_storage'     ]) as storage_:
+    return getattr(storage_, attr_name)(*args2, **kwargs)
 
 #################################################################################
 def func_for_args_of_one_storage_func_to_move_back(a):
@@ -29,7 +63,7 @@ def func_for_args_of_one_storage_func_to_move_back(a):
 #################################################################################
 def alt_partial_one_storage_func(*args, **keywords):
   result = partial_with_moving_back(one_storage_func, func_for_args_of_one_storage_func_to_move_back, 
-                                    ('StorageType', 'kwargs_storage', 'logger'), *args, **keywords) 
+                                    ('storage', 'StorageType', 'kwargs_storage', 'logger'), *args, **keywords) 
   return result
 
 #################################################################################
