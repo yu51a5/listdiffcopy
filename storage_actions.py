@@ -10,8 +10,6 @@ from LoggerObj import LoggerObj, FDStatus
 #################################################################################
 def one_storage_func(*args, return_if_error=None, attr_name=None, **kwargs):
 
-  print(attr_name, *args, **kwargs)
-
   args_inputs = ((LoggerObj, 'logger'),
                  (StorageBase, 'storage'),
                  (None, 'StorageType'),
@@ -105,7 +103,7 @@ def backup_a_Medium_website(url_or_urls, path, storage=None, StorageType=None, k
       with StorageWeb() as sw:
         sw.check_urls(external_urls, print_ok=print_ok)
   
-    s = synchronize(path_from=path, path_to=path, storage_from=swm, StorageToType=StorageType, kwargs_to=kwargs_storage)
+    s = copy(path_from=path, path_to=path, storage_from=swm, StorageToType=StorageType, kwargs_to=kwargs_storage)
 
     if False:
       s.storage_to.list(path, enforce_size_fetching=True)
@@ -124,49 +122,23 @@ def compare(*args, **kwargs):
 
 #################################################################################
 def synchronize(*args, **kwargs):
-  s = Synchronize(*args, **kwargs)
-  return s
+  result = Synchronize(*args, **kwargs)
+  return result
 
 #################################################################################
 def copy(*args, **kwargs):
-  Copy(*args, **kwargs)
+  result = Copy(*args, **kwargs)
+  return result
 
-def copy_and_rename(*args, **kwargs):
-  Copy(*args, **kwargs)
-
+def copy_into(*args, **kwargs):
+  result = CopyInto(*args, **kwargs)
+  return result
+  
 def move(*args, **kwargs):
-  Copy(*args, **kwargs)
+  result = Move(*args, **kwargs)
+  return result
 
-def move_and_rename(*args, **kwargs):
-  Copy(*args, **kwargs)
-
-#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.
-
-def copy_file(*args, **kwargs):
-  Copy(*args, **kwargs)
-
-def copy_file_and_rename(*args, **kwargs):
-  Copy(*args, **kwargs)
-
-def move_file(*args, **kwargs):
-  Copy(*args, **kwargs)
-
-def move_file_and_rename(*args, **kwargs):
-  Copy(*args, **kwargs)
-
-#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.#.
-
-def copy_directory(*args, **kwargs):
-  with Copy(*args, **kwargs) as _:
-    pass
-
-def copy_directory_and_rename(*args, **kwargs):
-  Copy(*args, **kwargs)
-
-def move_directory(*args, **kwargs):
-  Copy(*args, **kwargs)
-
-def move_directory_and_rename(*args, **kwargs):
-  Copy(*args, **kwargs)
-
+def move_into(*args, **kwargs):
+  result = MoveInto(*args, **kwargs)
+  return result
  

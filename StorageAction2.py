@@ -14,11 +14,10 @@ class StorageAction2(LoggerObj):
   create_if_left_only = None
   delete_if_right_only = None
   change_if_both_exist = None
+  delete_left_afterwards = False
 
-  is_renaming = None
-  is_move_not_copy = None
-  is_file_not_dir = None
   require_path_to = None
+  add_from_basename_to_to = None
 
   enter_123 = [None, None, None]
 
@@ -113,6 +112,13 @@ class StorageAction2(LoggerObj):
     str_to = self.storage_to.str(self.root_path_to)
 
     self.log_title(title = f'{self.enter_123[0]} {str_from} {self.enter_123[2]} {str_to}')
+
+    if self.add_from_basename_to_to:
+      try:
+        self.root_path_to = os.path.join(self.root_path_to, os.path.basename(self.root_path_from))
+      except:
+        self.log_error(f'Cannot join {self.root_path_to} with the basename of {self.root_path_from}')
+        return
     
     path_exist_is_dir_not_file_from = self.storage_from.check_path_exist_is_dir_not_file(self.root_path_from)
     path_exist_is_dir_not_file_to = self.storage_to.check_path_exist_is_dir_not_file(self.root_path_to)
@@ -168,13 +174,6 @@ class StorageAction2(LoggerObj):
     try:
       assert (file_from is not None) or (not add_basename)
       file_to_2 = file_to if (not add_basename) or not(basename) else os.path.join(file_to, basename)
-
-      if not file_from_doesnt_exist:
-        assert file_from
-
-      if not file_to_doesnt_exist:
-        assert file_to
-        assert file_to_2, file_to
   
       if file_to_doesnt_exist:
         status = FDStatus.LeftOnly_or_New
@@ -212,6 +211,11 @@ class StorageAction2(LoggerObj):
             if cont_to is None:
               cont_to = self.storage_to.get_content(file_to_2) 
             status = FDStatus.Different_or_Updated if cont_from != cont_to else FDStatus.Identical
+
+      if self.delete_left_afterwards:
+        if not file_from_doesnt_exist:
+          self.storage_from.delete(file_from)
+          
     except Exception as e:
       self.log_error(f'{self.enter_123[0]} {self.enter_123[1]} {self.storage_from.str(file_from)} {self.storage_to.str(file_to)} {self.enter_123[1]} failed, {e}')
     
@@ -317,6 +321,9 @@ class StorageAction2(LoggerObj):
         self.log_critical("Algo bug")
 
     dir_info_total += dir_info_first_level
+
+    if self.delete_left_afterwards:
+      self.storage_from.delete(_dir_from)
   
     self.log_exit_level(dir_details_df=pd.DataFrame(np.vstack((dir_info_first_level, dir_info_total)), index=self.index_comp_df, columns=self.columns_df))
     return dir_info_total
@@ -339,7 +346,23 @@ class Compare(StorageAction2):
     super().__init__(*args, **kwargs)
 
 #################################################################################
-class Copy(StorageAction2):
+class Synchronize(StorageAction2):
+
+  create_if_left_only = True
+  delete_if_right_only = True
+  change_if_both_exist = True
+  require_path_to = False
+
+  enter_123 = ['Copying', 'from', 'to']
+
+  status_names = ["New", "Pre-existing", "Updated", "Identical"]
+
+  #################################################################################
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    
+#################################################################################
+class _Copy(StorageAction2):
 
   create_if_left_only = True
   delete_if_right_only = False
@@ -355,17 +378,43 @@ class Copy(StorageAction2):
     super().__init__(*args, **kwargs)
 
 #################################################################################
-class Synchronize(StorageAction2):
+class _Move(StorageAction2):
 
   create_if_left_only = True
-  delete_if_right_only = True
+  delete_if_right_only = False
   change_if_both_exist = True
   require_path_to = False
+  delete_left_afterwards = True
 
-  enter_123 = ['Synchronizing', '', 'with']
+  enter_123 = ['Moving', 'from', 'to']
 
   status_names = ["New", "Deleted", "Updated", "Identical"]
   
   #################################################################################
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+
+#################################################################################
+#################################################################################
+class Copy(_Copy):
+  add_from_basename_to_to = False
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+
+#################################################################################
+class CopyInto(_Copy):
+  add_from_basename_to_to = True
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+
+#################################################################################
+class Move(_Move):
+  add_from_basename_to_to = False
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    
+#################################################################################
+class MoveInto(_Move):
+  add_from_basename_to_to = True
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)

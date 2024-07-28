@@ -4,15 +4,12 @@ from StorageSFTP import StorageSFTP
 from StorageGitHub import StorageGitHub
 from StoragePCloud import StoragePCloud
 
-from storage_actions import synchronize
+from storage_actions import copy_into
 
-sftp_folders = [
-                'www/yu51a5.org/public_html/wp-content/themes/pinboard-child',
-                'www/yu51a5.org/backup',
-                'www/yu51a5.org/public_html/wp-content/uploads']
-
-for sf in sftp_folders:
-  synchronize(path_from=sf, path_to=os.path.join('website', os.path.basename(sf)), StorageFromType=StorageSFTP, StorageToType=StoragePCloud)
+for sf in [ 'www/yu51a5.org/public_html/wp-content/themes/pinboard-child',
+            'www/yu51a5.org/backup',
+            'www/yu51a5.org/public_html/wp-content/uploads' ]:
+  copy_into(StorageSFTP, sf, StoragePCloud, 'website')
 
 # with cProfile.Profile() as pr:
 #with create_logging_object() as ll:

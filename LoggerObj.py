@@ -180,3 +180,4 @@ class LoggerObj:
     df_files = pd.DataFrame(_data, columns=self.columns_files_df[how_many_columns])
     df_str = self._df_to_str(df_files, extra_prefix=extra_prefix)
     self.log_info(df_str)
+    return df_files
