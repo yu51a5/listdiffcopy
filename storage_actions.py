@@ -3,7 +3,7 @@ import math
 from utils import partial_with_moving_back
 from StorageWebMedium import StorageWebMedium
 from StorageWeb import StorageWeb
-from StorageAction2 import Compare, Synchronize, Copy
+from StorageAction2 import Compare, Synchronize, Copy, Move
 from StorageBase import StorageBase
 from LoggerObj import LoggerObj, FDStatus
 
@@ -135,6 +135,10 @@ def copy_into(*args, **kwargs):
   return result
   
 def move(*args, **kwargs):
+  result = Move(*args, **kwargs)
+  return result
+
+def rename(*args, **kwargs):
   result = Move(*args, **kwargs)
   return result
 

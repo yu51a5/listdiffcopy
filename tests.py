@@ -33,30 +33,39 @@ copy(StoragePCloud, 'My Pictures', StoragePCloud, 'aa/My_Pictures')
 compare(StoragePCloud, 'My Pictures', StoragePCloud, 'aa/My_Pictures')
 compare(StoragePCloud, 'My Music', StoragePCloud, 'aa/My_Music')
 copy(StoragePCloud, 'My Music', StoragePCloud, 'aa/My_Music')
+copy(StoragePCloud, 'My Music', StoragePCloud, 'aa/My_Music2')
 
-list(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/themes/')
+
+list(StoragePCloud, 'My Music')
+list(StorageSFTP, 'www/yu51a5.xyz/public_html/wp-content/themes/')
 
 
-synchronize(StoragePCloud, 'aa', StorageGitHub, 'a')
+if False:
+  synchronize(StoragePCloud, 'aa', StorageGitHub, 'a')
+  
 _, files, dirs = list(StoragePCloud, 'aa')
 dirs_with_files = [d for d in dirs if len(dirs[d][0]) >= 1]
 
+print(dirs_with_files)
+print(dirs)
 assert len(dirs_with_files) >= 3
 assert len(dirs[dirs_with_files[0]][0]) >=2
 
 delete(StoragePCloud, dirs[dirs_with_files[0]][0][1])
 delete(StoragePCloud, dirs_with_files[2])
 
-synchronize(StorageGitHub, 'a', StoragePCloud, 'aa')
-compare(StorageGitHub, 'a', StoragePCloud, 'aa')
+if False:
+  synchronize(StorageGitHub, 'a', StoragePCloud, 'aa')
+  compare(StorageGitHub, 'a', StoragePCloud, 'aa')
 
 rename(StoragePCloud, dirs[dirs_with_files[0]][0][0], dirs[dirs_with_files[0]][0][1])
 rename(StoragePCloud, dirs_with_files[1], dirs_with_files[2])
 
-synchronize(StorageGitHub, 'a', StoragePCloud, 'aa')
-compare(StorageGitHub, 'a', StoragePCloud, 'aa')
+if False:
+  synchronize(StorageGitHub, 'a', StoragePCloud, 'aa')
+  compare(StorageGitHub, 'a', StoragePCloud, 'aa')
 
-  #sync_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/uploads', StoragePCloud, 'wp_uploads')
+sync_contents(StorageSFTP, 'www/yu51a5.xyz/public_html/wp-content/uploads', StoragePCloud, 'wp_uploads')
   #sync_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/uploads', StorageGitHub, 'dont')
   #list_contents(StoragePCloud, 'sf')
   #sync_contents(StorageSFTP, 'www/yu51a5.org/backup', StoragePCloud, 'sf') 
