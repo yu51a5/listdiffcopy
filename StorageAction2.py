@@ -77,7 +77,7 @@ class StorageAction2(LoggerObj):
     self.index_comp_df = pd.MultiIndex.from_tuples(creates_multi_index(self.index_listing_df, self.status_names_complete))
 
     errors = StorageBase._check_storage_or_type(storage=self.storage_from, StorageType=StorageFromType, kwargs=kwargs_from) \
-           + StorageBase._check_storage_or_type(storage=self.storage_to  , StorageType=StorageToType  , kwargs=kwargs_to)
+           + StorageBase._check_storage_or_type(storage=self.storage_to, StorageType=StorageToType, kwargs=kwargs_to, both_nones_ok=True)
 
     if errors:
       self.log_critical(errors)
@@ -94,11 +94,15 @@ class StorageAction2(LoggerObj):
       with StorageFromType(**kwargs_from, objects_to_sync_logger_with=[self.storage_to]) as self.storage_from:
         self.__common_part_of_constructor(**kwargs)
     elif self.storage_from and (not self.storage_to):
-      with StorageToType(**kwargs_to, objects_to_sync_logger_with=[self.storage_from]) as self.storage_to:
+      if not StorageToType:
+        self.storage_to = self.storage_from
         self.__common_part_of_constructor(**kwargs)
+      else:
+        with StorageToType(**kwargs_to, objects_to_sync_logger_with=[self.storage_from]) as self.storage_to:
+          self.__common_part_of_constructor(**kwargs)
     else:
       with StorageFromType(**kwargs_from) as self.storage_from:
-        if StorageFromType == StorageToType and kwargs_from == kwargs_to:
+        if (StorageFromType == StorageToType and kwargs_from == kwargs_to) or (StorageToType is None and (not kwargs_to)):
           self.storage_to = self.storage_from
           self.__common_part_of_constructor(**kwargs)
         else:
@@ -214,7 +218,7 @@ class StorageAction2(LoggerObj):
 
       if self.delete_left_afterwards:
         if not file_from_doesnt_exist:
-          self.storage_from.delete(file_from)
+          self.storage_from._delete(file_from)
           
     except Exception as e:
       self.log_error(f'{self.enter_123[0]} {self.enter_123[1]} {self.storage_from.str(file_from)} {self.storage_to.str(file_to)} {self.enter_123[1]} failed, {e}')
@@ -323,7 +327,7 @@ class StorageAction2(LoggerObj):
     dir_info_total += dir_info_first_level
 
     if self.delete_left_afterwards:
-      self.storage_from.delete(_dir_from)
+      self.storage_from._delete(_dir_from)
   
     self.log_exit_level(dir_details_df=pd.DataFrame(np.vstack((dir_info_first_level, dir_info_total)), index=self.index_comp_df, columns=self.columns_df))
     return dir_info_total

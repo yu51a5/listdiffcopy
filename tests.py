@@ -65,7 +65,7 @@ if False:
   synchronize(StorageGitHub, 'a', StoragePCloud, 'aa')
   compare(StorageGitHub, 'a', StoragePCloud, 'aa')
 
-sync_contents(StorageSFTP, 'www/yu51a5.xyz/public_html/wp-content/uploads', StoragePCloud, 'wp_uploads')
+synchronize(StorageSFTP, 'www/yu51a5.xyz/public_html/wp-content/uploads', StoragePCloud, 'wp_uploads')
   #sync_contents(StorageSFTP, 'www/yu51a5.org/public_html/wp-content/uploads', StorageGitHub, 'dont')
   #list_contents(StoragePCloud, 'sf')
   #sync_contents(StorageSFTP, 'www/yu51a5.org/backup', StoragePCloud, 'sf') 

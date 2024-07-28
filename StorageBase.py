@@ -13,10 +13,12 @@ class StorageBase(LoggerObj):
   __txt_chrs = set([chr(i) for i in range(32, 127)] + list("\n\r\t\b"))
 
   ###############################################################################
-  def _check_storage_or_type(storage, StorageType, kwargs):
+  def _check_storage_or_type(storage, StorageType, kwargs, both_nones_ok=False):
     errors = []
-    if (storage is None) == (StorageType is None):
-      errors.append(f"storage_from {storage} and StorageType {StorageType} mustn't be both None or both not None")
+    if storage and StorageType:
+      errors.append(f"storage_from {storage} and StorageType {StorageType} mustn't be both defined")
+    if not (storage or StorageType or both_nones_ok):
+      errors.append(f"storage_from {storage} and StorageType {StorageType} mustn't be both undefined")
     if StorageType is None:
       if kwargs:
         errors.append(f"StorageType is not provided, but arguments {kwargs} are")
