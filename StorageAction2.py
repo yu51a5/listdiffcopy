@@ -357,7 +357,7 @@ class Synchronize(StorageAction2):
   change_if_both_exist = True
   require_path_to = False
 
-  enter_123 = ['Copying', 'from', 'to']
+  enter_123 = ['Synchronizing', '', 'and']
 
   status_names = ["New", "Pre-existing", "Updated", "Identical"]
 
