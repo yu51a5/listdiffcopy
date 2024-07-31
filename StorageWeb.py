@@ -45,6 +45,7 @@ class StorageWeb(StorageBase):
     self.__fake_files = {}
     self.__name_content_type_is_content = {}
     self.__fake_paths_to_urls = {}
+    self.__requests_session = None
 
   ###############################################################################
   def __init__(self, logger_name=None, objects_to_sync_logger_with=[]):
@@ -58,12 +59,13 @@ class StorageWeb(StorageBase):
 
   ###############################################################################
   def _open(self):
-    self.requests_session = requests.Session()
-    self.requests_session.headers.update(self.get_headers())
+    self.__requests_session = requests.Session()
+    self.__requests_session.headers.update(self.get_headers())
 
   ###############################################################################
   def _close(self):
-    self.requests_session.close()
+    self.__requests_session.close()
+    self.__requests_session = None
 
   ###############################################################################
   def path_to_str(self, path):
@@ -75,7 +77,9 @@ class StorageWeb(StorageBase):
 
   ###############################################################################
   def get_response_code(self, url):
-    with self.requests_session.get(url) as response:
+    if not self.__requests_session:
+      self.log_critical("Web connection not open, use `with StorageWeb(<>) as s` instead of `s = StorageWeb(<>)` ")
+    with self.__requests_session.get(url) as response:
       return response.status_code
 
   ###############################################################################
@@ -105,9 +109,11 @@ class StorageWeb(StorageBase):
 
   ###############################################################################
   def get_content(self, filename, length=None, use_content_not_text=None): # filename is url
+    if not self.__requests_session:
+      self.log_critical("Web connection not open, use `with StorageWeb(<>) as s` instead of `s = StorageWeb(<>)` ")
     if filename in self.__fake_files:
       return self.__fake_files[filename]
-    with self.requests_session.get(filename) as response:
+    with self.__requests_session.get(filename) as response:
       if response.status_code == 200:
         use_content = use_content_not_text if use_content_not_text is not None else self.__name_content_type_is_content[filename]
         return response.content if use_content else (response.text[:length] if length else response.text)
