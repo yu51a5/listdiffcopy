@@ -66,15 +66,10 @@ def alt_partial_one_storage_func(*args, **keywords):
 
 #################################################################################
 #################################################################################
-for name_return_if_error in ("get_content", ("get_size", math.nan), "list", "delete", 
-                             "rename", "create_directory", "check_path_exist_is_dir_not_file", 
-                             ("create_file_given_content", FDStatus.Error),
-                             ("get_filenames_and_directories", (None, None))):
-  if isinstance(name_return_if_error, str):
-    name, return_if_error = name_return_if_error, None
-  else:
-    name, return_if_error = name_return_if_error[0], name_return_if_error[1]
+def __add_one_storage_action(name, return_if_error):
   globals()[name] = alt_partial_one_storage_func(return_if_error=return_if_error, attr_name=name)
+
+StorageBase.loop_over_action_list(__add_one_storage_action)  
 
 #################################################################################
 def check_urls(url_or_urls, print_ok=True):

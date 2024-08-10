@@ -2,6 +2,7 @@ import os
 import math
 import pandas as pd
 import numpy as np
+from functools import partial
 
 from settings import ENFORCE_SIZE_FETCHING_WHEN_LISTING
 from utils import is_equal_str_bytes
@@ -11,6 +12,19 @@ from LoggerObj import LoggerObj, FDStatus
 class StorageBase(LoggerObj):
 
   __txt_chrs = set([chr(i) for i in range(32, 127)] + list("\n\r\t\b"))
+
+  ###############################################################################
+  def loop_over_action_list(cllable):
+    for name_return_if_error in  ("read_file", "write_file", "create_directory", 
+                                   "list", "delete", "rename", 
+                                   ("check_path_exist_is_dir_not_file", None),
+                                   ("get_size", math.nan), 
+                                   ("get_filenames_and_directories", (None, None))):
+      if isinstance(name_return_if_error, str):
+        name, return_if_error = name_return_if_error, FDStatus.Error
+      else:
+        name, return_if_error = name_return_if_error[0], name_return_if_error[1]
+      cllable(name=name, return_if_error=return_if_error)
 
   ###############################################################################
   def _check_storage_or_type(storage, StorageType, kwargs, both_nones_ok=False):
@@ -111,28 +125,29 @@ class StorageBase(LoggerObj):
      raise Exception("needs to be overriden", type(self))
       
   ###############################################################################
-  def _get_filenames_and_directories(self, dir_name: str):
+  def _get_filenames_and_directories(self, path: str):
     self.__please_override()
   
   ###############################################################################
-  def _delete_file(self, filename):
+  def _delete_file(self, path):
     self.__please_override()
     
   ###############################################################################
-  def _delete_directory(self, dirname):
+  def _delete_directory(self, path):
     self.__please_override()
 
   ###############################################################################
-  def _create_directory(self, dirname):
+  def _create_directory(self, path):
     self.__please_override()
 
   ###############################################################################
-  def _create_file_given_content(self, filename, content):
+  def _create_file_given_content(self, path, content):
     self.__please_override()
 
   ###############################################################################
-  def _update_file_given_content(self, filename, content):
-    self.__please_override()
+  # default implementation
+  def _update_file_given_content(self, path, content):
+    self._create_file_given_content(path=path, content=content)
     
   ###############################################################################
   def _rename_file(self, path_to_existing_file, path_to_new_file):
@@ -143,7 +158,7 @@ class StorageBase(LoggerObj):
     self.__please_override()
     
   ###############################################################################
-  def _get_content(self, filename, length=None):
+  def _read_file(self, path, length=None):
     self.__please_override()
 
   ###############################################################################
@@ -176,7 +191,7 @@ class StorageBase(LoggerObj):
     path_so_far = self.get_init_path() 
     was_created = False
     for rf in root_folders:
-      _, directories_ = self.get_filenames_and_directories(dir_name=path_so_far)
+      _, directories_ = self.get_filenames_and_directories_(path=path_so_far)
       path_so_far = os.path.join(path_so_far, rf)
       if path_so_far in directories_:
         continue 
@@ -194,15 +209,15 @@ class StorageBase(LoggerObj):
   
   ###############################################################################
   def check_file_exists(self, path):  
-    dirname, filename = os.path.split(path)
+    dirname, _ = os.path.split(path)
     dir_exists = self.check_directory_exists(path=dirname)
     if dir_exists:
-      files_, _ = self.get_filenames_and_directories(dir_name=dirname)
+      files_, _ = self.get_filenames_and_directories_(path=dirname)
       return (path in files_)
     return False
 
   ###############################################################################
-  def check_path_exist_is_dir_not_file(self, path):
+  def _check_path_exist_is_dir_not_file(self, path):
     is_file = self.check_file_exists(path)
     is_dir = self.check_directory_exists(path)
     if is_file: 
@@ -211,33 +226,35 @@ class StorageBase(LoggerObj):
       return True
     else:
       return None
-  
+
   ###############################################################################
-  def rename_file(self, path_to_existing_file, path_to_new_file):
-    if self.check_file_exists(path=path_to_existing_file):
-      return self._rename_file(path_to_existing_file=path_to_existing_file, 
-                               path_to_new_file=path_to_new_file)
-    else:
-      raise Exception(f"{self.str(path_to_existing_file)} does not exist")
+  def _rename(self, existing_path, new_path):
+    new_path_exists = self._check_path_exist_is_dir_not_file(new_path)
+    if new_path_exists is not None:
+      self.log_error(f"{self.str(new_path)} already exists")
+      return
     
-  ###############################################################################
-  def rename_directory(self, path_to_existing_dir, path_to_new_dir):
-    if self.check_directory_exists(path=path_to_existing_dir):
-      return self._rename_directory(path_to_existing_dir=path_to_existing_dir, 
-                                    path_to_new_dir=path_to_new_dir)
+    path_exist_is_dir_not_file = self._check_path_exist_is_dir_not_file(existing_path)
+    if path_exist_is_dir_not_file is True:
+      return self._rename_directory(path_to_existing_dir=existing_path, 
+                                    path_to_new_dir=new_path)
+    elif path_exist_is_dir_not_file is False:
+      return self._rename_file(path_to_existing_file=existing_path, 
+                               path_to_new_file=new_path)
+    elif path_exist_is_dir_not_file == "both":
+      self.log_error(f"{self.str(existing_path)} is both a file and a directory")
     else:
-      raise Exception(f"{self.str(path_to_existing_dir)} does not exist")
+      self.log_error(f"{self.str(existing_path)} does not exist")  
       
   ###############################################################################
   def _filter_out_files(self, files_):
     return files_
   
   ###############################################################################
-  def get_filenames_and_directories(self, dir_name):
-    try:
-      if not dir_name:
-        dir_name = self.get_init_path()
-      files_, directories_ = self._get_filenames_and_directories(dir_name=dir_name)
+  def get_filenames_and_directories(self, path):
+      if not path:
+        path = self.get_init_path()
+      files_, directories_ = self.get_filenames_and_directories_(path=path)
       
       files_.sort(key=lambda x: x.lower())
       directories_.sort(key=lambda x: x.lower())
@@ -245,132 +262,76 @@ class StorageBase(LoggerObj):
       files_ = self._filter_out_files(files_)
   
       return files_, directories_
-  
-    except Exception as e:
-      self.log_error(f'Filenames and directories in {self.str(dir_name)} could not be identified, {e}')
-      return FDStatus.Error
       
   ###############################################################################
-  def file_contents_is_text(self, filename):
-    file_beginning = self.get_content(filename=filename, length=2048)
+  def file_contents_is_text(self, path):
+    file_beginning = self._read_file(path=path, length=2048)
     result = StorageBase._file_contents_is_text(file_beginning=file_beginning)
     return result
 
   ###############################################################################
-  def get_file_size_or_content(self, filename):
+  def _get_file_size_or_content(self, path):
     ffse = getattr(self, '_fetch_file_size_efficiently', None)
     if ffse is not None:
       my_contents = None
-      my_file_size = self._fetch_file_size_efficiently(filename)
+      my_file_size = self._fetch_file_size_efficiently(path)
     else:
-      my_contents = self.get_content(filename)
+      my_contents = self._read_file(path)
       my_file_size = len(my_contents)
 
     return my_file_size, my_contents
-  
-  ###############################################################################
-  def delete_file(self, filename):
-    try:
-      if self.check_file_exists(filename):
-        self._delete_file(filename)
-        return FDStatus.RightOnly_or_Deleted
-      else:
-        self.log_warning(f'{self.str(filename)} not found')
-        return FDStatus.Error
-    except Exception as e:
-      self.log_error(f'{self.str(filename)} could not be deleted, {e}')
-      return FDStatus.Error
-    
-  ###############################################################################
-  def delete_directory(self, dirname):
-    try:
-      if self.check_directory_exists(dirname):
-        self._delete_directory(dirname)
-        return FDStatus.RightOnly_or_Deleted
-      else:
-        self.log_warning(f'{self.str(dirname)} not found')
-        return FDStatus.Error
-    except Exception as e:
-      self.log_error(f'{self.str(dirname)} could not be deleted, {e}')
-      return FDStatus.Error
 
   ###############################################################################
-  def create_file_given_content(self, filename, content, check_if_contents_is_the_same_before_writing=True):
-    try:
-      assert filename, "Filename is not defined"
-      path_exist_is_dir_not_file_to = self.check_path_exist_is_dir_not_file(filename)
+  def _write_file(self, path, content, check_if_contents_is_the_same_before_writing=True):
+      assert isinstance(content, (str, bytes)), f'Type of contents is {type(content)}'
+      assert path, "Filename is not defined"
+      path_exist_is_dir_not_file_to = self._check_path_exist_is_dir_not_file(path)
       if path_exist_is_dir_not_file_to is False: # it's a file
         if check_if_contents_is_the_same_before_writing:
-          current_contents = self.get_content(filename)
+          current_contents = self._read_file(path)
           if is_equal_str_bytes(content, current_contents):
             return FDStatus.Identical
-        self._update_file_given_content(filename=filename, content=content)
+        self._update_file_given_content(path=path, content=content)
         return FDStatus.Different_or_Updated
       elif path_exist_is_dir_not_file_to is None: # it does not exist
-        self._check_directory_exists_or_create(path=os.path.dirname(filename), 
+        self._check_directory_exists_or_create(path=os.path.dirname(path), 
                                                create_if_doesnt_exist=True)
-        self._create_file_given_content(filename=filename, content=content)
+        self._create_file_given_content(path=path, content=content)
         return FDStatus.LeftOnly_or_New
       else: # it's a folder or both
-        self.log_error(f'{self.str(filename)} exists, and it is a directory')
+        self.log_error(f'{self.str(path)} exists, and it is a directory')
         return FDStatus.Error
-    except Exception as e:
-      self.log_error(f'Contents of {self.str(filename)} could not be set: {e}')
-      return FDStatus.Error
-
-  ###############################################################################
-  def get_content(self, filename):
-    try:
-      result = self._get_content(filename=filename)
-      return result
-    except Exception as e:
-      self.log_error(f'Contents of {self.str(filename)} could not be obtained, {e}')
-      return math.nan
   
   ###############################################################################
-  def fetch_file_size(self, filename):
-    try:
+  def _get_file_size(self, path):
       ffse = getattr(self, '_fetch_file_size_efficiently', None)
-      if ffse:
-        result = ffse(filename=filename)
-      else:
-        result = len(self.get_content(filename=filename))
+      result = ffse(path=path) if ffse else len(self._read_file(path=path))
       return result
-    except Exception as e:
-      self.log_error(f'Contents of {self.str(filename)} could not be set, {e}')
-      return math.nan
-        
-    return FDStatus.LeftOnly_or_New
-    return FDStatus.RightOnly_or_Deleted
-    return FDStatus.Different_or_Updated
-    return FDStatus.Identical
-    return FDStatus.Error
-
 
   ###############################################################################
-  def get_size(self, path):
-    path_exist_is_dir_not_file = self.check_path_exist_is_dir_not_file(path)
+  def _get_size(self, path):
+    path_exist_is_dir_not_file = self._check_path_exist_is_dir_not_file(path)
     if path_exist_is_dir_not_file is True:
-      files_, directories_ = self._get_filenames_and_directories(dir_name=path)
-      result = sum([self.fetch_file_size(f) for f in files_]) \
-             + sum([self.get_size(path=d) for d in directories_])
+      files_, directories_ = self._get_filenames_and_directories(path=path)
+      result = sum([self._get_file_size(f) for f in files_]) \
+             + sum([self.get_size_(path=d) for d in directories_])
       return result
     elif path_exist_is_dir_not_file is False:
-      return self.fetch_file_size(filename=path)  
+      return self._get_file_size(path=path)  
     elif path_exist_is_dir_not_file == "both":
       self.log_error(f"{self.str(path)} is both a file and a directory")
     else:
       self.log_error(f"{self.str(path)} does not exist")  
   
   ###############################################################################
-  def _list_files_directories_recursive(self, dir_to_list, enforce_size_fetching, message2=''):
+  def _list_files_directories_recursive(self, path, enforce_size_fetching, message2=''):
 
-    self.log_enter_level(dirname=dir_to_list, message_to_print='Listing', message2=message2)
+    self.log_enter_level(dirname=path, message_to_print='Listing', message2=message2)
 
-    files_, dirs_ = self.get_filenames_and_directories(dir_to_list)
+    files_, dirs_ = self.get_filenames_and_directories_(path)
 
     if enforce_size_fetching:
-      df = [[os.path.basename(f), self.fetch_file_size(f)] for f in files_]
+      df = [[os.path.basename(f), self._get_file_size(f)] for f in files_]
     else:
       df = [[os.path.basename(f)                         ] for f in files_]
     self.print_files_df(data =df)
@@ -380,7 +341,7 @@ class StorageBase(LoggerObj):
 
     dirs_dict = {}  
     for dir_ in dirs_:
-      dir_totals, dir_files, dir_dirs_dict = self._list_files_directories_recursive(dir_to_list=dir_, enforce_size_fetching=enforce_size_fetching)
+      dir_totals, dir_files, dir_dirs_dict = self._list_files_directories_recursive(path=dir_, enforce_size_fetching=enforce_size_fetching)
       totals += dir_totals
       dirs_dict[dir_] = (dir_files, dir_dirs_dict)
 
@@ -395,11 +356,10 @@ class StorageBase(LoggerObj):
     return totals, files_, dirs_dict
 
   ###############################################################################
-  def list(self, path, enforce_size_fetching=ENFORCE_SIZE_FETCHING_WHEN_LISTING):
-    self.log_title(title=f'Listing {self.str(path)}')
-    path_exist_is_dir_not_file = self.check_path_exist_is_dir_not_file(path)
+  def _list(self, path, enforce_size_fetching=ENFORCE_SIZE_FETCHING_WHEN_LISTING):
+    path_exist_is_dir_not_file = self._check_path_exist_is_dir_not_file(path)
     if path_exist_is_dir_not_file is True:
-      result = self._list_files_directories_recursive(dir_to_list=path, enforce_size_fetching=enforce_size_fetching)
+      result = self._list_files_directories_recursive(path=path, enforce_size_fetching=enforce_size_fetching)
       return result
     elif path_exist_is_dir_not_file is False:
       size_arr = [self.get_size(path=path)] if enforce_size_fetching else []
@@ -412,26 +372,59 @@ class StorageBase(LoggerObj):
 
 ###############################################################################
   def _delete(self, path):
-    path_exist_is_dir_not_file = self.check_path_exist_is_dir_not_file(path)
+    path_exist_is_dir_not_file = self._check_path_exist_is_dir_not_file(path)
     if path_exist_is_dir_not_file is True:
-      self.delete_directory(path)
+      self._delete_directory(path)
     elif path_exist_is_dir_not_file is False:
-      self.delete_file(path)  
+      self._delete_file(path)  
     elif path_exist_is_dir_not_file == "both":
       self.log_error(f"{self.str(path)} is both a file and a directory")
     else:
       self.log_error(f"{self.str(path)} does not exist")  
 
 ###############################################################################
-  def delete(self, path):
-    self.log_title(title=f'Deleting {self.str(path)}')
-    self._delete(path=path)
+  def _create_directory(self, path):
+    path_exist_is_dir_not_file = self._check_path_exist_is_dir_not_file(path)
+    if path_exist_is_dir_not_file is not None:
+      self.log_warning(message=f"Skipping because {self.str(path)} exists")
+    else:
+      self._check_directory_exists_or_create(path, create_if_doesnt_exist=True)
 
 ###############################################################################
-  def create_directory(self, dir_name):
-    self.log_title(title=f'Creating {self.str(dir_name)}')
-    path_exist_is_dir_not_file = self.check_path_exist_is_dir_not_file(dir_name)
-    if path_exist_is_dir_not_file is not None:
-      self.log_warning(message=f"Skipping because {self.str(dir_name)} exists")
+###############################################################################
+###############################################################################
+
+def add_StorageBase_method(name, return_if_error, title=None):
+  def _inner_add_method(self, *args, add_print_title, **kwargs):
+    title_ = title if title else name
+    path = None
+    if ('path' in kwargs) and ('existing_path' in kwargs):
+      raise Exception("path and existing_path are mutually exclusive")
+    elif ('path' in kwargs) or ('existing_path' in kwargs):
+      path = kwargs['path'] if ('path' in kwargs) else kwargs['existing_path']
     else:
-      self._check_directory_exists_or_create(dir_name, create_if_doesnt_exist=True)
+      strs = [arg for arg in args if isinstance(arg, str)]
+      if len(strs) == 1:
+        path = strs[0]
+    try:
+      title_ += " " + self.str(path)
+      if add_print_title:
+        self.log_title(title=title_)
+      return getattr(self, "_"+name)( *args, **kwargs)
+    except Exception as e:
+      self.log_error(f'{title_} failed, exception {e}')
+      return return_if_error
+
+  def inner_add_method_(self, *args, **kwargs):
+    return _inner_add_method(self, *args, add_print_title=False, **kwargs)
+  def inner_add_method(self, *args, **kwargs):
+    return _inner_add_method(self, *args, add_print_title=True, **kwargs)
+
+  setattr(StorageBase, name    , inner_add_method)
+  setattr(StorageBase, name+"_", inner_add_method_)
+  
+###############################################################################
+
+
+_ = StorageBase.loop_over_action_list(cllable=add_StorageBase_method)
+

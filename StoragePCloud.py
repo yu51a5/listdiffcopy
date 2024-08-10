@@ -133,7 +133,7 @@ class StoragePCloud(StorageBase):
     contents_ = self.__post(url_addon='file_read', param_dict=dict(fd=id, count=size_))
     return contents_
     
-  def _get_content(self, filename, length=None):
+  def _read_file(self, filename, length=None):
     contents_ = self._wrapper_with_id(filename=filename, func=self.__get_content_inner, length=length)
     return contents_
 
@@ -153,19 +153,15 @@ class StoragePCloud(StorageBase):
     return {'id' : result["metadata"]["folderid"]}
 
   ###############################################################################
-  def _create_file_given_content(self, filename, content):
+  def _create_file_given_content(self, path, content):
 
-    files = [("file", (os.path.basename(filename), content), )] 
+    files = [("file", (os.path.basename(path), content), )] 
     
     result = self.__post_folderid(url_addon='uploadfile', 
-                                   dirname=os.path.dirname(filename), 
-                                   param_dict={'filename' : os.path.basename(filename)}, 
+                                   dirname=os.path.dirname(path), 
+                                   param_dict={'filename' : os.path.basename(path)}, 
                                    files=files)
     # self.set_file_info(filename, {'id' : result["fileids"][0]})
-    
-  ###############################################################################
-  def _update_file_given_content(self, filename, content):
-    self._create_file_given_content(filename=filename, content=content)
     #self.__post_fileid(url_addon='file_write', filename=filename)
 
   ###############################################################################

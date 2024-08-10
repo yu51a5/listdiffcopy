@@ -84,7 +84,7 @@ class StorageGitHub(StorageBase):
     return None
 
   ###############################################################################
-  def _get_content(self, filename, length=None):
+  def _read_file(self, path):(self, filename, length=None):
 
     if length:
       return bytes(b'')
@@ -111,17 +111,16 @@ class StorageGitHub(StorageBase):
                           "removing " + filename,
                           sha=self.get_file_id(filename))
 
-  def _create_file_given_content(self, filename, content):
-    assert isinstance(content, (str, bytes)), f'Type of contents is {type(content)}'
-    self.repo.create_file(filename,
-                          message="creating " + filename,
+  def _create_file_given_content(self, path, content):
+    self.repo.create_file(path,
+                          message="creating " + path,
                           content=content)
 
-  def _update_file_given_content(self, filename, content):
-    self.repo.update_file(filename,
-                          message="updating " + filename,
+  def _update_file_given_content(self, path, content):
+    self.repo.update_file(path,
+                          message="updating " + path,
                           content=content,
-                          sha=self.get_file_id(filename))
+                          sha=self.get_file_id(path))
 
   ###############################################################################
   def _create_directory(self, dirname):
@@ -129,7 +128,7 @@ class StorageGitHub(StorageBase):
 
   ###############################################################################
   def _delete_directory(self, dirname):
-    all_files, all_directories = self.get_filenames_and_directories(dir_name=dirname)
+    all_files, all_directories = self.get_filenames_and_directories_(dir_name=dirname)
     for f in all_files:
       self._delete_file(filename=f)
     for d in all_directories:
@@ -153,7 +152,7 @@ class StorageGitHub(StorageBase):
         #commits2 = self.repo.get_commits(path=filename)
         #contents = self.repo.get_content(filename)
         #print(f"total count 2 is {commits2.totalCount}, filename is {filename}, sha is {sha}, {sha==contents.sha}")
-    #self.get_content(filename=filename)
+    #self.read_file(filename=filename)
     #result = self.get_file_info(filename, 'size')
     #return result
 

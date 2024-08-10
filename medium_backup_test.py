@@ -1,7 +1,7 @@
 import os
 from settings import log_dirname
-from storage_actions import backup_a_Medium_website, delete, get_size, get_content, synchronize, create_directory,\
-                            list, check_path_exist_is_dir_not_file, create_file_given_content, get_filenames_and_directories
+from storage_actions import backup_a_Medium_website, delete, get_size, read_file, synchronize, create_directory,\
+                            list, check_path_exist_is_dir_not_file, write_file, get_filenames_and_directories
 from StorageLocal import StorageLocal
 from StoragePCloud import StoragePCloud
 from StorageGitHub import StorageGitHub
@@ -18,8 +18,8 @@ if 1:
   t, di = (StoragePCloud, {'secret_name': "default_pcloud_secret"})
   filename = os.path.join('test', "testfile.txt")
   content = "Test line 22"
-  create_file_given_content(filename, content=content, StorageType=t, kwargs_storage=di)
-  create_file_given_content(filename, content=content + "ho ho", StorageType=t, kwargs_storage=di)
+  write_file(filename, content=content, StorageType=t, kwargs_storage=di)
+  write_file(filename, content=content + "ho ho", StorageType=t, kwargs_storage=di)
   
   logger = LoggerObj("another")
   content = "Test line"
@@ -27,18 +27,20 @@ if 1:
   for t, di in ((StorageLocal, {}), 
                 (StoragePCloud, {'secret_name': "default_pcloud_secret"}), 
                 (StorageGitHub, {'secret_name': github_secret_name})):
-    for d in ["test_test_test", "test_test_test2"]:
-      create_directory(d, logger=logger, StorageType=t, kwargs_storage=di)
-      check_path_exist_is_dir_not_file(d, StorageType=t, kwargs_storage=di)
-      list(d, StorageType=t, kwargs_storage=di, enforce_size_fetching=True)
-      filename = os.path.join(d, "testfile.txt")
-      create_file_given_content(filename, content=content, StorageType=t, kwargs_storage=di) 
-      list(d, StorageType=t, kwargs_storage=di, enforce_size_fetching=True)
-      assert len(content) == get_size(filename, StorageType=t, kwargs_storage=di)
-      if t != StorageLocal:
-        synchronize(path_from=d, path_to=d, StorageFromType=StorageLocal, StorageToType=t, kwargs_to=di)
-        list(d, StorageType=t, kwargs_storage=di, enforce_size_fetching=True)
-        assert len(content) == (get_size(filename, StorageType=t, kwargs_storage=di))
+    with t(**di, logger=logger) as storage:
+      for d in ["test_test_test", "test_test_test2"]:
+        storage.create_directory(d)
+        storage.check_path_exist_is_dir_not_file(d)
+        storage.list(d, enforce_size_fetching=True)
+        filename = os.path.join(d, "testfile.txt")
+        storage.write_file(filename, content=content) 
+        storage.list(d, enforce_size_fetching=True)
+        assert len(content) == storage.get_size(filename)
+        if t != StorageLocal:
+          synchronize(path_from=d, path_to=d, StorageFromType=StorageLocal, StorageToType=t, kwargs_to=di)
+          with StorageLocal() as sl:
+            sl.list(d, enforce_size_fetching=True)
+            assert len(content) == (sl.get_size(filename))
     
   
   med_url_1 = 'https://medium.com/@yu51a5/123-1332f629e146?source=friends_link&sk=6a7033b41578929ffc6569bbb25283f9'

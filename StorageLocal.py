@@ -24,7 +24,7 @@ class StorageLocal(StorageBase):
     return files_, directories_
 
 ###############################################################################
-  def _get_content(self, filename, length=None):
+  def _read_file(self, filename, length=None):
     f = open(filename, "r")
     return f.read()
 
@@ -41,14 +41,10 @@ class StorageLocal(StorageBase):
     os.mkdir(dirname)
 
   ###############################################################################
-  def _create_file_given_content(self, filename, content):
+  def _create_file_given_content(self, path, content):
     mode = "w" if isinstance(content, str) else "wb"
-    with open(filename, mode) as file_object:
+    with open(path, mode) as file_object:
       file_object.write(content)
-
-  ###############################################################################
-  def _update_file_given_content(self, filename, content):
-    self._create_file_given_content(filename=filename, content=content)
 
   ###############################################################################
   def _fetch_file_size_efficiently(self, filename):

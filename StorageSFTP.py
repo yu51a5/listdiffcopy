@@ -54,18 +54,18 @@ class StorageSFTP(StorageBase):
     
 
   ###############################################################################
-  def _get_filenames_and_directories(self, dir_name: str):
+  def _get_filenames_and_directories(self, path: str):
     
-    contents = self.__get_sftp_client().listdir_attr(dir_name)
+    contents = self.__get_sftp_client().listdir_attr(path)
 
     all_files, all_directories = [], []
     for entry in contents:
-      path = os.path.join(dir_name, entry.filename)
+      path_ = os.path.join(path, entry.filename)
       mode = entry.st_mode
       if S_ISDIR(mode):
-        all_directories.append(path)
+        all_directories.append(path_)
       if S_ISREG(mode):
-        all_files.append(path)
+        all_files.append(path_)
 
     return all_files, all_directories
 
@@ -113,8 +113,8 @@ class StorageSFTP(StorageBase):
     self.__get_sftp_client().rmdir(dirname)
 
   ###############################################################################
-  def _fetch_file_size_efficiently(self, filename):
-    result_raw = self.__get_sftp_client().stat(filename)
+  def _fetch_file_size_efficiently(self, path):
+    result_raw = self.__get_sftp_client().stat(path)
     result = result_raw.st_size #, 'modified' : result_raw.st_mtime
     return result
 
@@ -123,7 +123,7 @@ class StorageSFTP(StorageBase):
     return '.'
 
   ###############################################################################
-  def _get_content(self, filename, length=None):
+  def _read_file(self, filename, length=None):
     with self.__get_sftp_client().open(filename) as sftp_file:
       sftp_contents = sftp_file.read(size=length)
     return sftp_contents
@@ -136,16 +136,15 @@ class StorageSFTP(StorageBase):
       return result
     
   ###############################################################################
-  def _create_file_given_content(self, filename, content):
-    self._update_file_given_content(filename=filename, content=content)
+  def _create_file_given_content(self, path, content):
+    _content = io.BytesIO(content) if isinstance(content, bytes) else io.BytesIO(content.encode())
+    self.__get_sftp_client().putfo(_content, path)
 
   ###############################################################################
-  def _update_file_given_content(self, filename, content):
-    self.sftp_client.putfo(io.BytesIO(content.encode()), filename)
-
-  ###############################################################################
-  def _create_directory(self, dirname):
-    self.__get_sftp_client().mkdir(dirname)
+  def _create_directory(self, path):
+    print('_create_directory', path)
+    self.__get_sftp_client().mkdir(path)
+    print(0)
 
   ###############################################################################
   def _rename_file(self, path_to_existing_file, path_to_new_file):

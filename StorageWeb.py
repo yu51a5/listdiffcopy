@@ -108,7 +108,7 @@ class StorageWeb(StorageBase):
       # [("\n" + u + ": this URL is referenced in:\n" + "\n".join(p)) for u, p in
 
   ###############################################################################
-  def get_content(self, filename, length=None, use_content_not_text=None): # filename is url
+  def _read_file(self, filename, length=None, use_content_not_text=None): # filename is url
     if not self.__requests_session:
       self.log_critical("Web connection not open, use `with StorageWeb(<>) as s` instead of `s = StorageWeb(<>)` ")
     if filename in self.__fake_files:
@@ -249,7 +249,7 @@ class StorageWeb(StorageBase):
 
   ###############################################################################
   def _url_to_part_of_source(self, url, tag):
-    response_text = self.get_content(filename=url, use_content_not_text=False)
+    response_text = self._read_file(filename=url, use_content_not_text=False)
     soup = bs4.BeautifulSoup(response_text, 'html.parser')
     if isinstance(tag, str):
       result = soup.find(tag)

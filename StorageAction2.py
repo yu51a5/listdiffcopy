@@ -124,8 +124,8 @@ class StorageAction2(LoggerObj):
         self.log_error(f'Cannot join {self.root_path_to} with the basename of {self.root_path_from}')
         return
     
-    path_exist_is_dir_not_file_from = self.storage_from.check_path_exist_is_dir_not_file(self.root_path_from)
-    path_exist_is_dir_not_file_to = self.storage_to.check_path_exist_is_dir_not_file(self.root_path_to)
+    path_exist_is_dir_not_file_from = self.storage_from._check_path_exist_is_dir_not_file(self.root_path_from)
+    path_exist_is_dir_not_file_to = self.storage_to._check_path_exist_is_dir_not_file(self.root_path_to)
     
     if path_exist_is_dir_not_file_from is None:
       self.log_error(f"{str_from} does not exist")
@@ -182,12 +182,12 @@ class StorageAction2(LoggerObj):
       if file_to_doesnt_exist:
         status = FDStatus.LeftOnly_or_New
         if self.create_if_left_only:
-          from_contents = self.storage_from.get_content(file_from) 
-          self.storage_to.create_file_given_content(filename=file_to_2, content=from_contents) 
+          from_contents = self.storage_from._read_file(file_from) 
+          self.storage_to._write_file(filename=file_to_2, content=from_contents) 
           size_from = len(from_contents)
           size_to = size_from
         else:
-          size_from, _ = self.storage_from.get_file_size_or_content(filename=file_from)
+          size_from, _ = self.storage_from._get_file_size_or_content(filename=file_from)
           size_to   = 0
       elif file_from_doesnt_exist:
         status = FDStatus.RightOnly_or_Deleted
@@ -196,24 +196,24 @@ class StorageAction2(LoggerObj):
           size_from, size_to = 0, 0
         else:
           size_from = 0
-          size_to, _ = self.storage_to.get_file_size_or_content(filename=file_to_2)
+          size_to, _ = self.storage_to._get_file_size_or_content(filename=file_to_2)
       else:
         if self.change_if_both_exist:
-          from_contents = self.storage_from.get_content(file_from) 
+          from_contents = self.storage_from._read_file(file_from) 
           assert file_to_2 is not None
-          status = self.storage_to.create_file_given_content(filename=file_to_2, content=from_contents) 
+          status = self.storage_to._write_file(filename=file_to_2, content=from_contents) 
           size_from = len(from_contents)
           size_to = size_from
         else:
-          size_from, cont_from = self.storage_from.get_file_size_or_content(filename=file_from)
-          size_to, cont_to = self.storage_to.get_file_size_or_content(filename=file_to_2)
+          size_from, cont_from = self.storage_from._get_file_size_or_content(filename=file_from)
+          size_to, cont_to = self.storage_to._get_file_size_or_content(filename=file_to_2)
           if size_from != size_to:
             status = FDStatus.Different_or_Updated
           else:
             if cont_from is None:
-              cont_from = self.storage_from.get_content(file_from) 
+              cont_from = self.storage_from._read_file(file_from) 
             if cont_to is None:
-              cont_to = self.storage_to.get_content(file_to_2) 
+              cont_to = self.storage_to._read_file(file_to_2) 
             status = FDStatus.Different_or_Updated if cont_from != cont_to else FDStatus.Identical
 
       if self.delete_left_afterwards:
@@ -231,9 +231,9 @@ class StorageAction2(LoggerObj):
     self.log_enter_level(common_dir_appendix, self.enter_123[0])
 
     _dir_from = os.path.join(self.root_path_from, common_dir_appendix) if common_dir_appendix else self.root_path_from
-    files_from, dirs_from = self.storage_from.get_filenames_and_directories(_dir_from)
+    files_from, dirs_from = self.storage_from.get_filenames_and_directories_(_dir_from)
     _dir_to = os.path.join(self.root_path_to, common_dir_appendix) if common_dir_appendix else self.root_path_to
-    files_to  , dirs_to   = self.storage_to.get_filenames_and_directories(_dir_to)
+    files_to  , dirs_to   = self.storage_to.get_filenames_and_directories_(_dir_to)
   
     dir_info_first_level = np.zeros((5, 3), float)
     dir_info_total = np.zeros((5, 3), float)
