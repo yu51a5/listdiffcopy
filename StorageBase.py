@@ -393,6 +393,8 @@ class StorageBase(LoggerObj):
 ###############################################################################
 ###############################################################################
 ###############################################################################
+# # source : https://gist.github.com/mgarod/09aa9c3d8a52a980bd4d738e52e5b97a
+# https://stackoverflow.com/questions/533382
 
 def add_StorageBase_method(name, return_if_error, title=None):
   def _inner_add_method(self, *args, add_print_title, **kwargs):

@@ -16,13 +16,11 @@ d = "www/yu51a5.xyz/public_html/wp-content/uploads/hamlet"
 s_path = os.path.join(d, 'test7')
 JPGimg = Image.open('l.jpg', mode='r')
 img_byte_arr = io.BytesIO()
-print(type(img_byte_arr))
 JPGimg.save(img_byte_arr, format='AVIF', quality=AVIF_QUALITY)
 
 list(StorageSFTP, d)
 
 with StorageSFTP() as s:
-    print(s, type(s))
     s.create_directory(s_path)
     s.write_file(os.path.join(s_path, 'l.avif'), content=img_byte_arr.getvalue())
 

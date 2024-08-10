@@ -142,9 +142,7 @@ class StorageSFTP(StorageBase):
 
   ###############################################################################
   def _create_directory(self, path):
-    print('_create_directory', path)
     self.__get_sftp_client().mkdir(path)
-    print(0)
 
   ###############################################################################
   def _rename_file(self, path_to_existing_file, path_to_new_file):
