@@ -19,25 +19,16 @@ class StoragePCloud(StorageBase):
   # Use eapi if the server is in Europe
   # For Pcloud token, see
   def __init__(self, is_eapi=pcloud_urls_are_eapi, secret_name=None, logger_name=None, objects_to_sync_logger_with=[]):
-    super().__init__(constructor_kwargs=dict(is_eapi=is_eapi, secret_name=secret_name), logger_name=logger_name, objects_to_sync_logger_with=objects_to_sync_logger_with)
+    super().__init__(constructor_kwargs=dict(is_eapi=is_eapi, secret_name=secret_name), logger_name=logger_name, objects_to_sync_logger_with=objects_to_sync_logger_with, connection_var_name='__requests_session')
     self.token = self._find_secret_components(1, secret_name=secret_name)[0]
     self.url = StoragePCloud.base_url[is_eapi]
-    self.__requests_session = None
 
   ###############################################################################
   def _open(self):
     self.__requests_session = requests.Session()
 
   ###############################################################################
-  def _close(self):
-    self.__requests_session.close()
-    self.__requests_session = None
-
-  ###############################################################################
   def __post(self, url_addon, param_dict={}, files=None):
-
-    if not self.__requests_session:
-      self.log_critical("PCloud connection not open, use `with StoragePCloud(<>) as s` instead of `s = StoragePCloud(<>)` ")
 
     if files:
       fields = [(str(k), str(v)) for k, v in param_dict.items()] + files
@@ -48,7 +39,7 @@ class StoragePCloud(StorageBase):
       all_params.update(param_dict)
       request_dict = dict(data=all_params)
       
-    response = self.__requests_session.post(self.url + url_addon, **request_dict)
+    response = self._get_connection_var().post(self.url + url_addon, **request_dict)
     content_type = response.headers["content-type"].strip()
 
     if 'application/json' in content_type:

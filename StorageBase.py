@@ -2,7 +2,6 @@ import os
 import math
 import pandas as pd
 import numpy as np
-from functools import partial
 
 from settings import ENFORCE_SIZE_FETCHING_WHEN_LISTING
 from utils import is_equal_str_bytes
@@ -41,9 +40,31 @@ class StorageBase(LoggerObj):
     return errors
 
   #################################################################################
-  def __init__(self, constructor_kwargs, logger_name=None, objects_to_sync_logger_with=[]):
+  def __init__(self, constructor_kwargs, logger_name=None, objects_to_sync_logger_with=[], connection_var_name=None):
     self.__constructor_kwargs = {k : v for k, v in constructor_kwargs.items()}
     super().__init__(logger_name=logger_name, objects_to_sync_logger_with=objects_to_sync_logger_with)
+    self.__connection_var_name = connection_var_name
+    self._connection_var_action(setattr, None)
+
+  ###############################################################################
+  def _connection_var_action(self, func, *args, reverse=False, **kwargs):
+    if self.__connection_var_name:
+      if isinstance(self.__connection_var_name, str):
+        func(self, self.__connection_var_name, *args, **kwargs)
+      else:
+        for cvn in self.__connection_var_name[::(-1 if reverse else 1)]:
+          func(self, cvn, *args, **kwargs)
+
+  ###############################################################################
+  def _get_connection_var(self):
+    if self.__connection_var_name:
+      cvn = self.__connection_var_name if isinstance(self.__connection_var_name, str) else self.__connection_var_name[-1]
+      if hasattr(self, cvn):
+        a = getattr(self, cvn)
+        if a:
+          return a
+    cname = str(type(self).__name__)
+    self.log_critical(f"{cname} connection not open, use `with {cname}(<>) as s` instead of `s = {cname}(<>)` ")
 
   ###############################################################################
   def check_if_constructor_kwargs_are_the_same(self, the_other_constructor_kwargs):
@@ -118,7 +139,11 @@ class StorageBase(LoggerObj):
 
   ###############################################################################
   def _close(self):
-    pass
+    def _fc(self, vn):
+      a = getattr(self, vn, None)
+      a.close()
+      a = None
+    self._connection_var_action(_fc, reverse=True)
 
   ###############################################################################
   def __please_override(self):

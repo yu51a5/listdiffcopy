@@ -10,13 +10,10 @@ from settings import wp_images_extensions, default_ignore_wp_scaled_images
 class StorageSFTP(StorageBase):
 
   def __init__(self, secret_name=None, logger_name=None, objects_to_sync_logger_with=[]):
-    super().__init__(constructor_kwargs=dict(secret_name=secret_name), logger_name=logger_name, objects_to_sync_logger_with=objects_to_sync_logger_with)
+    super().__init__(constructor_kwargs=dict(secret_name=secret_name), logger_name=logger_name, objects_to_sync_logger_with=objects_to_sync_logger_with, connection_var_name=['_ssh_client', '_sftp_client'])
     
     secret_components = self._find_secret_components((4, 5), secret_name=secret_name)
     self.ssh_client_params = {what : secret_components[i] for i, what in enumerate(('hostname', 'port', 'username', 'password'))}
-
-    self.__ssh_client = None
-    self.__sftp_client = None
 
     if len(secret_components) == 5:
       # https://stackoverflow.com/questions/9963391/how-do-use-paramiko-rsakey-from-private-key
@@ -32,31 +29,17 @@ class StorageSFTP(StorageBase):
 
   ###############################################################################
   def _open(self):
-    self.__ssh_client = paramiko.SSHClient()
+    self._ssh_client = paramiko.SSHClient()
     # AutoAddPolicy explained in --> https://www.linode.com/docs/guides/use-paramiko-python-to-ssh-into-a-server/
-    self.__ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    self.__ssh_client.connect(**self.ssh_client_params)
-    self.__sftp_client = self.__ssh_client.open_sftp()
+    self._ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    self._ssh_client.connect(**self.ssh_client_params)
+    self._sftp_client = self._ssh_client.open_sftp()
     return self
-
-  ###############################################################################
-  def _close(self):
-    self.__sftp_client.close()
-    self.__ssh_client.close()
-    self.__ssh_client = None
-    self.__sftp_client = None
-
-  ###############################################################################
-  def __get_sftp_client(self):
-    if not self.__sftp_client:
-      self.log_critical("SFTP client not open, use `with StorageSFTP(<>) as s` instead of `s = StorageSFTP(<>)` ")
-    return self.__sftp_client
-    
 
   ###############################################################################
   def _get_filenames_and_directories(self, path: str):
     
-    contents = self.__get_sftp_client().listdir_attr(path)
+    contents = self._get_connection_var().listdir_attr(path)
 
     all_files, all_directories = [], []
     for entry in contents:
@@ -106,15 +89,15 @@ class StorageSFTP(StorageBase):
     
   ###############################################################################
   def _delete_file(self, filename):
-    self.__get_sftp_client().remove(filename)
+    self._get_connection_var().remove(filename)
 
   ###############################################################################
   def _delete_directory(self, dirname):
-    self.__get_sftp_client().rmdir(dirname)
+    self._get_connection_var().rmdir(dirname)
 
   ###############################################################################
   def _fetch_file_size_efficiently(self, path):
-    result_raw = self.__get_sftp_client().stat(path)
+    result_raw = self._get_connection_var().stat(path)
     result = result_raw.st_size #, 'modified' : result_raw.st_mtime
     return result
 
@@ -124,13 +107,13 @@ class StorageSFTP(StorageBase):
 
   ###############################################################################
   def _read_file(self, filename, length=None):
-    with self.__get_sftp_client().open(filename) as sftp_file:
+    with self._get_connection_var().open(filename) as sftp_file:
       sftp_contents = sftp_file.read(size=length)
     return sftp_contents
 
   ###############################################################################
   def file_contents_is_text(self, filename):
-    with self.__get_sftp_client().open(filename) as sftp_file:
+    with self._get_connection_var().open(filename) as sftp_file:
       sftp_contents = sftp_file.read(size=2048)
       result = StorageBase._file_contents_is_text(file_beginning=sftp_contents)
       return result
@@ -138,17 +121,17 @@ class StorageSFTP(StorageBase):
   ###############################################################################
   def _create_file_given_content(self, path, content):
     _content = io.BytesIO(content) if isinstance(content, bytes) else io.BytesIO(content.encode())
-    self.__get_sftp_client().putfo(_content, path)
+    self._get_connection_var().putfo(_content, path)
 
   ###############################################################################
   def _create_directory(self, path):
-    self.__get_sftp_client().mkdir(path)
+    self._get_connection_var().mkdir(path)
 
   ###############################################################################
   def _rename_file(self, path_to_existing_file, path_to_new_file):
-    self.__get_sftp_client().rename(path_to_existing_file, path_to_new_file)
+    self._get_connection_var().rename(path_to_existing_file, path_to_new_file)
     
   ###############################################################################
   def _rename_directory(self, path_to_existing_dir, path_to_new_dir):
-    self.__get_sftp_client().rename(path_to_existing_dir, path_to_new_dir)
+    self._get_connection_var().rename(path_to_existing_dir, path_to_new_dir)
       
