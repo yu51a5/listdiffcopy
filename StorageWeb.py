@@ -44,7 +44,7 @@ class StorageWeb(StorageBase):
     super().__init__(constructor_kwargs={}, 
                      logger_name=logger_name, 
                      objects_to_sync_logger_with=objects_to_sync_logger_with,
-                     connection_var_name='__requests_session')
+                     connection_var_name='_requests_session')
     self.__fake_directories = [{}, [], []]
     self.__fake_files = {}
     self.__name_content_type_is_content = {}
@@ -57,8 +57,8 @@ class StorageWeb(StorageBase):
 
   ###############################################################################
   def _open(self):
-    self.__requests_session = requests.Session()
-    self.__requests_session.headers.update(self.get_headers())
+    self._requests_session = requests.Session()
+    self._requests_session.headers.update(self.get_headers())
 
   ###############################################################################
   def path_to_str(self, path):
