@@ -123,7 +123,7 @@ class StorageGitHub(StorageBase):
                           sha=self.get_file_id(path))
 
   ###############################################################################
-  def _create_directory(self, dirname):
+  def _create_directory_only(self, path):
     pass
 
   ###############################################################################

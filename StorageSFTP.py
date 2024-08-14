@@ -121,10 +121,11 @@ class StorageSFTP(StorageBase):
   ###############################################################################
   def _create_file_given_content(self, path, content):
     _content = io.BytesIO(content) if isinstance(content, bytes) else io.BytesIO(content.encode())
+    print(type(_content).__name__)
     self._get_connection_var().putfo(_content, path)
 
   ###############################################################################
-  def _create_directory(self, path):
+  def _create_directory_only(self, path):
     self._get_connection_var().mkdir(path)
 
   ###############################################################################

@@ -137,10 +137,10 @@ class StoragePCloud(StorageBase):
     self.__post_folderid(url_addon='deletefolderrecursive', dirname=dirname)
 
   ###############################################################################
-  def _create_directory(self, dirname):
+  def _create_directory_only(self, path):
     result = self.__post_folderid(url_addon='createfolder', 
-                                  dirname=os.path.dirname(dirname),
-                                  param_dict={'name' : os.path.basename(dirname)})
+                                  dirname=os.path.dirname(path),
+                                  param_dict={'name' : os.path.basename(path)})
     return {'id' : result["metadata"]["folderid"]}
 
   ###############################################################################

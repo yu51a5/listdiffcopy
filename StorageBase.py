@@ -2,6 +2,7 @@ import os
 import math
 import pandas as pd
 import numpy as np
+from functools import partialmethod
 
 from settings import ENFORCE_SIZE_FETCHING_WHEN_LISTING
 from utils import is_equal_str_bytes
@@ -162,7 +163,7 @@ class StorageBase(LoggerObj):
     self.__please_override()
 
   ###############################################################################
-  def _create_directory(self, path):
+  def _create_directory_only(self, path):
     self.__please_override()
 
   ###############################################################################
@@ -205,13 +206,9 @@ class StorageBase(LoggerObj):
     if (len(result) > 1) and (result[0] == self.get_init_path()):
       result.pop(0)
     return result
-
-  ###############################################################################
-  def create_directory_in_existing_directory(self, path):
-    self._create_directory(path)
     
   ###############################################################################
-  def _check_directory_exists_or_create(self, path, create_if_doesnt_exist):
+  def _create_directory(self, path, create_if_doesnt_exist=True):
     root_folders = self.split_path_into_dirs_filename(path=path)
     path_so_far = self.get_init_path() 
     was_created = False
@@ -221,15 +218,17 @@ class StorageBase(LoggerObj):
       if path_so_far in directories_:
         continue 
       if create_if_doesnt_exist:
-        self.create_directory_in_existing_directory(path_so_far)
+        self._create_directory_only(path_so_far)
         was_created = True
         continue
       return False
+    if create_if_doesnt_exist and (not was_created):
+      pass # self.log_warning(message=f"Skipping because {self.str(path)} exists")
     return (not create_if_doesnt_exist) or was_created
 
   ###############################################################################
   def check_directory_exists(self, path):
-    result = self._check_directory_exists_or_create(path, create_if_doesnt_exist=False)
+    result = self._create_directory(path, create_if_doesnt_exist=False)
     return result
   
   ###############################################################################
@@ -319,8 +318,7 @@ class StorageBase(LoggerObj):
         self._update_file_given_content(path=path, content=content)
         return FDStatus.Different_or_Updated
       elif path_exist_is_dir_not_file_to is None: # it does not exist
-        self._check_directory_exists_or_create(path=os.path.dirname(path), 
-                                               create_if_doesnt_exist=True)
+        self._create_directory(path=os.path.dirname(path))
         self._create_file_given_content(path=path, content=content)
         return FDStatus.LeftOnly_or_New
       else: # it's a folder or both
@@ -408,14 +406,6 @@ class StorageBase(LoggerObj):
       self.log_error(f"{self.str(path)} does not exist")  
 
 ###############################################################################
-  def _create_directory(self, path):
-    path_exist_is_dir_not_file = self._check_path_exist_is_dir_not_file(path)
-    if path_exist_is_dir_not_file is not None:
-      self.log_warning(message=f"Skipping because {self.str(path)} exists")
-    else:
-      self._check_directory_exists_or_create(path, create_if_doesnt_exist=True)
-
-###############################################################################
 ###############################################################################
 ###############################################################################
 # # source : https://gist.github.com/mgarod/09aa9c3d8a52a980bd4d738e52e5b97a
@@ -426,13 +416,15 @@ def add_StorageBase_method(name, return_if_error, title=None):
     title_ = title if title else name
     path = None
     if ('path' in kwargs) and ('existing_path' in kwargs):
-      raise Exception("path and existing_path are mutually exclusive")
+      raise Exception("path and existing_path arguments are mutually exclusive")
     elif ('path' in kwargs) or ('existing_path' in kwargs):
       path = kwargs['path'] if ('path' in kwargs) else kwargs['existing_path']
     else:
       strs = [arg for arg in args if isinstance(arg, str)]
       if len(strs) == 1:
         path = strs[0]
+      else:
+        raise Exception(f"No path argument given, and {len(strs)} nameless string arguments given")
     try:
       title_ += " " + self.str(path)
       if add_print_title:
@@ -442,16 +434,9 @@ def add_StorageBase_method(name, return_if_error, title=None):
       self.log_error(f'{title_} failed, exception {e}')
       return return_if_error
 
-  def inner_add_method_(self, *args, **kwargs):
-    return _inner_add_method(self, *args, add_print_title=False, **kwargs)
-  def inner_add_method(self, *args, **kwargs):
-    return _inner_add_method(self, *args, add_print_title=True, **kwargs)
-
-  setattr(StorageBase, name    , inner_add_method)
-  setattr(StorageBase, name+"_", inner_add_method_)
+  setattr(StorageBase, name    , partialmethod(_inner_add_method, add_print_title=True))
+  setattr(StorageBase, name+"_", partialmethod(_inner_add_method, add_print_title=False))
   
 ###############################################################################
 
-
 _ = StorageBase.loop_over_action_list(cllable=add_StorageBase_method)
-

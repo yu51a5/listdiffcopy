@@ -148,7 +148,7 @@ class StorageAction2(LoggerObj):
       if self.require_path_to:
         self.log_error(f"{str_to} does not exist")
       elif path_exist_is_dir_not_file_from is True:
-        self.storage_to._create_directory(self.root_path_to)
+        self.storage_to._create_directory_only(self.root_path_to)
         path_exist_is_dir_not_file_to = True
         
     if (path_exist_is_dir_not_file_from in [True, False]) and (path_exist_is_dir_not_file_to in [True, False]) and (path_exist_is_dir_not_file_from is not path_exist_is_dir_not_file_to):
@@ -296,7 +296,7 @@ class StorageAction2(LoggerObj):
       if (id_to == 0) or ((basename_from is not None) and (basename_to is not None) and (basename_from < basename_to)):
         dir_info_first_level[0][2] += 1
         if self.create_if_left_only:
-          self.storage_to.create_directory_in_existing_directory(path=os.path.join(_dir_to, basename_from))
+          self.storage_to.create_directory(path=os.path.join(_dir_to, basename_from))
           subdir_info_total = self._action_files_directories_recursive(common_dir_appendix=os.path.join(common_dir_appendix, basename_from))
           dir_info_total += subdir_info_total
         else:

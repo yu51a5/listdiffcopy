@@ -25,7 +25,7 @@ class StorageLocal(StorageBase):
 
 ###############################################################################
   def _read_file(self, filename, length=None):
-    f = open(filename, "r")
+    f = open(filename, "rb")
     return f.read()
 
   ###############################################################################
@@ -37,8 +37,8 @@ class StorageLocal(StorageBase):
     shutil.rmtree(path=dirname)
 
   ###############################################################################
-  def _create_directory(self, dirname):
-    os.mkdir(dirname)
+  def _create_directory_only(self, path):
+    os.mkdir(path)
 
   ###############################################################################
   def _create_file_given_content(self, path, content):
