@@ -1,11 +1,28 @@
-import typing as typ
+import typing
+import io
+import pillow_avif
+from PIL import Image
+from settings import AVIF_QUALITY
+
+###############################################################################
+# SOURCES:
+# https://stackoverflow.com/questions/33101935/convert-pil-image-to-byte-array
+# https://codelabs.developers.google.com/codelabs/avif#3
+# there should be two dashes before `min` and `max`
+###############################################################################
+def convert_image_to_AVIF(another_image_bytes, quality=AVIF_QUALITY):
+  from_img = Image.open(io.BytesIO(another_image_bytes))
+  result_img_stream = io.BytesIO()
+  from_img.save(result_img_stream, format='AVIF', quality=quality)
+  result = result_img_stream.getvalue()
+  return result
 
 ###############################################################################
 # source: https://stackoverflow.com/questions/73498143/checking-for-equality-if-either-input-can-be-str-or-bytes
 ###############################################################################
 def is_equal_str_bytes(
-    a: typ.Union[str, bytes],
-    b: typ.Union[str, bytes],
+    a: typing.Union[str, bytes],
+    b: typing.Union[str, bytes],
 ) -> bool:
     if len(a) != len(b):
         return False
