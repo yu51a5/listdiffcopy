@@ -14,11 +14,10 @@ class StorageLocal(StorageBase):
     return '.'
     
   ###############################################################################
-  def _get_filenames_and_directories(self, dir_name : str):
+  def _get_filenames_and_directories(self, path : str):
     files_, directories_ = [], []
-    for basename_ in os.listdir(dir_name):
-      full_name = os.path.join(dir_name, basename_)
-      
+    for basename_ in os.listdir(path):
+      full_name = os.path.join(path, basename_)      
       (files_ if os.path.isfile(full_name) else directories_).append(full_name)
 
     return files_, directories_

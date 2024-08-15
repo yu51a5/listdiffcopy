@@ -53,7 +53,7 @@ class StorageSFTP(StorageBase):
     return all_files, all_directories
 
   ###############################################################################
-  def _filter_out_files(self, files_):
+  def _filter_out_files(files_):
     
     if not default_ignore_wp_scaled_images:
       return files_
@@ -106,14 +106,14 @@ class StorageSFTP(StorageBase):
     return '.'
 
   ###############################################################################
-  def _read_file(self, filename, length=None):
-    with self._get_connection_var().open(filename) as sftp_file:
+  def _read_file(self, path, length=None):
+    with self._get_connection_var().open(path) as sftp_file:
       sftp_contents = sftp_file.read(size=length)
     return sftp_contents
 
   ###############################################################################
-  def file_contents_is_text(self, filename):
-    with self._get_connection_var().open(filename) as sftp_file:
+  def file_contents_is_text(self, path):
+    with self._get_connection_var().open(path) as sftp_file:
       sftp_contents = sftp_file.read(size=2048)
       result = StorageBase._file_contents_is_text(file_beginning=sftp_contents)
       return result
@@ -121,7 +121,6 @@ class StorageSFTP(StorageBase):
   ###############################################################################
   def _create_file_given_content(self, path, content):
     _content = io.BytesIO(content) if isinstance(content, bytes) else io.BytesIO(content.encode())
-    print(type(_content).__name__)
     self._get_connection_var().putfo(_content, path)
 
   ###############################################################################

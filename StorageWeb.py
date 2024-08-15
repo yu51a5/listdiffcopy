@@ -110,12 +110,12 @@ class StorageWeb(StorageBase):
         self.log_error(f'Downloading of {filename} failed, code {response.status_code}') 
 
   ###############################################################################
-  def _get_filenames_and_directories(self, dir_name : str):
+  def _get_filenames_and_directories(self, path : str):
     files_, directories_ = [], []
-    if not dir_name:
+    if not path:
       directories_, urls, fake_filename_contents = self.__fake_directories
     else:
-      root_folders = self.split_path_into_dirs_filename(path=dir_name)
+      root_folders = self.split_path_into_dirs_filename(path=path)
       what = self.__fake_directories
       for rf in root_folders:
         if rf not in what[0]:
@@ -123,8 +123,8 @@ class StorageWeb(StorageBase):
         what = what[0][rf]
       directories_, urls, fake_filename_contents = what
 
-    directories_ = [os.path.join(dir_name, k) for k in directories_.keys()]
-    files_ = [u for u in urls] + [os.path.join(dir_name, k) for k in fake_filename_contents]
+    directories_ = [os.path.join(path, k) for k in directories_.keys()]
+    files_ = [u for u in urls] + [os.path.join(path, k) for k in fake_filename_contents]
     return files_, directories_
 
   ###############################################################################

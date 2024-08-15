@@ -95,11 +95,11 @@ class StoragePCloud(StorageBase):
     return result
   
   ###############################################################################
-  def _get_filenames_and_directories(self, dir_name : str):
-    contents_ = self.__post_folderid(url_addon='listfolder', dirname=dir_name)['metadata']['contents']
+  def _get_filenames_and_directories(self, path : str):
+    contents_ = self.__post_folderid(url_addon='listfolder', dirname=path)['metadata']['contents']
     files_, directories_ = [], []
     for c in contents_:
-      full_name = os.path.join(dir_name, c['name'])
+      full_name = os.path.join(path, c['name'])
       if c['isfolder']:
         #self.set_dir_info(full_name, {'id' : c['folderid']})
         directories_.append(full_name)

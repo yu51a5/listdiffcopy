@@ -49,17 +49,17 @@ class StorageGitHub(StorageBase):
   # filenames and their sha's are needed to be able to update existing files, see
   # https://stackoverflow.com/questions/63435987/python-pygithub-if-file-exists-then-update-else-create
   ###############################################################################
-  def _get_filenames_and_directories(self, dir_name: str):
+  def _get_filenames_and_directories(self, path: str):
     
     all_files, all_directories = [], []
     
-    exists = self.check_directory_exists(path=dir_name)
+    exists = self.check_directory_exists(path=path)
 
     if exists:
 
-      url = f"{self.url_head}/git/trees/({self.branch_name}):({dir_name})"
+      url = f"{self.url_head}/git/trees/({self.branch_name}):({path})"
       
-      contents = self.repo.get_contents(dir_name)
+      contents = self.repo.get_contents(path)
       if isinstance(contents, ContentFile.ContentFile):
         contents = [contents]
   
@@ -128,7 +128,7 @@ class StorageGitHub(StorageBase):
 
   ###############################################################################
   def _delete_directory(self, dirname):
-    all_files, all_directories = self.get_filenames_and_directories_(dir_name=dirname)
+    all_files, all_directories = self._get_filenames_and_dirnames(path=dirname)
     for f in all_files:
       self._delete_file(filename=f)
     for d in all_directories:

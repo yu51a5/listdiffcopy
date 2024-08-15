@@ -19,7 +19,7 @@ class StorageBase(LoggerObj):
                                    "list", "delete", "rename", 
                                    ("check_path_exist_is_dir_not_file", None),
                                    ("get_size", math.nan), 
-                                   ("get_filenames_and_directories", (None, None))):
+                                   ("get_filenames_and_dirnames", (None, None))):
       if isinstance(name_return_if_error, str):
         name, return_if_error = name_return_if_error, FDStatus.Error
       else:
@@ -60,10 +60,9 @@ class StorageBase(LoggerObj):
   def _get_connection_var(self):
     if self.__connection_var_name:
       cvn = self.__connection_var_name if isinstance(self.__connection_var_name, str) else self.__connection_var_name[-1]
-      if hasattr(self, cvn):
-        a = getattr(self, cvn)
-        if a:
-          return a
+      a = getattr(self, cvn, None)
+      if a:
+        return a
     cname = str(type(self).__name__)
     self.log_critical(f"{cname} connection not open, use `with {cname}(<>) as s` instead of `s = {cname}(<>)` ")
 
@@ -209,11 +208,13 @@ class StorageBase(LoggerObj):
     
   ###############################################################################
   def _create_directory(self, path, create_if_doesnt_exist=True):
+    if path in ('', self.get_init_path()):
+      return True
     root_folders = self.split_path_into_dirs_filename(path=path)
     path_so_far = self.get_init_path() 
     was_created = False
     for rf in root_folders:
-      _, directories_ = self.get_filenames_and_directories_(path=path_so_far)
+      _, directories_ = self._get_filenames_and_dirnames(path=path_so_far)
       path_so_far = os.path.join(path_so_far, rf)
       if path_so_far in directories_:
         continue 
@@ -234,10 +235,14 @@ class StorageBase(LoggerObj):
   ###############################################################################
   def check_file_exists(self, path):  
     dirname, _ = os.path.split(path)
+    if not dirname:
+      dirname = self.get_init_path()
     dir_exists = self.check_directory_exists(path=dirname)
     if dir_exists:
-      files_, _ = self.get_filenames_and_directories_(path=dirname)
-      return (path in files_)
+      files_, _ = self._get_filenames_and_dirnames(path=dirname)
+      filename_to_check = os.path.join(dirname, os.path.basename(path))
+      result = filename_to_check in files_
+      return result
     return False
 
   ###############################################################################
@@ -268,24 +273,29 @@ class StorageBase(LoggerObj):
     elif path_exist_is_dir_not_file == "both":
       self.log_error(f"{self.str(existing_path)} is both a file and a directory")
     else:
-      self.log_error(f"{self.str(existing_path)} does not exist")  
+      self.log_error(f"{self.str(existing_path)} does not exist 1")  
       
   ###############################################################################
   def _filter_out_files(self, files_):
     return files_
   
   ###############################################################################
-  def get_filenames_and_directories(self, path):
-      if not path:
-        path = self.get_init_path()
-      files_, directories_ = self.get_filenames_and_directories_(path=path)
-      
+  def _get_filenames_and_dirnames(self, path, sort=False, filter_func=None):
+    if not path:
+      return self._get_filenames_and_dirnames(path=self.get_init_path(), 
+                                              sort=sort, 
+                                              filter_func=filter_func)
+
+    files_, directories_ = self._get_filenames_and_directories(path=path)
+
+    if filter_func:
+      files_ = filter_func(files_)
+
+    if sort:
       files_.sort(key=lambda x: x.lower())
       directories_.sort(key=lambda x: x.lower())
-  
-      files_ = self._filter_out_files(files_)
-  
-      return files_, directories_
+
+    return files_, directories_
       
   ###############################################################################
   def file_contents_is_text(self, path):
@@ -308,7 +318,6 @@ class StorageBase(LoggerObj):
   ###############################################################################
   def _write_file(self, path, content, check_if_contents_is_the_same_before_writing=True):
       assert isinstance(content, (str, bytes)), f'Type of contents is {type(content)}'
-      assert path, "Filename is not defined"
       path_exist_is_dir_not_file_to = self._check_path_exist_is_dir_not_file(path)
       if path_exist_is_dir_not_file_to is False: # it's a file
         if check_if_contents_is_the_same_before_writing:
@@ -335,7 +344,7 @@ class StorageBase(LoggerObj):
   def _get_size(self, path):
     path_exist_is_dir_not_file = self._check_path_exist_is_dir_not_file(path)
     if path_exist_is_dir_not_file is True:
-      files_, directories_ = self._get_filenames_and_directories(path=path)
+      files_, directories_ = self._get_filenames_and_dirnames(path=path)
       result = sum([self._get_file_size(f) for f in files_]) \
              + sum([self.get_size_(path=d) for d in directories_])
       return result
@@ -344,14 +353,14 @@ class StorageBase(LoggerObj):
     elif path_exist_is_dir_not_file == "both":
       self.log_error(f"{self.str(path)} is both a file and a directory")
     else:
-      self.log_error(f"{self.str(path)} does not exist")  
+      self.log_error(f"{self.str(path)} does not exist 2")  
   
   ###############################################################################
   def _list_files_directories_recursive(self, path, enforce_size_fetching, message2=''):
 
     self.log_enter_level(dirname=path, message_to_print='Listing', message2=message2)
 
-    files_, dirs_ = self.get_filenames_and_directories_(path)
+    files_, dirs_ = self._get_filenames_and_dirnames(path, sort=True)
 
     if enforce_size_fetching:
       df = [[os.path.basename(f), self._get_file_size(f)] for f in files_]
@@ -391,7 +400,7 @@ class StorageBase(LoggerObj):
     elif path_exist_is_dir_not_file == "both":
       self.log_error(f"{self.str(path)} is both a file and a directory")
     else:
-      self.log_error(f"{self.str(path)} does not exist")  
+      self.log_error(f"{self.str(path)} does not exist 3")  
 
 ###############################################################################
   def _delete(self, path):
@@ -403,7 +412,7 @@ class StorageBase(LoggerObj):
     elif path_exist_is_dir_not_file == "both":
       self.log_error(f"{self.str(path)} is both a file and a directory")
     else:
-      self.log_error(f"{self.str(path)} does not exist")  
+      self.log_error(f"{self.str(path)} does not exist 4")  
 
 ###############################################################################
 ###############################################################################
