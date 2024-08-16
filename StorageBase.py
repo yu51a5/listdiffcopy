@@ -257,23 +257,42 @@ class StorageBase(LoggerObj):
       return None
 
   ###############################################################################
+  def __method_with_check_path_exist_is_dir_not_file(self, path, mT, mF, mN=None):
+    path_exist_is_dir_not_file = self._check_path_exist_is_dir_not_file(path)
+    if path_exist_is_dir_not_file is True:
+      if mT:
+        return mT()
+      else:
+        self.log_error(f"{self.str(path)} is a directory")
+        return FDStatus.Error
+    elif path_exist_is_dir_not_file is False:
+      return mF()
+    elif path_exist_is_dir_not_file == "both":
+      self.log_error(f"{self.str(path)} is both a file and a directory")
+      return FDStatus.Error
+    else:
+      if mN:
+        return mN()
+      else:
+        self.log_error(f"{self.str(path)} does not exist")  
+        return FDStatus.Error
+
+  ###############################################################################
   def _rename(self, existing_path, new_path):
     new_path_exists = self._check_path_exist_is_dir_not_file(new_path)
     if new_path_exists is not None:
       self.log_error(f"{self.str(new_path)} already exists")
-      return
-    
-    path_exist_is_dir_not_file = self._check_path_exist_is_dir_not_file(existing_path)
-    if path_exist_is_dir_not_file is True:
-      return self._rename_directory(path_to_existing_dir=existing_path, 
-                                    path_to_new_dir=new_path)
-    elif path_exist_is_dir_not_file is False:
-      return self._rename_file(path_to_existing_file=existing_path, 
-                               path_to_new_file=new_path)
-    elif path_exist_is_dir_not_file == "both":
-      self.log_error(f"{self.str(existing_path)} is both a file and a directory")
-    else:
-      self.log_error(f"{self.str(existing_path)} does not exist 1")  
+      return FDStatus.Error
+
+    return self.__method_with_check_path_exist_is_dir_not_file(
+                   path=existing_path,
+                   mT=partial(self._rename_directory, 
+                              path_to_existing_dir=existing_path, 
+                              path_to_new_dir=new_path),
+                   mF=partial(self._rename_file, 
+                              path_to_existing_file=existing_path, 
+                              path_to_new_file=new_path)
+    )
       
   ###############################################################################
   def _filter_out_files(self, files_):
@@ -317,22 +336,23 @@ class StorageBase(LoggerObj):
 
   ###############################################################################
   def _write_file(self, path, content, check_if_contents_is_the_same_before_writing=True):
-      assert isinstance(content, (str, bytes)), f'Type of contents is {type(content)}'
-      path_exist_is_dir_not_file_to = self._check_path_exist_is_dir_not_file(path)
-      if path_exist_is_dir_not_file_to is False: # it's a file
-        if check_if_contents_is_the_same_before_writing:
-          current_contents = self._read_file(path)
-          if is_equal_str_bytes(content, current_contents):
-            return FDStatus.Identical
-        self._update_file_given_content(path=path, content=content)
-        return FDStatus.Different_or_Updated
-      elif path_exist_is_dir_not_file_to is None: # it does not exist
-        self._create_directory(path=os.path.dirname(path))
-        self._create_file_given_content(path=path, content=content)
-        return FDStatus.LeftOnly_or_New
-      else: # it's a folder or both
-        self.log_error(f'{self.str(path)} exists, and it is a directory')
-        return FDStatus.Error
+    assert isinstance(content, (str, bytes)), f'Type of contents is {type(content)}'
+
+    def mN():
+      self._create_directory(path=os.path.dirname(path))
+      self._create_file_given_content(path=path, content=content)
+      return FDStatus.LeftOnly_or_New
+
+    def mF():
+      if check_if_contents_is_the_same_before_writing:
+        current_contents = self._read_file(path)
+        if is_equal_str_bytes(content, current_contents):
+          return FDStatus.Identical
+      self._update_file_given_content(path=path, content=content)
+      return FDStatus.Different_or_Updated
+
+    return self.__method_with_check_path_exist_is_dir_not_file(
+                                                path=path, mF=mF, mT=None, mN=mN)
   
   ###############################################################################
   def _get_file_size(self, path):
@@ -342,18 +362,17 @@ class StorageBase(LoggerObj):
 
   ###############################################################################
   def _get_size(self, path):
-    path_exist_is_dir_not_file = self._check_path_exist_is_dir_not_file(path)
-    if path_exist_is_dir_not_file is True:
+    def _sum_up_sizes():
       files_, directories_ = self._get_filenames_and_dirnames(path=path)
       result = sum([self._get_file_size(f) for f in files_]) \
              + sum([self.get_size_(path=d) for d in directories_])
       return result
-    elif path_exist_is_dir_not_file is False:
-      return self._get_file_size(path=path)  
-    elif path_exist_is_dir_not_file == "both":
-      self.log_error(f"{self.str(path)} is both a file and a directory")
-    else:
-      self.log_error(f"{self.str(path)} does not exist 2")  
+
+    return self.__method_with_check_path_exist_is_dir_not_file(
+                   path=path,
+                   mT=_sum_up_sizes,
+                   mF=partial(self._get_file_size, path=path)
+    )
   
   ###############################################################################
   def _list_files_directories_recursive(self, path, enforce_size_fetching, message2=''):
@@ -389,30 +408,22 @@ class StorageBase(LoggerObj):
 
   ###############################################################################
   def _list(self, path, enforce_size_fetching=ENFORCE_SIZE_FETCHING_WHEN_LISTING):
-    path_exist_is_dir_not_file = self._check_path_exist_is_dir_not_file(path)
-    if path_exist_is_dir_not_file is True:
-      result = self._list_files_directories_recursive(path=path, enforce_size_fetching=enforce_size_fetching)
-      return result
-    elif path_exist_is_dir_not_file is False:
-      size_arr = [self.get_size(path=path)] if enforce_size_fetching else []
-      result = self.print_files_df(data = [[os.path.basename(path)] + size_arr])
-      return size_arr
-    elif path_exist_is_dir_not_file == "both":
-      self.log_error(f"{self.str(path)} is both a file and a directory")
-    else:
-      self.log_error(f"{self.str(path)} does not exist 3")  
+    return self.__method_with_check_path_exist_is_dir_not_file(
+                   path=path,
+                   mT=partial(self._list_files_directories_recursive,
+                              path=path, 
+                              enforce_size_fetching=enforce_size_fetching),
+                   mF=partial(self.print_files_df, 
+                              data = [[os.path.basename(path)] 
+                                      + ([self.get_size(path=path)] if enforce_size_fetching else [])])
+    )
 
 ###############################################################################
   def _delete(self, path):
-    path_exist_is_dir_not_file = self._check_path_exist_is_dir_not_file(path)
-    if path_exist_is_dir_not_file is True:
-      self._delete_directory(path)
-    elif path_exist_is_dir_not_file is False:
-      self._delete_file(path)  
-    elif path_exist_is_dir_not_file == "both":
-      self.log_error(f"{self.str(path)} is both a file and a directory")
-    else:
-      self.log_error(f"{self.str(path)} does not exist 4")  
+    return self.__method_with_check_path_exist_is_dir_not_file(
+                   path=path,
+                   mT=partial(self._delete_directory, path=path),
+                   mF=partial(self._delete_file, path=path))
 
 ###############################################################################
 ###############################################################################

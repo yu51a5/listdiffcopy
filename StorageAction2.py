@@ -24,7 +24,7 @@ class StorageAction2(LoggerObj):
   #################################################################################
   def __init__(self, *args, **kwargs):
 
-    for fn in ['transform_func', 'filename_transform']:
+    for fn in ['file_contents_transform', 'filename_transform', 'filenames_filter']:
       if not hasattr(self, fn):
         setattr(self, fn, None)
       
@@ -130,12 +130,12 @@ class StorageAction2(LoggerObj):
     path_exist_is_dir_not_file_to = self.storage_to._check_path_exist_is_dir_not_file(self.root_path_to)
     
     if path_exist_is_dir_not_file_from is None:
-      self.log_error(f"{str_from} does not exist 5, {self.root_path_from}, {self.storage_from}")
+      self.log_error(f"{str_from} does not exist")
     elif (path_exist_is_dir_not_file_from == 'both'):
       if path_exist_is_dir_not_file_to == 'both':
         self.log_error(f"Both {str_from} and {str_to} are both a directory and a file")
       elif path_exist_is_dir_not_file_to is None:
-        self.log_error(f"{str_from} is both a directory and a file, and {str_to} does not exist 6")
+        self.log_error(f"{str_from} is both a directory and a file, and {str_to} does not exist")
         return
       else:
         # make path_exist_is_dir_not_file_from either True or False
@@ -148,7 +148,7 @@ class StorageAction2(LoggerObj):
 
     if path_exist_is_dir_not_file_to is None:
       if self.require_path_to:
-        self.log_error(f"{str_to} does not exist 7")
+        self.log_error(f"{str_to} does not exist")
       elif path_exist_is_dir_not_file_from is True:
         self.storage_to._create_directory_only(self.root_path_to)
         path_exist_is_dir_not_file_to = True
@@ -186,7 +186,7 @@ class StorageAction2(LoggerObj):
         if self.create_if_left_only:
           from_contents = self.storage_from._read_file(file_from) 
           size_from = len(from_contents)
-          to_contents = from_contents if not self.transform_func else self.transform_func(from_contents)
+          to_contents = from_contents if not self.transform_func else self.file_contents_transform(from_contents)
           self.storage_to._write_file(path=file_to_2, content=to_contents) 
           
           size_to = size_from if not self.transform_func else len(to_contents)
@@ -205,7 +205,7 @@ class StorageAction2(LoggerObj):
         if self.change_if_both_exist:
           from_contents = self.storage_from._read_file(file_from) 
           size_from = len(from_contents)
-          to_contents = from_contents if not self.transform_func else self.transform_func(from_contents)
+          to_contents = from_contents if not self.transform_func else self.file_contents_transform(from_contents)
           status = self.storage_to._write_file(path=file_to_2, content=to_contents) 
           
           size_to = size_from if not self.transform_func else len(to_contents)
@@ -236,9 +236,9 @@ class StorageAction2(LoggerObj):
     self.log_enter_level(common_dir_appendix, self.enter_123[0])
 
     _dir_from = os.path.join(self.root_path_from, common_dir_appendix) if common_dir_appendix else self.root_path_from
-    files_from, dirs_from = self.storage_from._get_filenames_and_dirnames(_dir_from, sort=True)
+    files_from, dirs_from = self.storage_from._get_filenames_and_dirnames(_dir_from, sort=True, filter_func=self.filenames_filter)
     _dir_to = os.path.join(self.root_path_to, common_dir_appendix) if common_dir_appendix else self.root_path_to
-    files_to  , dirs_to   = self.storage_to._get_filenames_and_dirnames(_dir_to, sort=True)
+    files_to  , dirs_to   = self.storage_to._get_filenames_and_dirnames(  _dir_to,   sort=True, filter_func=self.filenames_filter)
   
     dir_info_first_level = np.zeros((5, 3), float)
     dir_info_total = np.zeros((5, 3), float)
@@ -345,6 +345,7 @@ class Compare(StorageAction2):
   delete_if_right_only = False
   change_if_both_exist = False
   require_path_to = True
+  add_from_basename_to_to = False
   
   status_names = ["Left Only", "Right Only", "Different", "Identical"]
 
@@ -364,7 +365,7 @@ class Synchronize(StorageAction2):
 
   enter_123 = ['Synchronizing', '', 'and']
 
-  status_names = ["New", "Pre-existing", "Updated", "Identical"]
+  status_names = ["New", "Deleted", "Updated", "Identical"]
 
   #################################################################################
   def __init__(self, *args, **kwargs):
@@ -376,18 +377,19 @@ class Transform(Synchronize):
   enter_123 = ['Transforming', '', 'to']
 
   #################################################################################
-  def __init__(self, *args, transform_func, filename_transform, **kwargs):
-    self.transform_func = transform_func
+  def __init__(self, *args, file_contents_transform, filename_transform, **kwargs):
+    self.file_contents_transform = file_contents_transform
     self.filename_transform = filename_transform
     super().__init__(*args, **kwargs)
 
 #################################################################################
-class _Copy(StorageAction2):
+class Copy(StorageAction2):
 
   create_if_left_only = True
   delete_if_right_only = False
   change_if_both_exist = True
   require_path_to = False
+  add_from_basename_to_to = False
 
   enter_123 = ['Copying', 'from', 'to']
 
@@ -396,15 +398,22 @@ class _Copy(StorageAction2):
   #################################################################################
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
-
+    
 #################################################################################
-class _Move(StorageAction2):
+class CopyInto(Copy):
+  add_from_basename_to_to = True
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    
+#################################################################################
+class Move(StorageAction2):
 
   create_if_left_only = True
   delete_if_right_only = False
   change_if_both_exist = True
   require_path_to = False
   delete_left_afterwards = True
+  add_from_basename_to_to = False
 
   enter_123 = ['Moving', 'from', 'to']
 
@@ -413,28 +422,14 @@ class _Move(StorageAction2):
   #################################################################################
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
-
+    
 #################################################################################
-#################################################################################
-class Copy(_Copy):
-  add_from_basename_to_to = False
-  def __init__(self, *args, **kwargs):
-    super().__init__(*args, **kwargs)
-
-#################################################################################
-class CopyInto(_Copy):
+class MoveInto(Move):
   add_from_basename_to_to = True
-  def __init__(self, *args, **kwargs):
-    super().__init__(*args, **kwargs)
-
-#################################################################################
-class Move(_Move):
-  add_from_basename_to_to = False
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
     
-#################################################################################
-class MoveInto(_Move):
-  add_from_basename_to_to = True
-  def __init__(self, *args, **kwargs):
-    super().__init__(*args, **kwargs)
+
+
+
+

@@ -4,7 +4,6 @@ import paramiko
 from stat import S_ISDIR, S_ISREG
 
 from StorageBase import StorageBase
-from settings import wp_images_extensions, default_ignore_wp_scaled_images
 
 #################################################################################
 class StorageSFTP(StorageBase):
@@ -51,41 +50,6 @@ class StorageSFTP(StorageBase):
         all_files.append(path_)
 
     return all_files, all_directories
-
-  ###############################################################################
-  def _filter_out_files(files_):
-    
-    if not default_ignore_wp_scaled_images:
-      return files_
-      
-    qty_files = len(files_)
-    i = 0
-    while i < qty_files:
-      this_file_name = files_[i]
-      i += 1 # as if it's already the next iteration
-      pos = {c : this_file_name.rfind(c) for c in ('.', 'x', '-')}
-      if min(pos.values()) < 0:
-        continue
-      if not ((pos['-'] + 4) <= (pos['x'] + 2) <= pos['.']):
-        continue
-      maybe_numbers = this_file_name[pos['-'] + 1:pos['x']] + this_file_name[pos['x'] + 1:pos['.']]
-      not_numbers = [c for c in maybe_numbers if not ('0' <= c <= '9')]
-      if not_numbers:
-        continue
-      extension = (this_file_name[pos['.']+1:]).lower() 
-      if extension not in wp_images_extensions:
-        continue
-      presumed_original = this_file_name[:pos['-']] + this_file_name[pos['.']:]
-      for j in range(i, qty_files):
-        if files_[j] == presumed_original:
-          qty_files -= 1
-          i -= 1 #rolling back
-          files_.pop(i)
-          break
-        if files_[j] > presumed_original:
-          break
-
-    return files_
     
   ###############################################################################
   def _delete_file(self, filename):
