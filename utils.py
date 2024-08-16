@@ -7,7 +7,11 @@ from settings import AVIF_QUALITY, wp_images_extensions
 wp_images_extensions_with_dot = [f'.{ext.lower()}' for ext in wp_images_extensions]
 
 ###############################################################################
-def get_file extention(filename):
+def idem(x):
+  return x
+
+###############################################################################
+def get_file_extention(filename):
   dot_pos = filename.rfind('.')
   if dot_pos < 0:
     return None
@@ -27,23 +31,23 @@ def filter_out_extra_wp_images(files_):
     i += 1 # as if it's already the next iteration
     pos = {c : this_file_name.rfind(c) for c in ('.', 'x', '-')}
     if min(pos.values()) < 0:
-    continue
+      continue
     if not ((pos['-'] + 4) <= (pos['x'] + 2) <= pos['.']):
-    continue
+      continue
     maybe_numbers = this_file_name[pos['-'] + 1:pos['x']] + this_file_name[pos['x'] + 1:pos['.']]
     not_numbers = [c for c in maybe_numbers if not ('0' <= c <= '9')]
     if not_numbers:
-    continue
+      continue
 
     presumed_original = this_file_name[:pos['-']] + this_file_name[pos['.']:]
     for j in range(i, qty_files):
-    if files_[j] == presumed_original:
-      qty_files -= 1
-      i -= 1 #rolling back
-      files_.pop(i)
-      break
-    if files_[j] > presumed_original:
-      break
+      if files_[j] == presumed_original:
+        qty_files -= 1
+        i -= 1 #rolling back
+        files_.pop(i)
+        break
+      if files_[j] > presumed_original:
+        break
   
   return files_
 
@@ -92,10 +96,10 @@ def remove_char_and_after(s, c):
 ###############################################################################
 def remove_duplicates(a_list, transform_func=None):
   if transform_func:
-  dict_ = {transform_func(v) : v for v in a_list}
-  result = [v for v in dict_.values()]
+    dict_ = {transform_func(v) : v for v in a_list}
+    result = [v for v in dict_.values()]
   else:
-  result = [x for n, x in enumerate(a_list) if a_list.index(x) == n]
+    result = [x for n, x in enumerate(a_list) if a_list.index(x) == n]
   return result
 
 ###############################################################################
@@ -114,13 +118,13 @@ def creates_multi_index(index_1, index_2):
 #################################################################################
 def partial_with_moving_back(func, func_for_args_to_move_back, kwargnames_to_move_back, /, *args, **keywords):
   def newfunc(*fargs, **fkeywords):
-  keywords_to_move_back = {a : keywords.pop(a) for a in keywords if a in kwargnames_to_move_back}
-  newkeywords = {**keywords, **fkeywords, **keywords_to_move_back}
-
-  args_to_move_back = [a for a in args if func_for_args_to_move_back(a)]
-  args0 = [a for a in args if not func_for_args_to_move_back(a)]
-
-  return func(*args0, *fargs, *args_to_move_back, **newkeywords)
+    keywords_to_move_back = {a : keywords.pop(a) for a in keywords if a in kwargnames_to_move_back}
+    newkeywords = {**keywords, **fkeywords, **keywords_to_move_back}
+  
+    args_to_move_back = [a for a in args if func_for_args_to_move_back(a)]
+    args0 = [a for a in args if not func_for_args_to_move_back(a)]
+  
+    return func(*args0, *fargs, *args_to_move_back, **newkeywords)
 
   return newfunc
   

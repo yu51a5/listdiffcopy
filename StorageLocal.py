@@ -24,9 +24,10 @@ class StorageLocal(StorageBase):
 
 ###############################################################################
   def _read_file(self, filename, length=None):
-    f = open(filename, "rb")
-    return f.read()
-
+    with open(filename, "rb") as f:
+      result = f.read()
+      return result
+  
   ###############################################################################
   def _delete_file(self, filename):
     os.remove(filename)

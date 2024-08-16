@@ -15,7 +15,7 @@ class StorageBase(LoggerObj):
 
   ###############################################################################
   def loop_over_action_list(cllable):
-    for name_return_if_error in  ("read_file", "write_file", "create_directory", 
+    for name_return_if_error in  (("read_file", None), "write_file", "create_directory", 
                                    "list", "delete", "rename", 
                                    ("check_path_exist_is_dir_not_file", None),
                                    ("get_size", math.nan), 
@@ -278,20 +278,20 @@ class StorageBase(LoggerObj):
         return FDStatus.Error
 
   ###############################################################################
-  def _rename(self, existing_path, new_path):
-    new_path_exists = self._check_path_exist_is_dir_not_file(new_path)
+  def _rename(self, path_from, path_to):
+    new_path_exists = self._check_path_exist_is_dir_not_file(path_to)
     if new_path_exists is not None:
-      self.log_error(f"{self.str(new_path)} already exists")
+      self.log_error(f"{self.str(path_to)} already exists")
       return FDStatus.Error
 
     return self.__method_with_check_path_exist_is_dir_not_file(
-                   path=existing_path,
+                   path=path_from,
                    mT=partial(self._rename_directory, 
-                              path_to_existing_dir=existing_path, 
-                              path_to_new_dir=new_path),
+                              path_to_existing_dir=path_from, 
+                              path_to_new_dir=path_to),
                    mF=partial(self._rename_file, 
-                              path_to_existing_file=existing_path, 
-                              path_to_new_file=new_path)
+                              path_to_existing_file=path_from, 
+                              path_to_new_file=path_to)
     )
       
   ###############################################################################
@@ -435,25 +435,53 @@ def add_StorageBase_method(name, return_if_error, title=None):
   def _inner_add_method(self, *args, add_print_title, **kwargs):
     title_ = title if title else name
     path = None
-    if ('path' in kwargs) and ('existing_path' in kwargs):
-      raise Exception("path and existing_path arguments are mutually exclusive")
-    elif ('path' in kwargs) or ('existing_path' in kwargs):
-      path = kwargs['path'] if ('path' in kwargs) else kwargs['existing_path']
+    if ('path' in kwargs) and ('path_from' in kwargs):
+      raise Exception("path and path_from arguments are mutually exclusive")
+    elif ('path' in kwargs) or ('path_from' in kwargs):
+      path = kwargs['path'] if ('path' in kwargs) else kwargs['path_from']
     else:
       strs = [arg for arg in args if isinstance(arg, str)]
       if len(strs) == 1:
         path = strs[0]
       else:
-        raise Exception(f"No path argument given, and {len(strs)} nameless string arguments given")
+        raise Exception(f"No path argument is given, and {len(strs)} nameless string arguments are given")
     try:
       title_ += " " + self.str(path)
       if add_print_title:
-        self.log_title(title=title_)
-      return getattr(self, "_"+name)( *args, **kwargs)
-    except Exception as e:
-      self.log_error(f'{title_} failed, exception {e}')
-      return return_if_error
+        #self.log_title(title=title_)
+        when_started = self.start_file(path=path, 
+           message_to_print=name, 
+           message2="")
+      
+      result = getattr(self, "_"+name)( *args, **kwargs)
+      
+      if add_print_title:
+        this_file_status = result if isinstance(result, FDStatus) else FDStatus.Success
+        size = '-'
+        if name == "read_file": 
+          size = len(result)
+        if name == "get_size":
+          size = result
+        if name == "write_file":
+          if 'content' in kwargs:
+            size = len(kwargs['content'])
+          else:
+            bytes_args = [arg for arg in args if isinstance(arg, bytes)]
+            if len(bytes_args) == 1:
+              size = len(bytes_args[0])
+            else:
+              str_args = [arg for arg in args if isinstance(arg, str)]
+              if len(str_args) == 2:
+                size = len(bytes_args[-1])
+        data = [os.path.basename(path), size, this_file_status]
+        self.print_complete_file(data=data, when_started=when_started)
 
+      return result
+      
+    except Exception as e:
+      self.log_error(f'{title_} failed', e)
+      return return_if_error
+      
   setattr(StorageBase, name    , partialmethod(_inner_add_method, add_print_title=True))
   setattr(StorageBase, name+"_", partialmethod(_inner_add_method, add_print_title=False))
   

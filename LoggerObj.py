@@ -12,17 +12,20 @@ class FDStatus(Enum):
   Different_or_Updated = 2
   Identical = 3
   Error = 4
+  Success = 5
 
 #################################################################################
-_size_plus = {4: [' L', ' R'], 3: [''], 2: [''], 1: []}
+_size_plus = {3: [' L', ' R'], 2: [''], 1: []}
 
 class LoggerObj:
   status_names = None
   columns_df = pd.MultiIndex.from_tuples([["Files",  "Size"],  ["Files", "How Many"], ["Directories", "How Many"]])
-  columns_files_df = {i : ['File Name'] + ['File Size' + j for j in _size_plus[i]] + (['File Status'] if i > 2 else []) for i in (1, 2, 3, 4)}
+  columns_files_df = {i : ['File Name'] + ['File Size' + j for j in _size_plus[i]] for i in (1, 2, 3)}
   index_listing_df = ["First level", "Total"]
 
   default_logger_extra = (get_logger(name="log"), LoggerExtra())
+
+  status_names = ["New", "Deleted", "Updated", "Identical"]
 
 ###################################################################################
   def __init__(self, logger_name=None, objects_to_sync_logger_with=[]):
@@ -36,6 +39,8 @@ class LoggerObj:
     else:
       self.__logger = None
       self.__logger_extra = None
+
+    self.status_names_complete = self.status_names + ['Error', 'Success']
     
     LoggerObj.sync_loggers(*([self] + objects_to_sync_logger_with))
 
@@ -83,12 +88,16 @@ class LoggerObj:
     self.__logger_extra.clear_errors_count()
 
   ###############################################################################
-  def log_critical(self, message):
+  def log_critical(self, message, e=None):
+    if e:
+      message += ", exception " + str(e)
     self.__logger.critical(message)
     self.__logger_extra.increment_errors_count()
 
   ###############################################################################
-  def log_error(self, message):
+  def log_error(self, message, e=None):
+    if e:
+      message += ", exception " + str(e)
     self.__logger.error(message)
     self.__logger_extra.increment_errors_count()
 
@@ -174,10 +183,13 @@ class LoggerObj:
     extra_prefix = '──── ' if isinstance(data[0], list) else '║ '
     
     how_many_columns = len(_data[0])
-    if isinstance(_data[0][-1], FDStatus):
+    last_col_is_status = isinstance(_data[0][-1], FDStatus)
+    if last_col_is_status:
       for row_ in _data:
         row_[-1] = self.status_names_complete[row_[-1].value]
-    df_files = pd.DataFrame(_data, columns=self.columns_files_df[how_many_columns])
+    columns = self.columns_files_df[how_many_columns-1] + (['File Status'] if last_col_is_status else [])
+    df_files = pd.DataFrame(_data, columns=columns)
+                            
     df_str = self._df_to_str(df_files, extra_prefix=extra_prefix)
     self.log_info(df_str)
     return df_files

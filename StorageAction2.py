@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 
 from settings import ENFORCE_SIZE_FETCHING_WHEN_COMPARING
-from utils import creates_multi_index
+from utils import creates_multi_index, idem
 from LoggerObj import FDStatus, LoggerObj
 from StorageBase import StorageBase
 
@@ -17,7 +17,7 @@ class StorageAction2(LoggerObj):
   delete_left_afterwards = False
 
   require_path_to = None
-  add_from_basename_to_to = None
+  add_basename_to_to = False
 
   enter_123 = [None, None, None]
 
@@ -26,7 +26,7 @@ class StorageAction2(LoggerObj):
 
     for fn in ['file_contents_transform', 'filename_transform', 'filenames_filter']:
       if not hasattr(self, fn):
-        setattr(self, fn, None)
+        setattr(self, fn, idem)
       
     super().__init__()
     self.clear_errors_count()
@@ -75,7 +75,7 @@ class StorageAction2(LoggerObj):
     kwargs_to         = constr_args['kwargs_to']        if 'kwargs_to'       in constr_args else {}
     
 
-    self.status_names_complete = self.status_names + ['Error']
+    
     self.index_comp_df = pd.MultiIndex.from_tuples(creates_multi_index(self.index_listing_df, self.status_names_complete))
 
     errors = StorageBase._check_storage_or_type(storage=self.storage_from, StorageType=StorageFromType, kwargs=kwargs_from) \
@@ -119,14 +119,18 @@ class StorageAction2(LoggerObj):
 
     self.log_title(title = f'{self.enter_123[0]} {str_from} {self.enter_123[2]} {str_to}')
 
-    if self.add_from_basename_to_to:
+    path_exist_is_dir_not_file_from = self.storage_from._check_path_exist_is_dir_not_file(self.root_path_from)
+
+    if self.add_basename_to_to:
       try:
-        self.root_path_to = os.path.join(self.root_path_to, os.path.basename(self.root_path_from))
-      except:
-        self.log_error(f'Cannot join {self.root_path_to} with the basename of {self.root_path_from}')
+        bn = os.path.basename(self.root_path_from)
+        if path_exist_is_dir_not_file_from is False:
+          bn = self.filename_transform(bn)
+        self.root_path_to = os.path.join(self.root_path_to, bn)
+      except Exception as e:
+        self.log_error(f'Cannot join {self.root_path_to} and the basename of {self.root_path_from}', e)
         return
     
-    path_exist_is_dir_not_file_from = self.storage_from._check_path_exist_is_dir_not_file(self.root_path_from)
     path_exist_is_dir_not_file_to = self.storage_to._check_path_exist_is_dir_not_file(self.root_path_to)
     
     if path_exist_is_dir_not_file_from is None:
@@ -186,10 +190,10 @@ class StorageAction2(LoggerObj):
         if self.create_if_left_only:
           from_contents = self.storage_from._read_file(file_from) 
           size_from = len(from_contents)
-          to_contents = from_contents if not self.transform_func else self.file_contents_transform(from_contents)
+          to_contents = self.file_contents_transform(path, from_contents)
           self.storage_to._write_file(path=file_to_2, content=to_contents) 
           
-          size_to = size_from if not self.transform_func else len(to_contents)
+          size_to = size_from if self.file_contents_transform == idem else len(to_contents)
         else:
           size_from, _ = self.storage_from._get_file_size_or_content(filename=file_from)
           size_to   = 0
@@ -205,10 +209,10 @@ class StorageAction2(LoggerObj):
         if self.change_if_both_exist:
           from_contents = self.storage_from._read_file(file_from) 
           size_from = len(from_contents)
-          to_contents = from_contents if not self.transform_func else self.file_contents_transform(from_contents)
+          to_contents = self.file_contents_transform(from_contents)
           status = self.storage_to._write_file(path=file_to_2, content=to_contents) 
           
-          size_to = size_from if not self.transform_func else len(to_contents)
+          size_to = size_from if self.file_contents_transform == idem else len(to_contents)
         else:
           size_from, cont_from = self.storage_from._get_file_size_or_content(filename=file_from)
           size_to, cont_to = self.storage_to._get_file_size_or_content(filename=file_to_2)
@@ -345,7 +349,6 @@ class Compare(StorageAction2):
   delete_if_right_only = False
   change_if_both_exist = False
   require_path_to = True
-  add_from_basename_to_to = False
   
   status_names = ["Left Only", "Right Only", "Different", "Identical"]
 
@@ -389,7 +392,6 @@ class Copy(StorageAction2):
   delete_if_right_only = False
   change_if_both_exist = True
   require_path_to = False
-  add_from_basename_to_to = False
 
   enter_123 = ['Copying', 'from', 'to']
 
@@ -401,7 +403,7 @@ class Copy(StorageAction2):
     
 #################################################################################
 class CopyInto(Copy):
-  add_from_basename_to_to = True
+  add_basename_to_to = True
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
     
@@ -413,7 +415,6 @@ class Move(StorageAction2):
   change_if_both_exist = True
   require_path_to = False
   delete_left_afterwards = True
-  add_from_basename_to_to = False
 
   enter_123 = ['Moving', 'from', 'to']
 
@@ -425,11 +426,6 @@ class Move(StorageAction2):
     
 #################################################################################
 class MoveInto(Move):
-  add_from_basename_to_to = True
+  add_basename_to_to = True
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
-    
-
-
-
-
