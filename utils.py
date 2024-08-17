@@ -4,7 +4,7 @@ import pillow_avif
 from PIL import Image
 from settings import AVIF_QUALITY, wp_images_extensions
 
-wp_images_extensions_with_dot = [f'.{ext.lower()}' for ext in wp_images_extensions]
+wp_images_extensions_with_dot = tuple([f'.{ext.lower()}' for ext in wp_images_extensions])
 
 ###############################################################################
 def idem(x):
@@ -18,7 +18,7 @@ def get_file_extention(filename):
   return filename[dot_pos+1:]
   
 def is_an_image(filename):
-  result = f.lower().endswith(wp_images_extensions_with_dot)
+  result = filename.lower().endswith(wp_images_extensions_with_dot)
   return result
 
 def filter_out_extra_wp_images(files_):

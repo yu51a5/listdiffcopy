@@ -457,7 +457,7 @@ def add_StorageBase_method(name, return_if_error, title=None):
       
       if add_print_title:
         this_file_status = result if isinstance(result, FDStatus) else FDStatus.Success
-        size = '-'
+        size = math.nan
         if name == "read_file": 
           size = len(result)
         if name == "get_size":

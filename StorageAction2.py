@@ -76,7 +76,7 @@ class StorageAction2(LoggerObj):
     
 
     
-    self.index_comp_df = pd.MultiIndex.from_tuples(creates_multi_index(self.index_listing_df, self.status_names_complete))
+    self.index_comp_df = pd.MultiIndex.from_tuples(creates_multi_index(self.index_listing_df, self.status_names_complete[:-1]))
 
     errors = StorageBase._check_storage_or_type(storage=self.storage_from, StorageType=StorageFromType, kwargs=kwargs_from) \
            + StorageBase._check_storage_or_type(storage=self.storage_to, StorageType=StorageToType, kwargs=kwargs_to, both_nones_ok=True)
@@ -170,59 +170,56 @@ class StorageAction2(LoggerObj):
                                      message_to_print=self.enter_123[0], 
                                      message2=self.enter_123[2])
       
-      this_file_result = self._action_files(file_from=self.root_path_from, file_to=self.root_path_to, 
-         file_from_doesnt_exist=(path_exist_is_dir_not_file_from is None), 
-         file_to_doesnt_exist  =(path_exist_is_dir_not_file_to   is None), add_basename=False)
+      this_file_result = self._action_files(
+        file_from=None if (path_exist_is_dir_not_file_from is None) else self.root_path_from, 
+        file_to=self.root_path_to,
+        file_to_doesnt_exist  =(path_exist_is_dir_not_file_to   is None))
       
       self.print_complete_file(data=this_file_result, when_started=when_started)
 
   ###############################################################################
-  def _action_files(self, file_from, file_to, file_from_doesnt_exist, file_to_doesnt_exist, add_basename):
+  def _action_files(self, file_from, file_to, file_to_doesnt_exist):
 
-    basename = os.path.basename(file_from if file_from is not None else file_to)
     size_from, size_to, status = math.nan, math.nan, FDStatus.Error
     try:
-      assert (file_from is not None) or (not add_basename)
-      file_to_2 = file_to if (not add_basename) or not(basename) else os.path.join(file_to, basename)
-  
       if file_to_doesnt_exist:
         status = FDStatus.LeftOnly_or_New
         if self.create_if_left_only:
           from_contents = self.storage_from._read_file(file_from) 
           size_from = len(from_contents)
-          to_contents = self.file_contents_transform(path, from_contents)
-          self.storage_to._write_file(path=file_to_2, content=to_contents) 
+          to_contents = self.file_contents_transform(file_from, from_contents)
+          self.storage_to._write_file(path=file_to, content=to_contents) 
           
           size_to = size_from if self.file_contents_transform == idem else len(to_contents)
         else:
           size_from, _ = self.storage_from._get_file_size_or_content(filename=file_from)
           size_to   = 0
-      elif file_from_doesnt_exist:
+      elif file_from is None:
         status = FDStatus.RightOnly_or_Deleted
         if self.delete_if_right_only:
-          self.storage_to._delete_file(file_to_2)
+          self.storage_to._delete_file(file_to)
           size_from, size_to = 0, 0
         else:
           size_from = 0
-          size_to, _ = self.storage_to._get_file_size_or_content(filename=file_to_2)
+          size_to, _ = self.storage_to._get_file_size_or_content(filename=file_to)
       else:
         if self.change_if_both_exist:
           from_contents = self.storage_from._read_file(file_from) 
           size_from = len(from_contents)
-          to_contents = self.file_contents_transform(from_contents)
-          status = self.storage_to._write_file(path=file_to_2, content=to_contents) 
+          to_contents = self.file_contents_transform(file_from, from_contents)
+          status = self.storage_to._write_file(path=file_to, content=to_contents) 
           
           size_to = size_from if self.file_contents_transform == idem else len(to_contents)
         else:
           size_from, cont_from = self.storage_from._get_file_size_or_content(filename=file_from)
-          size_to, cont_to = self.storage_to._get_file_size_or_content(filename=file_to_2)
+          size_to, cont_to = self.storage_to._get_file_size_or_content(filename=file_to)
           if size_from != size_to:
             status = FDStatus.Different_or_Updated
           else:
             if cont_from is None:
               cont_from = self.storage_from._read_file(file_from) 
             if cont_to is None:
-              cont_to = self.storage_to._read_file(file_to_2) 
+              cont_to = self.storage_to._read_file(file_to) 
             status = FDStatus.Different_or_Updated if cont_from != cont_to else FDStatus.Identical
 
       if self.delete_left_afterwards:
@@ -231,7 +228,8 @@ class StorageAction2(LoggerObj):
           
     except Exception as e:
       self.log_error(f'{self.enter_123[0]} {self.enter_123[1]} {self.storage_from.str(file_from)} {self.storage_to.str(file_to)} {self.enter_123[1]} failed, {e}')
-    
+
+    basename = os.path.basename(file_from if file_from is not None else file_to)
     return [basename, size_from, size_to, status]
     
   ###############################################################################
@@ -247,39 +245,26 @@ class StorageAction2(LoggerObj):
     dir_info_first_level = np.zeros((5, 3), float)
     dir_info_total = np.zeros((5, 3), float)
     # dir_info_first_level[3][0] = math.nan # no information about deleted files' size 
+
+    files_from_to = {f1 : self.filename_transform(os.path.basename(f1)) for f1 in files_from} 
+    files_from_to = files_from_to | {f2 : None for f2 in files_to if os.path.basename(f2) not in files_from_to.values()}
     
-    if_from = -len(files_from)
-    if_to = -len(files_to)
     files_data = []
     
-    while (if_from < 0) or (if_to < 0):
+    for key, value in files_from_to.items():
       
-      file_from = files_from[if_from] if if_from < 0 else None
-      file_to   = files_to[  if_to]   if if_to < 0   else None
-
-      if (file_from is not None) and (file_to is not None):
-        basename = min(os.path.basename(file_from), os.path.basename(file_to))
-        if os.path.basename(file_to) > basename:
-          file_to = None
-        if os.path.basename(file_from) > basename:
-          file_from = None
-      elif (file_from is not None) and (file_to is     None):
-        basename = os.path.basename(file_from)
-      elif (file_from is     None) and (file_to is not None):
-        basename = os.path.basename(file_to)
+      if value is None:
+        file_from = None
+        file_to = key
+        file_to_doesnt_exist = False
       else:
-        assert 0, 'bug'
-
-      if (file_from is not None):
-        if_from += 1      
-      if (file_to is not None):
-        if_to   += 1  
+        file_from = key
+        file_to = os.path.join(_dir_to, value)
+        file_to_doesnt_exist = file_to not in files_to
 
       this_file_result = self._action_files(file_from=file_from, 
-                                            file_to=file_to if file_to is not None else os.path.join(_dir_to, basename), 
-                                            file_from_doesnt_exist=(file_from is None), 
-                                            file_to_doesnt_exist=(file_to is None), 
-                                            add_basename=False)
+                                            file_to=file_to, 
+                                            file_to_doesnt_exist=file_to_doesnt_exist)
 
       status = this_file_result[-1].value
       dir_info_first_level[status][1] += 1
@@ -337,8 +322,9 @@ class StorageAction2(LoggerObj):
 
     if self.delete_left_afterwards:
       self.storage_from._delete(_dir_from)
-  
-    self.log_exit_level(dir_details_df=pd.DataFrame(np.vstack((dir_info_first_level, dir_info_total)), index=self.index_comp_df, columns=self.columns_df))
+
+    data = np.vstack((dir_info_first_level, dir_info_total))
+    self.log_exit_level(dir_details_df=pd.DataFrame(data, index=self.index_comp_df, columns=self.columns_df))
     return dir_info_total
 
 
