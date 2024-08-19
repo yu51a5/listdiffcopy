@@ -24,8 +24,8 @@ class StorageLocal(StorageBase):
 
 ###############################################################################
   def _read_file(self, filename, length=None):
-    with open(filename, "rb") as f:
-      result = f.read()
+    with open(filename, "rb") as fi:
+      result = fi.read()
       return result
   
   ###############################################################################
@@ -47,8 +47,8 @@ class StorageLocal(StorageBase):
       file_object.write(content)
 
   ###############################################################################
-  def _fetch_file_size_efficiently(self, filename):
-    return os.path.getsize(filename)
+  def _fetch_file_size_efficiently(self, path):
+    return os.path.getsize(path)
 
   ###############################################################################
   def _rename_file(self, path_to_existing_file, path_to_new_file):

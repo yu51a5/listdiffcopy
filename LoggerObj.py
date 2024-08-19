@@ -187,7 +187,8 @@ class LoggerObj:
     if last_col_is_status:
       for row_ in _data:
         row_[-1] = self.status_names_complete[row_[-1].value]
-    columns = self.columns_files_df[how_many_columns-1] + (['File Status'] if last_col_is_status else [])
+    columns = self.columns_files_df[how_many_columns-int(last_col_is_status)] + (['File Status'] if last_col_is_status else [])
+    
     df_files = pd.DataFrame(_data, columns=columns)
                             
     df_str = self._df_to_str(df_files, extra_prefix=extra_prefix)

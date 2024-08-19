@@ -85,13 +85,13 @@ class StoragePCloud(StorageBase):
   def _get_dir_id(self, name):
     result, whats_broken = self.__get_id(name=name, isfolder=True, id_name='folderid')
     if result is None:
-      self.log_error(f'Cannot find the id of {whats_broken}')
+      raise Exception(f'Directory {whats_broken} is not found')
     return result
 
   def _get_file_id(self, name):
     result, whats_broken = self.__get_id(name=name, isfolder=False, id_name='fileid')
     if result is None:
-      self.log_error(f'Cannot find the id of {whats_broken}')
+      raise Exception (f'File {whats_broken} is not found')
     return result
   
   ###############################################################################
@@ -156,8 +156,8 @@ class StoragePCloud(StorageBase):
     #self.__post_fileid(url_addon='file_write', filename=filename)
 
   ###############################################################################
-  def _fetch_file_size_efficiently(self, filename):
-    response = self.__post_fileid(url_addon='stat', filename=filename)
+  def _fetch_file_size_efficiently(self, path):
+    response = self.__post_fileid(url_addon='stat', filename=path)
     metadata = response['metadata']
     result = metadata['size']
     # 'modified' : datetime.strptime(metadata['modified'], '%a, %d %b %Y %H:%M:%S +0000')

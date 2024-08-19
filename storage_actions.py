@@ -68,6 +68,7 @@ def alt_partial_one_storage_func(*args, **keywords):
 #################################################################################
 def __add_one_storage_action(name, return_if_error):
   globals()[name] = alt_partial_one_storage_func(return_if_error=return_if_error, attr_name=name)
+  globals()[name+'_'] = alt_partial_one_storage_func(return_if_error=return_if_error, attr_name=name+'_')
 
 StorageBase.loop_over_action_list(__add_one_storage_action)  
 

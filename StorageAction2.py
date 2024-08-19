@@ -187,12 +187,12 @@ class StorageAction2(LoggerObj):
         if self.create_if_left_only:
           from_contents = self.storage_from._read_file(file_from) 
           size_from = len(from_contents)
-          to_contents = self.file_contents_transform(file_from, from_contents)
+          to_contents = from_contents if self.file_contents_transform == idem else self.file_contents_transform(file_from, from_contents)
           self.storage_to._write_file(path=file_to, content=to_contents) 
           
           size_to = size_from if self.file_contents_transform == idem else len(to_contents)
         else:
-          size_from, _ = self.storage_from._get_file_size_or_content(filename=file_from)
+          size_from, _ = self.storage_from._get_file_size_or_content(path=file_from)
           size_to   = 0
       elif file_from is None:
         status = FDStatus.RightOnly_or_Deleted
@@ -201,18 +201,18 @@ class StorageAction2(LoggerObj):
           size_from, size_to = 0, 0
         else:
           size_from = 0
-          size_to, _ = self.storage_to._get_file_size_or_content(filename=file_to)
+          size_to, _ = self.storage_to._get_file_size_or_content(path=file_to)
       else:
         if self.change_if_both_exist:
           from_contents = self.storage_from._read_file(file_from) 
           size_from = len(from_contents)
-          to_contents = self.file_contents_transform(file_from, from_contents)
+          to_contents = from_contents if self.file_contents_transform == idem else self.file_contents_transform(file_from, from_contents)
           status = self.storage_to._write_file(path=file_to, content=to_contents) 
           
           size_to = size_from if self.file_contents_transform == idem else len(to_contents)
         else:
-          size_from, cont_from = self.storage_from._get_file_size_or_content(filename=file_from)
-          size_to, cont_to = self.storage_to._get_file_size_or_content(filename=file_to)
+          size_from, cont_from = self.storage_from._get_file_size_or_content(path=file_from)
+          size_to, cont_to = self.storage_to._get_file_size_or_content(path=file_to)
           if size_from != size_to:
             status = FDStatus.Different_or_Updated
           else:

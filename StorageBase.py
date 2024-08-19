@@ -2,7 +2,7 @@ import os
 import math
 import pandas as pd
 import numpy as np
-from functools import partialmethod
+from functools import partialmethod, partial
 
 from settings import ENFORCE_SIZE_FETCHING_WHEN_LISTING
 from utils import is_equal_str_bytes
@@ -16,7 +16,7 @@ class StorageBase(LoggerObj):
   ###############################################################################
   def loop_over_action_list(cllable):
     for name_return_if_error in  (("read_file", None), "write_file", "create_directory", 
-                                   "list", "delete", "rename", 
+                                   ("list", (None, None)), "delete", "rename", 
                                    ("check_path_exist_is_dir_not_file", None),
                                    ("get_size", math.nan), 
                                    ("get_filenames_and_dirnames", (None, None))):
@@ -300,7 +300,7 @@ class StorageBase(LoggerObj):
   
   ###############################################################################
   def _get_filenames_and_dirnames(self, path, sort=False, filter_func=None):
-    if not path:
+    if (not path) and self.get_init_path():
       return self._get_filenames_and_dirnames(path=self.get_init_path(), 
                                               sort=sort, 
                                               filter_func=filter_func)
@@ -408,14 +408,18 @@ class StorageBase(LoggerObj):
 
   ###############################################################################
   def _list(self, path, enforce_size_fetching=ENFORCE_SIZE_FETCHING_WHEN_LISTING):
+    def mF():
+      data =  [[os.path.basename(path)] 
+                 + ([self.get_size_(path=path)] if enforce_size_fetching else [])]
+      self.print_files_df(data=data)
+      return data, [path], {}
+      
     return self.__method_with_check_path_exist_is_dir_not_file(
                    path=path,
                    mT=partial(self._list_files_directories_recursive,
                               path=path, 
                               enforce_size_fetching=enforce_size_fetching),
-                   mF=partial(self.print_files_df, 
-                              data = [[os.path.basename(path)] 
-                                      + ([self.get_size(path=path)] if enforce_size_fetching else [])])
+                   mF=mF
     )
 
 ###############################################################################
@@ -441,41 +445,59 @@ def add_StorageBase_method(name, return_if_error, title=None):
       path = kwargs['path'] if ('path' in kwargs) else kwargs['path_from']
     else:
       strs = [arg for arg in args if isinstance(arg, str)]
-      if len(strs) == 1:
+      if 1 <= len(strs) <= 2:
         path = strs[0]
       else:
         raise Exception(f"No path argument is given, and {len(strs)} nameless string arguments are given")
     try:
+      should_be_dir_not_file = True if name in ("get_filenames_and_dirnames", "create_directory") \
+                                 else (False if name in ("read_file", "write_file") else self._check_path_exist_is_dir_not_file(path))
+
+      if should_be_dir_not_file is None:
+        self.log_error(f"{self.str(path)} does not exist")
+        return FDStatus.Error
+      if should_be_dir_not_file == "both":
+        self.log_error(f"{self.str(path)} is both a file and a directory")
+        return FDStatus.Error
+      
       title_ += " " + self.str(path)
       if add_print_title:
-        #self.log_title(title=title_)
-        when_started = self.start_file(path=path, 
-           message_to_print=name, 
-           message2="")
+        if should_be_dir_not_file:
+          self.log_title(title=title_)
+          if name != "list":
+            self.log_enter_level(dirname=path, message_to_print=name)
+        else:
+          when_started = self.start_file(path=path, 
+             message_to_print=name, 
+             message2="")
       
       result = getattr(self, "_"+name)( *args, **kwargs)
       
       if add_print_title:
-        this_file_status = result if isinstance(result, FDStatus) else FDStatus.Success
-        size = math.nan
-        if name == "read_file": 
-          size = len(result)
-        if name == "get_size":
-          size = result
-        if name == "write_file":
-          if 'content' in kwargs:
-            size = len(kwargs['content'])
-          else:
-            bytes_args = [arg for arg in args if isinstance(arg, bytes)]
-            if len(bytes_args) == 1:
-              size = len(bytes_args[0])
+        if should_be_dir_not_file:
+          if name != "list":
+            self.log_exit_level()
+        else:
+          this_file_status = result if isinstance(result, FDStatus) else FDStatus.Success
+          size = math.nan
+          if name == "read_file": 
+            size = len(result)
+          if name == "get_size":
+            size = result
+          if name == "write_file":
+            if 'content' in kwargs:
+              size = len(kwargs['content'])
             else:
-              str_args = [arg for arg in args if isinstance(arg, str)]
-              if len(str_args) == 2:
-                size = len(bytes_args[-1])
-        data = [os.path.basename(path), size, this_file_status]
-        self.print_complete_file(data=data, when_started=when_started)
-
+              bytes_args = [arg for arg in args if isinstance(arg, bytes)]
+              if len(bytes_args) == 1:
+                size = len(bytes_args[0])
+              else:
+                str_args = [arg for arg in args if isinstance(arg, str)]
+                if len(str_args) == 2:
+                  size = len(bytes_args[-1])
+          data = [os.path.basename(path), size, this_file_status]
+          self.print_complete_file(data=data, when_started=when_started)
+  
       return result
       
     except Exception as e:
