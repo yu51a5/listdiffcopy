@@ -2,9 +2,12 @@ import typing
 import io
 import pillow_avif
 from PIL import Image
-from settings import AVIF_QUALITY, wp_images_extensions
+from settings import DEFAULT_AVIF_QUALITY, DEFAULT_IMAGE_RESIZING_FILTER, wp_images_extensions
 
 wp_images_extensions_with_dot = tuple([f'.{ext.lower()}' for ext in wp_images_extensions])
+# https://stackoverflow.com/questions/4354543/determining-jpg-quality-in-python-pil
+image_saving_settings = {'jpeg' : dict(quality='keep', optimize=True, progressive=True), 
+                         'avif' : dict(quality=DEFAULT_AVIF_QUALITY)}
 
 ###############################################################################
 def idem(x):
@@ -15,12 +18,14 @@ def get_file_extention(filename):
   dot_pos = filename.rfind('.')
   if dot_pos < 0:
     return None
-  return filename[dot_pos+1:]
-  
+  return filename[dot_pos+1:].lower()
+
+###############################################################################
 def is_an_image(filename):
   result = filename.lower().endswith(wp_images_extensions_with_dot)
   return result
 
+###############################################################################
 def filter_out_extra_wp_images(files_):
   qty_files = len(files_)
   i = 0
@@ -54,12 +59,50 @@ def filter_out_extra_wp_images(files_):
 ###############################################################################
 # SOURCE: https://stackoverflow.com/questions/33101935/convert-pil-image-to-byte-array
 ###############################################################################
-def convert_image_to_AVIF(another_image_bytes, quality=AVIF_QUALITY):
-  from_img = Image.open(io.BytesIO(another_image_bytes))
+def _to_image_image(image_in_some_format):
+  result = image_in_some_format if isinstance(image_in_some_format, Image.Image) \
+                                  else Image.open(io.BytesIO(image_in_some_format))
+  return result
+
+def convert_image(image_bytes, target_extention, kwargs={}):
+  from_img = _to_image_image(image_bytes)
   result_img_stream = io.BytesIO()
-  from_img.save(result_img_stream, format='AVIF', quality=quality)
+  from_img.save(result_img_stream, target_extention.upper() if target_extention.lower() != "jpg" else "JPEG", **kwargs)
   result = result_img_stream.getvalue()
   return result
+
+def resize_image(image_bytes, max_size, max_ratio=None, filter=DEFAULT_IMAGE_RESIZING_FILTER):
+  img = image_bytes if isinstance(image_bytes, Image.Image) else Image.open(io.BytesIO(image_bytes))
+  ratio = min([1.] + [max_size[i] / float(img.size[i]) for i in range(2) if max_size[i]])
+  if max_ratio is not None:
+    if ratio > max_ratio:
+      return None
+  new_size = [int(float(img.size[i]) * ratio) for i in range(2)]
+  img = img.resize(new_size, filter)
+  return img
+
+def batch_resize_images(init_filename, init_content, max_ratio=.99):
+
+  if not is_an_image(init_filename):
+    raise Exception(f"The extension of {init_filename} suggests that this file is not an image")
+    
+  ext = get_file_extention(init_filename)
+  if ext.lower() == 'svg':
+    return [[init_filename, init_content]]
+    
+  target_extentions = ['avif', ext] if ext.lower() != 'avif' else ['avif']
+  init_fn = init_filename[:init_filename.rfind('.')]
+  
+  filenames_contents = []
+  for w, h in sizes_for_wp:
+    appendix = '.w' + str(w) if w else '.h' + str(h) if h else ''
+    img_content_resized = init_content if not appendix else resize_image(init_content, [w, h], max_ratio=max_ratio)
+    if img_content_resized:
+      filenames_contents += [[init_fn + appendix + '.' + target_extention,
+                               convert_image(img_content_resized, target_extention=target_extention)] 
+                                                                   for target_extention in target_extentions]
+
+  return filenames_contents
 
 ###############################################################################
 # source: https://stackoverflow.com/questions/73498143/checking-for-equality-if-either-input-can-be-str-or-bytes

@@ -1,3 +1,5 @@
+from PIL import Image
+
 pcloud_urls_are_eapi = True
 fetch_github_modif_timestamps = True
 wp_images_extensions = ('jpg', 'jpeg', 'gif', 'png', 'svg', 'webp', 'avif') # small letters only
@@ -10,6 +12,7 @@ ENFORCE_SIZE_FETCHING_WHEN_COMPARING = False
 # https://codelabs.developers.google.com/codelabs/avif#3
 # there should be two dashes before `min` and `max`
 recommended_avifenc_parameters = "--min 0 --max 63 -a end-usage=q -a cq-level=32 -a tune=ssim -a deltaq-mode=3 -a sharpness=3 -y 420"
-AVIF_QUALITY = 80
+DEFAULT_AVIF_QUALITY = 80
+DEFAULT_IMAGE_RESIZING_FILTER = Image.Resampling.LANCZOS
 
 log_dirname = 'logs'

@@ -104,7 +104,7 @@ class StorageWeb(StorageBase):
       return self.__fake_files[filename]
     with self._get_connection_var().get(filename) as response:
       if response.status_code == 200:
-        use_content = use_content_not_text if use_content_not_text is not None else self.__name_content_type_is_content[filename]
+        use_content = use_content_not_text if use_content_not_text is not None else self.__name_content_type_is_content[filename] if filename in self.__name_content_type_is_content else True
         return response.content if use_content else (response.text[:length] if length else response.text)
       else:
         self.log_error(f'Downloading of {filename} failed, code {response.status_code}') 
