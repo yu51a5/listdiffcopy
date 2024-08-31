@@ -102,9 +102,7 @@ def backup_a_Medium_website(url_or_urls, path, storage=None, StorageType=None, k
     s = copy(path_from=path, path_to=path, storage_from=swm, StorageToType=StorageType, kwargs_to=kwargs_storage)
 
     if False:
-      s.storage_to.list(path, enforce_size_fetching=True)
-      if storage:
-        storage._close()
+      list(path, StorageType, enforce_size_fetching=True)
 
 #################################################################################
 def generate_medium_toc(url):

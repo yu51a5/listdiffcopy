@@ -8,6 +8,8 @@ from StorageBase import StorageBase
 #################################################################################
 class StorageSFTP(StorageBase):
 
+  _init_path = '.'
+
   def __init__(self, secret_name=None, logger_name=None, objects_to_sync_logger_with=[]):
     super().__init__(constructor_kwargs=dict(secret_name=secret_name), logger_name=logger_name, objects_to_sync_logger_with=objects_to_sync_logger_with, connection_var_name=['_ssh_client', '_sftp_client'])
     
@@ -48,7 +50,6 @@ class StorageSFTP(StorageBase):
         all_directories.append(path_)
       if S_ISREG(mode):
         all_files.append(path_)
-
     return all_files, all_directories
     
   ###############################################################################
@@ -64,10 +65,6 @@ class StorageSFTP(StorageBase):
     result_raw = self._get_connection_var().stat(path)
     result = result_raw.st_size #, 'modified' : result_raw.st_mtime
     return result
-
-  ###############################################################################
-  def get_init_path(self):
-    return '.'
 
   ###############################################################################
   def _read_file(self, path, length=None):

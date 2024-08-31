@@ -7,6 +7,7 @@ from StorageBase import StorageBase
 #################################################################################
 class StorageGitHub(StorageBase):
   file_size_limit = 100 << 20
+  inexistent_directories_are_empty = True
   
   # github_token secret structure: REPO_NAME|TOKEN . For Github token, see
   # https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens
@@ -40,10 +41,6 @@ class StorageGitHub(StorageBase):
     self.headers["Accept"] = "application/vnd.github.v3.raw"
     self.headers["Authorization"] = f"Bearer {self.token}"
     self.headers["X-GitHub-Api-Version"] = "2022-11-28"
-
-  ###############################################################################
-  def inexistent_directories_are_empty(self):
-    return True
 
   ###############################################################################
   # filenames and their sha's are needed to be able to update existing files, see

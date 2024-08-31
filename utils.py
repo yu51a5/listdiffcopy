@@ -10,8 +10,13 @@ image_saving_settings = {'jpeg' : dict(quality='keep', optimize=True, progressiv
                          'avif' : dict(quality=DEFAULT_AVIF_QUALITY)}
 
 ###############################################################################
-def idem(x):
-  return x
+def idem(*args, **kwargs):
+  if not kwargs:
+    if len(args) == 1:
+      return args[0]
+    if len(args) == 2:
+      return args[0], args[1]
+  return (*args, *(kwargs.values()))
 
 ###############################################################################
 def get_file_extention(filename):

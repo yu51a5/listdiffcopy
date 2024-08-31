@@ -20,7 +20,7 @@ _size_plus = {3: [' L', ' R'], 2: [''], 1: []}
 class LoggerObj:
   status_names = None
   columns_df = pd.MultiIndex.from_tuples([["Files",  "Size"],  ["Files", "How Many"], ["Directories", "How Many"]])
-  columns_files_df = {i : ['File Name'] + ['File Size' + j for j in _size_plus[i]] for i in (1, 2, 3)}
+  __columns_files_df = {i : ['File Name'] + ['File Size' + j for j in _size_plus[i]] for i in (1, 2, 3)}
   index_listing_df = ["First level", "Total"]
 
   default_logger_extra = (get_logger(name="log"), LoggerExtra())
@@ -176,21 +176,26 @@ class LoggerObj:
 
   ###############################################################################
   def print_files_df(self, data):
-    if not data:
-      return
-    
-    _data = data if isinstance(data[0], list) else [data]
-    extra_prefix = '──── ' if isinstance(data[0], list) else '║ '
-    
-    how_many_columns = len(_data[0])
-    last_col_is_status = isinstance(_data[0][-1], FDStatus)
-    if last_col_is_status:
-      for row_ in _data:
-        row_[-1] = self.status_names_complete[row_[-1].value]
-    columns = self.columns_files_df[how_many_columns-int(last_col_is_status)] + (['File Status'] if last_col_is_status else [])
-    
-    df_files = pd.DataFrame(_data, columns=columns)
-                            
+    if isinstance(data, pd.DataFrame):
+      if len(data.index) == 0:
+        return
+      df_files = data
+    else:
+      if not data:
+        return
+      _data = data if isinstance(data[0], list) else [data]
+      how_many_columns = len(_data[0])
+      last_col_is_status = isinstance(_data[0][-1], FDStatus)
+      if last_col_is_status:
+        for row_ in _data:
+          row_[-1] = self.status_names_complete[row_[-1].value]
+      columns = self.__columns_files_df[how_many_columns-int(last_col_is_status)] + (['File Status'] if last_col_is_status else [])
+      df_files = pd.DataFrame(_data, columns=columns)
+      df_files.sort_values(by=self.__columns_files_df[1][0], inplace=True)
+
+    extra_prefix = '║ ' if isinstance(data, list) else '──── '
+
+
     df_str = self._df_to_str(df_files, extra_prefix=extra_prefix)
     self.log_info(df_str)
     return df_files

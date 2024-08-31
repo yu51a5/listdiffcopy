@@ -12,6 +12,8 @@ from LoggerObj import LoggerObj, FDStatus
 class StorageBase(LoggerObj):
 
   __txt_chrs = set([chr(i) for i in range(32, 127)] + list("\n\r\t\b"))
+  inexistent_directories_are_empty = False
+  _init_path = ''
 
   ###############################################################################
   def loop_over_action_list(cllable):
@@ -30,9 +32,9 @@ class StorageBase(LoggerObj):
   def _check_storage_or_type(storage, StorageType, kwargs, both_nones_ok=False):
     errors = []
     if storage and StorageType:
-      errors.append(f"storage_from {storage} and StorageType {StorageType} mustn't be both defined")
+      errors.append(f"storage {storage} and StorageType {StorageType} mustn't be both defined")
     if not (storage or StorageType or both_nones_ok):
-      errors.append(f"storage_from {storage} and StorageType {StorageType} mustn't be both undefined")
+      errors.append(f"storage {storage} and StorageType {StorageType} mustn't be both undefined")
     if StorageType is None:
       if kwargs:
         errors.append(f"StorageType is not provided, but arguments {kwargs} are")
@@ -184,15 +186,7 @@ class StorageBase(LoggerObj):
     
   ###############################################################################
   def _read_file(self, path, length=None):
-    self.__please_override()
-
-  ###############################################################################
-  def inexistent_directories_are_empty(self):
-    return False
-    
-  ###############################################################################
-  def get_init_path(self):
-    return ''    
+    self.__please_override()  
 
   ###############################################################################
   def split_path_into_dirs_filename(self, path):
@@ -202,16 +196,16 @@ class StorageBase(LoggerObj):
       result = [tail] + result   
     if (len(result) > 1) and (not result[-1]):
       result.pop(-1)
-    if (len(result) > 1) and (result[0] == self.get_init_path()):
+    if (len(result) > 1) and (result[0] == self._init_path):
       result.pop(0)
     return result
     
   ###############################################################################
   def _create_directory(self, path, create_if_doesnt_exist=True):
-    if path in ('', self.get_init_path()):
+    if path in ('', self._init_path):
       return True
     root_folders = self.split_path_into_dirs_filename(path=path)
-    path_so_far = self.get_init_path() 
+    path_so_far = self._init_path
     was_created = False
     for rf in root_folders:
       _, directories_ = self._get_filenames_and_dirnames(path=path_so_far)
@@ -236,7 +230,7 @@ class StorageBase(LoggerObj):
   def check_file_exists(self, path):  
     dirname, _ = os.path.split(path)
     if not dirname:
-      dirname = self.get_init_path()
+      dirname = self._init_path
     dir_exists = self.check_directory_exists(path=dirname)
     if dir_exists:
       files_, _ = self._get_filenames_and_dirnames(path=dirname)
@@ -257,7 +251,7 @@ class StorageBase(LoggerObj):
       return None
 
   ###############################################################################
-  def __method_with_check_path_exist_is_dir_not_file(self, path, mT, mF, mN=None):
+  def _method_with_check_path_exist_is_dir_not_file(self, path, mF, mT=None, mN=None):
     path_exist_is_dir_not_file = self._check_path_exist_is_dir_not_file(path)
     if path_exist_is_dir_not_file is True:
       if mT:
@@ -284,7 +278,7 @@ class StorageBase(LoggerObj):
       self.log_error(f"{self.str(path_to)} already exists")
       return FDStatus.Error
 
-    return self.__method_with_check_path_exist_is_dir_not_file(
+    return self._method_with_check_path_exist_is_dir_not_file(
                    path=path_from,
                    mT=partial(self._rename_directory, 
                               path_to_existing_dir=path_from, 
@@ -300,8 +294,8 @@ class StorageBase(LoggerObj):
   
   ###############################################################################
   def _get_filenames_and_dirnames(self, path, sort=False, filter_func=None):
-    if (not path) and self.get_init_path():
-      return self._get_filenames_and_dirnames(path=self.get_init_path(), 
+    if (not path) and self._init_path:
+      return self._get_filenames_and_dirnames(path=self._init_path, 
                                               sort=sort, 
                                               filter_func=filter_func)
 
@@ -351,7 +345,7 @@ class StorageBase(LoggerObj):
       self._update_file_given_content(path=path, content=content)
       return FDStatus.Different_or_Updated
 
-    return self.__method_with_check_path_exist_is_dir_not_file(
+    return self._method_with_check_path_exist_is_dir_not_file(
                                                 path=path, mF=mF, mT=None, mN=mN)
   
   ###############################################################################
@@ -368,7 +362,7 @@ class StorageBase(LoggerObj):
              + sum([self.get_size_(path=d) for d in directories_])
       return result
 
-    return self.__method_with_check_path_exist_is_dir_not_file(
+    return self._method_with_check_path_exist_is_dir_not_file(
                    path=path,
                    mT=_sum_up_sizes,
                    mF=partial(self._get_file_size, path=path)
@@ -414,7 +408,7 @@ class StorageBase(LoggerObj):
       self.print_files_df(data=data)
       return data, [path], {}
       
-    return self.__method_with_check_path_exist_is_dir_not_file(
+    return self._method_with_check_path_exist_is_dir_not_file(
                    path=path,
                    mT=partial(self._list_files_directories_recursive,
                               path=path, 
@@ -424,7 +418,7 @@ class StorageBase(LoggerObj):
 
 ###############################################################################
   def _delete(self, path):
-    return self.__method_with_check_path_exist_is_dir_not_file(
+    return self._method_with_check_path_exist_is_dir_not_file(
                    path=path,
                    mT=partial(self._delete_directory, path=path),
                    mF=partial(self._delete_file, path=path))
