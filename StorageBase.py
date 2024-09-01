@@ -164,6 +164,14 @@ class StorageBase(LoggerObj):
     self.__please_override()
 
   ###############################################################################
+  def _delete_directory_contents(self, path):
+    all_files, all_directories = self._get_filenames_and_dirnames(path=path)
+    for f in all_files:
+      self._delete_file(filename=f)
+    for d in all_directories:
+      self._delete_directory(path=d)
+
+  ###############################################################################
   def _create_directory_only(self, path):
     self.__please_override()
 
@@ -495,7 +503,7 @@ def add_StorageBase_method(name, return_if_error, title=None):
       return result
       
     except Exception as e:
-      self.log_error(f'{title_} failed', e)
+      raise e # self.log_error(f'{title_} failed', e)
       return return_if_error
       
   setattr(StorageBase, name    , partialmethod(_inner_add_method, add_print_title=True))

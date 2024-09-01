@@ -31,8 +31,8 @@ class StorageLocal(StorageBase):
     os.remove(filename)
 
   ###############################################################################
-  def _delete_directory(self, dirname):
-    shutil.rmtree(path=dirname)
+  def _delete_directory(self, path):
+    shutil.rmtree(path=path)
 
   ###############################################################################
   def _create_directory_only(self, path):

@@ -124,12 +124,8 @@ class StorageGitHub(StorageBase):
     pass
 
   ###############################################################################
-  def _delete_directory(self, dirname):
-    all_files, all_directories = self._get_filenames_and_dirnames(path=dirname)
-    for f in all_files:
-      self._delete_file(filename=f)
-    for d in all_directories:
-      self._delete_directory(dirname=d)
+  def _delete_directory(self, path):
+    self._delete_directory_contents(path=path)
     
   ###############################################################################
   def file_contents_is_text(self, filename):

@@ -8,6 +8,7 @@ wp_images_extensions_with_dot = tuple([f'.{ext.lower()}' for ext in wp_images_ex
 # https://stackoverflow.com/questions/4354543/determining-jpg-quality-in-python-pil
 image_saving_settings = {'jpeg' : dict(quality='keep', optimize=True, progressive=True), 
                          'avif' : dict(quality=DEFAULT_AVIF_QUALITY)}
+sizes_for_wp = [[None, h] for h in [150, 180, 200, 220, 250, 300, 400]] + [[w, None] for w in [500, 700]] + [[None, None]]
 
 ###############################################################################
 def idem(*args, **kwargs):
@@ -85,6 +86,13 @@ def resize_image(image_bytes, max_size, max_ratio=None, filter=DEFAULT_IMAGE_RES
   new_size = [int(float(img.size[i]) * ratio) for i in range(2)]
   img = img.resize(new_size, filter)
   return img
+
+def convert_image_to_AVIF_if_another_format_image(path, content, *args, **kwargs):
+  if is_an_image(path):
+    if not path.lower().endswith(("avif", 'svg')):
+      path_result = path[:path.rfind('.')] + ".avif"
+      return path_result, convert_image(content, "avif")
+  return path, content
 
 def batch_resize_images(init_filename, init_content, max_ratio=.99):
 

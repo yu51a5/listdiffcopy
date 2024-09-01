@@ -186,11 +186,11 @@ class StorageAction2(LoggerObj):
         size_to, _ = self.__storage_to._get_file_size_or_content(path=file_to)
       return [os.path.basename(file_to), size_to, FDStatus.RightOnly_or_Deleted]
     except Exception as e:
-      self.log_error(f'{self.enter_123[0]} {self.enter_123[1]} {self.__storage_to.str(file_to)} {self.enter_123[1]} failed, {e}')
+      raise e # self.log_error(f'{self.enter_123[0]} {self.enter_123[1]} {self.__storage_to.str(file_to)} {self.enter_123[1]} failed, {e}')
 
   ###############################################################################
   def _action_file(self, file_from, file_to_or_dir_to, files_to_matched):
-    
+
     def _action_new_file(path, content):
       if self.create_if_left_only:
         self.__storage_to._write_file(path=path, content=content)
@@ -218,15 +218,17 @@ class StorageAction2(LoggerObj):
       from_contents = self.__storage_from._read_file(file_from) 
       size_from = len(from_contents)
 
-      files_to_contents = self.filename_contents_transform(file_from, from_contents, files_to_matched, self.change_if_both_exist is False)
+      files_to_contents = self.filename_contents_transform(basename_from, from_contents, files_to_matched, self.change_if_both_exist is False)
       result_outputs = []
       if files_to_contents and isinstance(files_to_contents[0], str):
-          files_to_contents = [files_to_contents]
+        files_to_contents = [files_to_contents]
+      print([type(files_to_contents[0][i]) for i in range(4)])
       for file_to, content_to in files_to_contents:
+        path = os.path.join(file_to_or_dir_to, file_to)
         status = self.__storage_to._method_with_check_path_exist_is_dir_not_file(
-                       path=file_to,
-                       mN=partial(_action_new_file, path=file_to, content=content_to),
-                       mF=partial(_action_existing_file, path=file_to, content=content_to))            
+                       path=path,
+                       mN=partial(_action_new_file, path=path, content=content_to),
+                       mF=partial(_action_existing_file, path=path, content=content_to))            
         result_outputs.append([os.path.basename(file_to), len(content_to), status])
           
       if self.delete_left_afterwards:
@@ -234,7 +236,7 @@ class StorageAction2(LoggerObj):
           
       return basename_from, size_from, result_outputs
     except Exception as e:
-      self.log_error(f'{self.enter_123[0]} {self.enter_123[1]} {self.__storage_from.str(file_from)} {self.__storage_to.str(file_to_or_dir_to)} {self.enter_123[1]} failed, {e}')
+      raise e # self.log_error(f'{self.enter_123[0]} {self.enter_123[1]} {self.__storage_from.str(file_from)} {self.__storage_to.str(file_to_or_dir_to)} {self.enter_123[1]} failed, {e}')
       return [basename_from, size_from, status]
     
   ###############################################################################
@@ -320,7 +322,7 @@ class StorageAction2(LoggerObj):
         dir_info_first_level[1][2] += 1
         if self.delete_if_right_only:
           self.log_mention_directory(dirname=dir_to, message_to_print="Deleting", message2=f"in {self.__storage_to.str(_dir_to)}")
-          self.__storage_to._delete_directory(dir_to)
+          self.__storage_to.delete_(dir_to)
           dir_info_first_level[1] += np.array([math.nan] * 3)
         else:
           subdir_list_total, _, _ = self.__storage_to._list_files_directories_recursive(dir_to_list=dir_to, message2=f"Exists in {_dir_to} but not in {_dir_from}", enforce_size_fetching=ENFORCE_SIZE_FETCHING_WHEN_COMPARING)

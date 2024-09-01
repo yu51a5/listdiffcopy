@@ -133,8 +133,8 @@ class StoragePCloud(StorageBase):
     self.__post_fileid(url_addon='deletefile', filename=filename)
     
   ###############################################################################
-  def _delete_directory(self, dirname):
-    self.__post_folderid(url_addon='deletefolderrecursive', dirname=dirname)
+  def _delete_directory(self, path):
+    self.__post_folderid(url_addon='deletefolderrecursive', dirname=path)
 
   ###############################################################################
   def _create_directory_only(self, path):

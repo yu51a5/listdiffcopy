@@ -57,8 +57,9 @@ class StorageSFTP(StorageBase):
     self._get_connection_var().remove(filename)
 
   ###############################################################################
-  def _delete_directory(self, dirname):
-    self._get_connection_var().rmdir(dirname)
+  def _delete_directory(self, path):
+    self._delete_directory_contents(path=path)
+    self._get_connection_var().rmdir(path)
 
   ###############################################################################
   def _fetch_file_size_efficiently(self, path):
