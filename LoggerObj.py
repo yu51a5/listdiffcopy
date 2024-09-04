@@ -13,6 +13,7 @@ class FDStatus(Enum):
   Identical = 3
   Error = 4
   Success = 5
+  DidNotExist = 6
 
 #################################################################################
 _size_plus = {3: [' L', ' R'], 2: [''], 1: []}
@@ -149,7 +150,8 @@ class LoggerObj:
     level = self.__logger_extra.get_level_depth()
 
     prefix = ('╚' if (message.lower().startswith('exit') or message.lower().startswith('completed'))
-                      else ('╠' if message.lower().startswith('delet') else '╔')) + '════ '
+                      else (#'╠' if message.lower().startswith('delet') else '
+                        '╔')) + '════ '
     if message.lower().startswith('exit'):
       level += 1
       if (dir_details_df is not None):
@@ -175,7 +177,7 @@ class LoggerObj:
     self.__log_print(f'Completed {at_now_str}, time elapsed {at_now - when_started}')
 
   ###############################################################################
-  def print_files_df(self, data):
+  def print_files_df(self, data, rows_printed_so_far=0):
     if isinstance(data, pd.DataFrame):
       if len(data.index) == 0:
         return
@@ -194,8 +196,12 @@ class LoggerObj:
       df_files.sort_values(by=self.__columns_files_df[1][0], inplace=True)
 
     extra_prefix = '║ ' if (isinstance(data, list) and not isinstance(data[0], list)) else '──── '
-
-
     df_str = self._df_to_str(df_files, extra_prefix=extra_prefix)
-    self.log_info(df_str)
-    return df_files
+    
+    df_str_arr = df_str.split('\n')
+    if rows_printed_so_far == 0:
+      self.log_info(df_str)
+    else:
+      self.log_info('\n'.join(df_str_arr[rows_printed_so_far:]))
+    
+    return len(df_str_arr)

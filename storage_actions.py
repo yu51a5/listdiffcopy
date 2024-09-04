@@ -5,7 +5,7 @@ from StorageWebMedium import StorageWebMedium
 from StorageWeb import StorageWeb
 from StorageAction2 import Compare, Synchronize, Copy, Move
 from StorageBase import StorageBase
-from LoggerObj import LoggerObj, FDStatus
+from LoggerObj import LoggerObj
 
 #################################################################################
 def one_storage_func(*args, return_if_error=None, attr_name=None, **kwargs):

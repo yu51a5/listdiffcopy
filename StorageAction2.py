@@ -9,6 +9,9 @@ from utils import creates_multi_index, idem
 from LoggerObj import FDStatus, LoggerObj
 from StorageBase import StorageBase
 
+def filename_contents_transform_default(path, content, *args, **kwargs):
+  return [path, content]
+  
 #################################################################################
 class StorageAction2(LoggerObj):
 
@@ -25,9 +28,9 @@ class StorageAction2(LoggerObj):
   #################################################################################
   def __init__(self, *args, **kwargs):
 
-    for fn in ['filename_contents_transform', 'filenames_filter']:
-      if not hasattr(self, fn):
-        setattr(self, fn, idem)
+    for fn_name, default_fn in [['filename_contents_transform', filename_contents_transform_default], ['filenames_filter', idem]]:
+      if not hasattr(self, fn_name):
+        setattr(self, fn_name, default_fn)
       
     super().__init__()
     self.clear_errors_count()
@@ -218,11 +221,11 @@ class StorageAction2(LoggerObj):
       from_contents = self.__storage_from._read_file(file_from) 
       size_from = len(from_contents)
 
-      files_to_contents = self.filename_contents_transform(basename_from, from_contents, files_to_matched, self.change_if_both_exist is False)
+      files_to_contents = self.filename_contents_transform(path=basename_from, content=from_contents, files_to_matched=files_to_matched, change_if_same_name_exist=self.change_if_both_exist is False)
       result_outputs = []
       if files_to_contents and isinstance(files_to_contents[0], str):
         files_to_contents = [files_to_contents]
-      print([type(files_to_contents[0][i]) for i in range(4)])
+
       for file_to, content_to in files_to_contents:
         path = os.path.join(file_to_or_dir_to, file_to)
         status = self.__storage_to._method_with_check_path_exist_is_dir_not_file(
@@ -256,40 +259,57 @@ class StorageAction2(LoggerObj):
     dir_info_total = np.zeros((5, 3), float)
     # dir_info_first_level[3][0] = math.nan # no information about deleted files' size 
 
-    files_to_matched = {f : None for f in files_to}
-    files_data = []
-    for f in files_from:
-      this_file_result = self._action_file(file_from=f, file_to_or_dir_to=_dir_to, files_to_matched=files_to_matched)
-      files_data.append(this_file_result)
-
-    for f, v in files_to_matched.items():
-      if v is None:
-        this_file_result = self._action_right_only_file(f)
-        files_data.append((None, math.nan, [this_file_result]))
-
+    files_to_matched = {os.path.basename(f) : [] for f in files_to}
     row_header_array = [[], [], []]
     files_data_data = []
     has_multi_outputs = False
-    for name, size, data_ in files_data:
-      row_header_array[0] += [name] * len(data_)
-      row_header_array[1] += [size] * len(data_)
-      row_header_array[2] += range(1, len(data_) + 1)
-      has_multi_outputs = has_multi_outputs or (len(data_) > 1)
-      files_data_data += data_
+
+    files_from.sort()
+    rows_printed_so_far = 0
+    columns = (['Result Filename', 'Result Size', 'Status'] 
+      if self.filename_contents_transform != filename_contents_transform_default else ['Size', 'Status'])
+    index_names = (['Filename']
+                      if self.filename_contents_transform == filename_contents_transform_default
+                                           else ['Initial Filename', 'Initial Size', ''])
+
+    def to_df_and_print(fn, fsize, fdata, files_data_data, rows_printed_so_far):
+      row_header_array[0] += [fn] * len(fdata)
+      row_header_array[1] += [fsize] * len(fdata)
+      row_header_array[2] += range(1, len(fdata) + 1)
+
+      for this_file_result in fdata:
+        status = this_file_result[-1].value
+        dir_info_first_level[status][1] += 1
+        dir_info_first_level[status][0] += this_file_result[-2]
+        this_file_result[-1] = self.status_names_complete[status]
       
-    for this_file_result in files_data_data:
-      status = this_file_result[-1].value
-      dir_info_first_level[status][1] += 1
-      dir_info_first_level[status][0] += this_file_result[-2]
-      this_file_result[-1] = self.status_names_complete[status]
+      files_data_data += fdata
+      files_df = pd.DataFrame(
+        files_data_data if self.filename_contents_transform != filename_contents_transform_default else [l[1:] for l in files_data_data], 
+        index=[np.array(row_header_array[i]) for i in range(3 if self.filename_contents_transform != filename_contents_transform_default else 1)], 
+        columns=columns) 
 
-    files_df = pd.DataFrame(files_data_data, 
-                            index=[np.array(row_header_array[i]) for i in range(2 + has_multi_outputs)], 
-                            columns=['Result Filename', 'Result Size', 'Status']) 
+      files_df.index.names = index_names
+      rows_printed_so_far = self.print_files_df(data=files_df, rows_printed_so_far=rows_printed_so_far)
+      return rows_printed_so_far
+      
+    
+    for f in files_from:
+      fn, fsize, fdata = self._action_file(file_from=f, file_to_or_dir_to=_dir_to, files_to_matched=files_to_matched)
 
-    files_df.index.names = ['Initial Filename', 'Initial Size'] + ([''] if has_multi_outputs else [])
-    files_df.sort_values(by='Initial Filename', inplace=True)
-    self.print_files_df(data=files_df)
+      for this_file_result in fdata:
+        if this_file_result[0] not in files_to_matched:
+          files_to_matched[os.path.basename(this_file_result[0])] = [os.path.basename(f)]
+        else:
+          files_to_matched[os.path.basename(this_file_result[0])].append(os.path.basename(f))
+      
+      rows_printed_so_far = to_df_and_print(fn, fsize, fdata, files_data_data, rows_printed_so_far)
+      
+    right_only_files = []
+    for f, v in files_to_matched.items():
+      if not v:
+        this_file_result = self._action_right_only_file(os.path.join(_dir_to, f))
+        rows_printed_so_far = to_df_and_print(None, math.nan, [this_file_result], files_data_data, rows_printed_so_far)
 
     dirs_from.sort(key=lambda x: x.lower())
     dirs_to.sort(  key=lambda x: x.lower())

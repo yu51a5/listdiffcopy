@@ -426,10 +426,17 @@ class StorageBase(LoggerObj):
 
 ###############################################################################
   def _delete(self, path):
+    def mN():
+      return FDStatus.DidNotExist
+    def mT():
+      self._delete_directory(path=path)
+      return FDStatus.Success
+    def mF():
+      self._delete_file(path=path)
+      return FDStatus.Success
+      
     return self._method_with_check_path_exist_is_dir_not_file(
-                   path=path,
-                   mT=partial(self._delete_directory, path=path),
-                   mF=partial(self._delete_file, path=path))
+                   path=path, mT=mT, mF=mF, mN=mN)
 
 ###############################################################################
 ###############################################################################
