@@ -405,8 +405,10 @@ class Transform(Synchronize):
   enter_123 = ['Transforming', '', 'to']
 
   #################################################################################
-  def __init__(self, *args, filename_contents_transform, **kwargs):
+  def __init__(self, *args, filename_contents_transform, filenames_filter=None, **kwargs):
     self.filename_contents_transform = filename_contents_transform
+    if filenames_filter:
+      self.filenames_filter = filenames_filter
     super().__init__(*args, **kwargs)
 
 #################################################################################
@@ -422,6 +424,18 @@ class Copy(StorageAction2):
   
   #################################################################################
   def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+
+#################################################################################
+class CopyAndTransform(Copy):
+
+  enter_123 = ['Transforming', '', 'to']
+
+  #################################################################################
+  def __init__(self, *args, filename_contents_transform, filenames_filter=None, **kwargs):
+    self.filename_contents_transform = filename_contents_transform
+    if filenames_filter:
+      self.filenames_filter = filenames_filter
     super().__init__(*args, **kwargs)
     
 #################################################################################

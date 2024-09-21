@@ -202,10 +202,13 @@ class StorageBase(LoggerObj):
     while path:
       path, tail = os.path.split(path)
       result = [tail] + result   
+      if path is os.sep:
+        result = [''] + result 
+        break
     if (len(result) > 1) and (not result[-1]):
       result.pop(-1)
     if (len(result) > 1) and (result[0] == self._init_path):
-      result.pop(0)
+      pass # result.pop(0)
     return result
     
   ###############################################################################
@@ -215,6 +218,7 @@ class StorageBase(LoggerObj):
     root_folders = self.split_path_into_dirs_filename(path=path)
     path_so_far = self._init_path
     was_created = False
+
     for rf in root_folders:
       _, directories_ = self._get_filenames_and_dirnames(path=path_so_far)
       path_so_far = os.path.join(path_so_far, rf)
@@ -378,7 +382,6 @@ class StorageBase(LoggerObj):
   
   ###############################################################################
   def _list_files_directories_recursive(self, path, enforce_size_fetching, message2=''):
-
     self.log_enter_level(dirname=path, message_to_print='Listing', message2=message2)
 
     files_, dirs_ = self._get_filenames_and_dirnames(path, sort=True)
@@ -468,7 +471,6 @@ def add_StorageBase_method(name, return_if_error, title=None):
       if should_be_dir_not_file == "both":
         self.log_error(f"{self.str(path)} is both a file and a directory")
         return FDStatus.Error
-      
       title_ += " " + self.str(path)
       if add_print_title:
         if should_be_dir_not_file:
