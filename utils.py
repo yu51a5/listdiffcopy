@@ -33,17 +33,16 @@ def is_an_image(filename):
 
 ###############################################################################
 def filter_out_extra_wp_images(files_):
+  files_.sort()
   qty_files = len(files_)
   i = 0
   while i < qty_files:
-    this_file_name = files_[i].lower()
-    if not is_an_image(this_file_name):
-      continue
+    this_file_name = files_[i]
     i += 1 # as if it's already the next iteration
-    pos = {c : this_file_name.rfind(c) for c in ('.', 'x', '-')}
-    if min(pos.values()) < 0:
+    if not is_an_image(this_file_name.lower()):
       continue
-    if not ((pos['-'] + 4) <= (pos['x'] + 2) <= pos['.']):
+    pos = {c : this_file_name.rfind(c) for c in ('.', 'x', '-')}
+    if (min(pos.values())) < 0 or not ((pos['-'] + 4) <= (pos['x'] + 2) <= pos['.']):
       continue
     maybe_numbers = this_file_name[pos['-'] + 1:pos['x']] + this_file_name[pos['x'] + 1:pos['.']]
     not_numbers = [c for c in maybe_numbers if not ('0' <= c <= '9')]
@@ -59,7 +58,7 @@ def filter_out_extra_wp_images(files_):
         break
       if files_[j] > presumed_original:
         break
-  
+
   return files_
 
 ###############################################################################
@@ -79,11 +78,25 @@ def convert_image(image_bytes, target_extention, kwargs={}):
 
 def resize_image(image_bytes, max_size, max_ratio=None, filter=DEFAULT_IMAGE_RESIZING_FILTER):
   img = image_bytes if isinstance(image_bytes, Image.Image) else Image.open(io.BytesIO(image_bytes))
-  ratio = min([1.] + [max_size[i] / float(img.size[i]) for i in range(2) if max_size[i]])
+  ratios_array = [(max_size[i] / float(img.size[i]) if max_size[i] is not None else None)  for i in range(2)] + [1.]
+  ratio = min([a for a in ratios_array if a is not None])
   if max_ratio is not None:
     if ratio > max_ratio:
       return None
+  # approximate size
   new_size = [int(float(img.size[i]) * ratio) for i in range(2)]
+  # adjusting
+  i = None
+  if (ratios_array[0] is not None) and (ratios_array[1] is not None):
+    i = min(range(2), key=lambda x : ratios_array[x])
+  elif ratios_array[0] is not None:
+    i = 0
+  elif ratios_array[1] is not None:
+    i = 1
+  if i is not None:
+    new_size[i] = max_size[i]
+  # resizing
+  print(f"resizing image from {img.size} to {new_size}")
   img = img.resize(new_size, filter)
   return img
 

@@ -29,9 +29,8 @@ class StorageAction2(LoggerObj):
   def __init__(self, *args, **kwargs):
 
     for fn_name, default_fn in [['filename_contents_transform', filename_contents_transform_default], ['filenames_filter', idem]]:
-      if not hasattr(self, fn_name):
-        setattr(self, fn_name, default_fn)
-      
+      setattr(self, fn_name, kwargs[fn_name] if (fn_name in kwargs) else default_fn)
+
     super().__init__()
     self.clear_errors_count()
     
@@ -405,11 +404,8 @@ class Transform(Synchronize):
   enter_123 = ['Transforming', '', 'to']
 
   #################################################################################
-  def __init__(self, *args, filename_contents_transform, filenames_filter=None, **kwargs):
-    self.filename_contents_transform = filename_contents_transform
-    if filenames_filter:
-      self.filenames_filter = filenames_filter
-    super().__init__(*args, **kwargs)
+  def __init__(self, *args, filename_contents_transform, **kwargs):
+    super().__init__(*args, filename_contents_transform=filename_contents_transform, **kwargs)
 
 #################################################################################
 class Copy(StorageAction2):
@@ -432,11 +428,8 @@ class CopyAndTransform(Copy):
   enter_123 = ['Transforming', '', 'to']
 
   #################################################################################
-  def __init__(self, *args, filename_contents_transform, filenames_filter=None, **kwargs):
-    self.filename_contents_transform = filename_contents_transform
-    if filenames_filter:
-      self.filenames_filter = filenames_filter
-    super().__init__(*args, **kwargs)
+  def __init__(self, *args, filename_contents_transform, **kwargs):
+    super().__init__(*args, filename_contents_transform=filename_contents_transform, **kwargs)
     
 #################################################################################
 class CopyInto(Copy):

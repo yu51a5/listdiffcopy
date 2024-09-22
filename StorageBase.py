@@ -381,10 +381,10 @@ class StorageBase(LoggerObj):
     )
   
   ###############################################################################
-  def _list_files_directories_recursive(self, path, enforce_size_fetching, message2=''):
+  def _list_files_directories_recursive(self, path, enforce_size_fetching, message2='', filter_func=None):
     self.log_enter_level(dirname=path, message_to_print='Listing', message2=message2)
 
-    files_, dirs_ = self._get_filenames_and_dirnames(path, sort=True)
+    files_, dirs_ = self._get_filenames_and_dirnames(path, sort=True, filter_func=filter_func)
 
     if enforce_size_fetching:
       df = [[os.path.basename(f), self._get_file_size(f)] for f in files_]
@@ -397,7 +397,7 @@ class StorageBase(LoggerObj):
 
     dirs_dict = {}  
     for dir_ in dirs_:
-      dir_totals, dir_files, dir_dirs_dict = self._list_files_directories_recursive(path=dir_, enforce_size_fetching=enforce_size_fetching)
+      dir_totals, dir_files, dir_dirs_dict = self._list_files_directories_recursive(path=dir_, enforce_size_fetching=enforce_size_fetching, filter_func=filter_func)
       totals += dir_totals
       dirs_dict[dir_] = (dir_files, dir_dirs_dict)
 
@@ -412,7 +412,7 @@ class StorageBase(LoggerObj):
     return totals, files_, dirs_dict
 
   ###############################################################################
-  def _list(self, path, enforce_size_fetching=ENFORCE_SIZE_FETCHING_WHEN_LISTING):
+  def _list(self, path, enforce_size_fetching=ENFORCE_SIZE_FETCHING_WHEN_LISTING, filter_func=None):
     def mF():
       data =  [[os.path.basename(path)] 
                  + ([self.get_size_(path=path)] if enforce_size_fetching else [])]
@@ -423,7 +423,8 @@ class StorageBase(LoggerObj):
                    path=path,
                    mT=partial(self._list_files_directories_recursive,
                               path=path, 
-                              enforce_size_fetching=enforce_size_fetching),
+                              enforce_size_fetching=enforce_size_fetching, 
+                              filter_func=filter_func),
                    mF=mF
     )
 
