@@ -95,8 +95,7 @@ def resize_image(image_bytes, max_size, max_ratio=None, filter=DEFAULT_IMAGE_RES
     i = 1
   if i is not None:
     new_size[i] = max_size[i]
-  # resizing
-  print(f"resizing image from {img.size} to {new_size}")
+
   img = img.resize(new_size, filter)
   return img
 

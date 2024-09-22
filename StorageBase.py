@@ -331,6 +331,7 @@ class StorageBase(LoggerObj):
   ###############################################################################
   def _get_file_size_or_content(self, path):
     ffse = getattr(self, '_fetch_file_size_efficiently', None)
+    
     if ffse is not None:
       my_contents = None
       my_file_size = self._fetch_file_size_efficiently(path)
@@ -350,10 +351,15 @@ class StorageBase(LoggerObj):
       return FDStatus.LeftOnly_or_New
 
     def mF():
-      if check_if_contents_is_the_same_before_writing:
-        current_contents = self._read_file(path)
-        if is_equal_str_bytes(content, current_contents):
+      if check_if_contents_is_the_same_before_writing is not None:
+        if check_if_contents_is_the_same_before_writing is False: # size only
+          current_size, current_content = self._get_file_size_or_content(path)    
+        else:
+          current_content = self._read_file(path)
+          current_size = None
+        if current_size == len(content) or is_equal_str_bytes(content, current_content):
           return FDStatus.Identical
+
       self._update_file_given_content(path=path, content=content)
       return FDStatus.Different_or_Updated
 

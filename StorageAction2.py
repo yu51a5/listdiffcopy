@@ -28,9 +28,14 @@ class StorageAction2(LoggerObj):
   #################################################################################
   def __init__(self, *args, **kwargs):
 
-    for fn_name, default_fn in [['filename_contents_transform', filename_contents_transform_default], ['filenames_filter', idem]]:
+    for fn_name, default_fn in [['filename_contents_transform', filename_contents_transform_default], 
+                                ['filenames_filter', idem]]:
       setattr(self, fn_name, kwargs[fn_name] if (fn_name in kwargs) else default_fn)
-
+    if 'change_if_both_exist' in kwargs:
+      self.change_if_both_exist = kwargs['change_if_both_exist']
+    for k in ['filename_contents_transform', 'filenames_filter', 'change_if_both_exist']:
+      kwargs.pop(k, None)
+      
     super().__init__()
     self.clear_errors_count()
     
@@ -77,8 +82,6 @@ class StorageAction2(LoggerObj):
     kwargs_from       = constr_args['kwargs_from']      if 'kwargs_from'     in constr_args else {}
     kwargs_to         = constr_args['kwargs_to']        if 'kwargs_to'       in constr_args else {}
     
-
-    
     self.index_comp_df = pd.MultiIndex.from_tuples(creates_multi_index(self.index_listing_df, self.status_names_complete[:-1]))
 
     errors = StorageBase._check_storage_or_type(storage=self.__storage_from, StorageType=StorageFromType, kwargs=kwargs_from) \
@@ -94,25 +97,25 @@ class StorageAction2(LoggerObj):
       self.__storage_from = self.__storage_to
 
     if self.__storage_to and self.__storage_from:
-      self.__common_part_of_constructor(**kwargs)
+      self.__common_part_of_constructor()
     elif self.__storage_to and (not self.__storage_from):
       with StorageFromType(**kwargs_from, objects_to_sync_logger_with=[self.__storage_to]) as self.__storage_from:
-        self.__common_part_of_constructor(**kwargs)
+        self.__common_part_of_constructor()
     elif self.__storage_from and (not self.__storage_to):
       if not StorageToType:
         self.__storage_to = self.__storage_from
-        self.__common_part_of_constructor(**kwargs)
+        self.__common_part_of_constructor()
       else:
         with StorageToType(**kwargs_to, objects_to_sync_logger_with=[self.__storage_from]) as self.__storage_to:
-          self.__common_part_of_constructor(**kwargs)
+          self.__common_part_of_constructor()
     else:
       with StorageFromType(**kwargs_from) as self.__storage_from:
         if (StorageFromType == StorageToType and kwargs_from == kwargs_to) or (StorageToType is None and (not kwargs_to)):
           self.__storage_to = self.__storage_from
-          self.__common_part_of_constructor(**kwargs)
+          self.__common_part_of_constructor()
         else:
           with StorageToType(**kwargs_to, objects_to_sync_logger_with=[self.__storage_from]) as self.__storage_to: 
-            self.__common_part_of_constructor(**kwargs)
+            self.__common_part_of_constructor()
 
   ###############################################################################
   def __common_part_of_constructor(self):
@@ -199,8 +202,9 @@ class StorageAction2(LoggerObj):
       return FDStatus.LeftOnly_or_New
 
     def _action_existing_file(path, content):
-      if self.change_if_both_exist:
-        status = self.__storage_to._write_file(path=path, content=content) 
+      if self.change_if_both_exist is not None:
+        print(0, path)
+        status = self.__storage_to._write_file(path=path, content=content, check_if_contents_is_the_same_before_writing=self.change_if_both_exist) 
       else:
         size_to_current, cont_to_current = self.__storage_to._get_file_size_or_content(path=path)
         status = FDStatus.Different_or_Updated
@@ -217,7 +221,7 @@ class StorageAction2(LoggerObj):
       if self.filename_contents_transform == idem:
         pass # start by checking sizes
           
-      from_contents = self.__storage_from._read_file(file_from) 
+      from_contents = self.__storage_from._read_file(file_from)
       size_from = len(from_contents)
 
       files_to_contents = self.filename_contents_transform(path=basename_from, content=from_contents, files_to_matched=files_to_matched, change_if_same_name_exist=self.change_if_both_exist is False)
