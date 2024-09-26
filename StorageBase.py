@@ -3,6 +3,7 @@ import math
 import pandas as pd
 import numpy as np
 from functools import partialmethod, partial
+from collections.abc import Iterable 
 
 from settings import ENFORCE_SIZE_FETCHING_WHEN_LISTING
 from utils import is_equal_str_bytes
@@ -305,7 +306,7 @@ class StorageBase(LoggerObj):
     return files_
   
   ###############################################################################
-  def _get_filenames_and_dirnames(self, path, sort=False, filter_func=None):
+  def _get_filenames_and_dirnames(self, path, sort=False, filter_func=[]):
     if (not path) and self._init_path:
       return self._get_filenames_and_dirnames(path=self._init_path, 
                                               sort=sort, 
@@ -314,7 +315,11 @@ class StorageBase(LoggerObj):
     files_, directories_ = self._get_filenames_and_directories(path=path)
 
     if filter_func:
-      files_ = filter_func(files_)
+      if isinstance(filter_func, Iterable):
+        for ff in filter_func:
+          files_ = ff(files_)
+      else:
+        files_ = filter_func(files_)
 
     if sort:
       files_.sort(key=lambda x: x.lower())
@@ -351,6 +356,8 @@ class StorageBase(LoggerObj):
       return FDStatus.LeftOnly_or_New
 
     def mF():
+      if check_if_contents_is_the_same_before_writing == 'pass':
+        return FDStatus.Identical
       if check_if_contents_is_the_same_before_writing is not None:
         if check_if_contents_is_the_same_before_writing is False: # size only
           current_size, current_content = self._get_file_size_or_content(path)    
@@ -387,7 +394,7 @@ class StorageBase(LoggerObj):
     )
   
   ###############################################################################
-  def _list_files_directories_recursive(self, path, enforce_size_fetching, message2='', filter_func=None):
+  def _list_files_directories_recursive(self, path, enforce_size_fetching, message2='', filter_func=[]):
     self.log_enter_level(dirname=path, message_to_print='Listing', message2=message2)
 
     files_, dirs_ = self._get_filenames_and_dirnames(path, sort=True, filter_func=filter_func)
@@ -418,7 +425,7 @@ class StorageBase(LoggerObj):
     return totals, files_, dirs_dict
 
   ###############################################################################
-  def _list(self, path, enforce_size_fetching=ENFORCE_SIZE_FETCHING_WHEN_LISTING, filter_func=None):
+  def _list(self, path, enforce_size_fetching=ENFORCE_SIZE_FETCHING_WHEN_LISTING, filter_func=[]):
     def mF():
       data =  [[os.path.basename(path)] 
                  + ([self.get_size_(path=path)] if enforce_size_fetching else [])]

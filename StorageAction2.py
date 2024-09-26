@@ -29,7 +29,7 @@ class StorageAction2(LoggerObj):
   def __init__(self, *args, **kwargs):
 
     for fn_name, default_fn in [['filename_contents_transform', filename_contents_transform_default], 
-                                ['filenames_filter', idem]]:
+                                ['filenames_filter', []]]:
       setattr(self, fn_name, kwargs[fn_name] if (fn_name in kwargs) else default_fn)
     if 'change_if_both_exist' in kwargs:
       self.change_if_both_exist = kwargs['change_if_both_exist']
