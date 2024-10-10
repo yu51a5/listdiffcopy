@@ -21,8 +21,8 @@ class StorageLocal(StorageBase):
     return files_, directories_
 
 ###############################################################################
-  def _read_file(self, filename, length=None):
-    with open(filename, "rb") as fi:
+  def _read_file(self, path, binary=True, length=None):
+    with open(path, "rb" if binary else "r") as fi:
       result = fi.read()
       return result
   

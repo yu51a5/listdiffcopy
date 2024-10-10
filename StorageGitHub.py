@@ -81,12 +81,12 @@ class StorageGitHub(StorageBase):
     return None
 
   ###############################################################################
-  def _read_file(self, path):(self, filename, length=None):
+  def _read_file(self, path, length=None):
 
     if length:
       return bytes(b'')
 
-    url = f"{self.url_head}/contents/{filename}"
+    url = f"{self.url_head}/contents/{path}"
     #url2 = f'https://raw.githubusercontent.com/{self.owner}/{self.repo_name}/main/{filename}'
     response = requests.get(url, headers=self.headers)
     content = response.content
