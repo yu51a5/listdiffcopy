@@ -106,33 +106,36 @@ def convert_image_to_AVIF_if_another_format_image(path, content, *args, **kwargs
       return path_result, convert_image(content, "avif")
   return path, content
 
-def batch_resize_images(path, content, max_ratio=.99, *args, **kwargs):
+def batch_resize_images(path, content, max_pixel_ratio=.99, min_avif_compression=.95, *args, **kwargs):
 
   ext = get_file_extention(path)
   if (ext.lower() == 'svg') or (not is_an_image(path)):
     return [[path, content]]
-    
-  target_extentions = ['avif', ext] if ext.lower() != 'avif' else ['avif']
-  init_fn = path[:path.rfind('.')]
   
   filenames_contents = []
   for w, h in sizes_for_wp:
     appendix = '.w' + str(w) if w else '.h' + str(h) if h else ''
-    img_content_resized = content if not appendix else resize_image(content, [w, h], max_ratio=max_ratio)
-    if img_content_resized:
-      filenames_contents += [[init_fn + appendix + '.' + target_extention,
-                               convert_image(img_content_resized, target_extention=target_extention)] 
-                                                                   for target_extention in target_extentions]
+    img_content_resized = content if not appendix else resize_image(content, [w, h], max_ratio=max_pixel_ratio)
+    
+    if not img_content_resized:
+      continue
+
+    init_fn = path[:path.rfind('.')] + appendix + '.'
+    converted_img_original_ext = convert_image(img_content_resized, target_extention=ext)
+    if ext.lower() != 'avif':
+      converted_img_avif = convert_image(img_content_resized, target_extention='avif')
+      #print( len(converted_img_original_ext), len(converted_img_avif), path)
+      if len(converted_img_avif) < min_avif_compression * len(converted_img_original_ext):
+        filenames_contents.append([init_fn + 'avif', converted_img_avif])
+    
+    filenames_contents.append([init_fn + ext, converted_img_original_ext])
 
   return filenames_contents
 
 ###############################################################################
 # source: https://stackoverflow.com/questions/73498143/checking-for-equality-if-either-input-can-be-str-or-bytes
 ###############################################################################
-def is_equal_str_bytes(
-  a: typing.Union[str, bytes],
-  b: typing.Union[str, bytes],
-) -> bool:
+def is_equal_str_bytes(a, b):
   if len(a) != len(b):
     return False
   if hash(a) != hash(b):
