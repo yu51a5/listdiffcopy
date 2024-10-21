@@ -2,12 +2,14 @@ import typing
 import io
 import pillow_avif
 from PIL import Image
+from wand.image import Image as ImageWand
+from jpg_quality_pil_magick import get_jpg_quality
+
 from settings import DEFAULT_AVIF_QUALITY, DEFAULT_IMAGE_RESIZING_FILTER, wp_images_extensions
 
 wp_images_extensions_with_dot = tuple([f'.{ext.lower()}' for ext in wp_images_extensions])
 # https://stackoverflow.com/questions/4354543/determining-jpg-quality-in-python-pil
-image_saving_settings = {'jpeg' : dict(quality='keep', optimize=True, progressive=True), 
-                         'avif' : dict(quality=DEFAULT_AVIF_QUALITY)}
+jpeg_saving_settings = dict(optimize=True, progressive=True) # quality='keep', 
 sizes_for_wp = [[None, h] for h in [150, 180, 200, 220, 250, 300, 400]] + [[w, None] for w in [500, 700]] + [[None, None]]
 
 ###############################################################################
@@ -69,10 +71,12 @@ def _to_image_image(image_in_some_format):
                                   else Image.open(io.BytesIO(image_in_some_format))
   return result
 
-def convert_image(image_bytes, target_extention, kwargs={}):
+def convert_image(image_bytes, target_extention, **kwargs):
   from_img = _to_image_image(image_bytes)
   result_img_stream = io.BytesIO()
-  from_img.save(result_img_stream, target_extention.upper() if target_extention.lower() != "jpg" else "JPEG", **kwargs)
+  ext = target_extention.upper() if target_extention.lower() != "jpg" else "JPEG"
+  kwargs_ = jpeg_saving_settings if (ext == "JPEG") and (not kwargs) else kwargs
+  from_img.save(result_img_stream, ext, **kwargs_)
   result = result_img_stream.getvalue()
   return result
 
@@ -99,18 +103,23 @@ def resize_image(image_bytes, max_size, max_ratio=None, filter=DEFAULT_IMAGE_RES
   img = img.resize(new_size, filter)
   return img
 
-def convert_image_to_AVIF_if_another_format_image(path, content, *args, **kwargs):
+def convert_image_to_AVIF_if_another_format_image(path, content, files_to_matched=None, change_if_same_name_exist=None):
   if is_an_image(path):
     if not path.lower().endswith(("avif", 'svg')):
       path_result = path[:path.rfind('.')] + ".avif"
       return path_result, convert_image(content, "avif")
   return path, content
 
-def batch_resize_images(path, content, max_pixel_ratio=.99, min_avif_compression=.95, *args, **kwargs):
+def batch_resize_images(path, content, max_pixel_ratio=.99, min_avif_compression=.95, avif_quality=DEFAULT_AVIF_QUALITY,
+                       files_to_matched=None, change_if_same_name_exist=None):
 
   ext = get_file_extention(path)
   if (ext.lower() == 'svg') or (not is_an_image(path)):
     return [[path, content]]
+
+  if ext.upper() in ("JPG", "JPEG"):
+    c = _to_image_image(content)
+    print('image quality', get_jpg_quality(c))
   
   filenames_contents = []
   for w, h in sizes_for_wp:
@@ -121,10 +130,11 @@ def batch_resize_images(path, content, max_pixel_ratio=.99, min_avif_compression
       continue
 
     init_fn = path[:path.rfind('.')] + appendix + '.'
-    converted_img_original_ext = convert_image(img_content_resized, target_extention=ext)
+    kwargs_ = dict(quality=avif_quality)  if ext.lower() == 'avif' else {}
+    converted_img_original_ext = convert_image(img_content_resized, target_extention=ext, **kwargs_)
     if ext.lower() != 'avif':
-      converted_img_avif = convert_image(img_content_resized, target_extention='avif')
-      #print( len(converted_img_original_ext), len(converted_img_avif), path)
+      converted_img_avif = convert_image(img_content_resized, target_extention='avif', quality=avif_quality)
+      print( len(converted_img_original_ext), len(converted_img_avif), init_fn)
       if len(converted_img_avif) < min_avif_compression * len(converted_img_original_ext):
         filenames_contents.append([init_fn + 'avif', converted_img_avif])
     
