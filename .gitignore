@@ -1,7 +1,7 @@
 .replit
 poetry.lock
 replit.nix
-pyproject.toml
+# pyproject.toml
 .breakpoints
 .local
 .upm
