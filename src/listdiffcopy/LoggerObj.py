@@ -1,8 +1,8 @@
 import pandas as pd
 from enum import Enum
 
-from utils import put_together_framed_message
-from logging_config import get_logger, LoggerExtra
+from listdiffcopy.utils import put_together_framed_message
+from listdiffcopy.logging_config import get_logger, LoggerExtra
 
 
 #################################################################################

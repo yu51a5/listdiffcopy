@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "listdiffcopy"
-version = "0.0.5"
+version = "0.05551"
 authors = [
   { name="Yulia V", email="yu51a5@proton.me" },
 ]
@@ -16,21 +16,6 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-]
-dependencies = [
-  "logging-config >= 1.0.4",
-  "paramiko >= 3.3.1",
-  "requests >= 2.31.0",
-  "selenium >= 4.16.0",
-  "utils >= 1.0.1",
-  "html2text",
-  "numpy >= 1.26.2",
-  "pandas >= 2.1.3",
-  "requests-toolbelt >= 1.0.0",
-  "beautifulsoup4 >= 4.12.2",
-  "pillow-avif-plugin >= 1.4.6",
-  "image >= 1.5.33",
-  "wand >= 0.6.13",
 ]
 
 keywords = ["list", "diff", "copy"]

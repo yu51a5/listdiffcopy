@@ -1,6 +1,6 @@
 import os
 import shutil
-from StorageBase import StorageBase
+from listdiffcopy.StorageBase import StorageBase
 
 #################################################################################
 class StorageLocal(StorageBase):

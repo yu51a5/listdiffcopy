@@ -2,12 +2,12 @@ import os
 import math
 import pandas as pd
 import numpy as np
-from functools import partialmethod, partial
+from functools import partial
 
-from settings import ENFORCE_SIZE_FETCHING_WHEN_COMPARING
-from utils import creates_multi_index, idem
-from LoggerObj import FDStatus, LoggerObj
-from StorageBase import StorageBase
+from listdiffcopy.settings import ENFORCE_SIZE_FETCHING_WHEN_COMPARING, DEFAULT_SORT_KEY
+from listdiffcopy.utils import creates_multi_index, idem
+from listdiffcopy.LoggerObj import FDStatus, LoggerObj
+from listdiffcopy.StorageBase import StorageBase
 
 def filename_contents_transform_default(path, content, *args, **kwargs):
   return [path, content]
@@ -29,6 +29,8 @@ class StorageAction2(LoggerObj):
   def __init__(self, *args, **kwargs):
 
     for fn_name, default_fn in [['filename_contents_transform', filename_contents_transform_default], 
+                                ['sort_key', DEFAULT_SORT_KEY], 
+                                ['sort_reverse', False],                             
                                 ['filenames_filter', []]]:
       setattr(self, fn_name, kwargs[fn_name] if (fn_name in kwargs) else default_fn)
     if 'change_if_both_exist' in kwargs:
@@ -254,8 +256,6 @@ class StorageAction2(LoggerObj):
     files_from, dirs_from = self.__storage_from._get_filenames_and_dirnames(_dir_from, filter_func=self.filenames_filter)
     _dir_to = os.path.join(self.root_path_to, common_dir_appendix) if common_dir_appendix else self.root_path_to
     
-    result =  self.__storage_to._get_filenames_and_dirnames(  _dir_to, filter_func=self.filenames_filter)
-    
     files_to, dirs_to   = self.__storage_to._get_filenames_and_dirnames(  _dir_to, filter_func=self.filenames_filter)
   
     dir_info_first_level = np.zeros((5, 3), float)
@@ -265,9 +265,8 @@ class StorageAction2(LoggerObj):
     files_to_matched = {os.path.basename(f) : [] for f in files_to}
     row_header_array = [[], [], []]
     files_data_data = []
-    has_multi_outputs = False
 
-    files_from.sort()
+    files_from.sort(key=self.sort_key, reverse=self.sort_reverse)
     rows_printed_so_far = 0
     columns = (['Result Filename', 'Result Size', 'Status'] 
       if self.filename_contents_transform != filename_contents_transform_default else ['Size', 'Status'])
@@ -308,14 +307,13 @@ class StorageAction2(LoggerObj):
       
       rows_printed_so_far = to_df_and_print(fn, fsize, fdata, files_data_data, rows_printed_so_far)
       
-    right_only_files = []
     for f, v in files_to_matched.items():
       if not v:
         this_file_result = self._action_right_only_file(os.path.join(_dir_to, f))
         rows_printed_so_far = to_df_and_print(None, math.nan, [this_file_result], files_data_data, rows_printed_so_far)
 
-    dirs_from.sort(key=lambda x: x.lower())
-    dirs_to.sort(  key=lambda x: x.lower())
+    dirs_from.sort(key=self.sort_key, reverse=self.sort_reverse)
+    dirs_to.sort(  key=self.sort_key, reverse=self.sort_reverse)
     
     id_from = -len(dirs_from)
     id_to = -len(dirs_to)
@@ -335,10 +333,13 @@ class StorageAction2(LoggerObj):
         dir_info_first_level[0][2] += 1
         if self.create_if_left_only:
           self.__storage_to.create_directory(path=os.path.join(_dir_to, basename_from))
-          subdir_info_total = self._action_files_directories_recursive(common_dir_appendix=os.path.join(common_dir_appendix, basename_from))
+          subdir_info_total = self._action_files_directories_recursive(
+            common_dir_appendix=os.path.join(common_dir_appendix, basename_from))
           dir_info_total += subdir_info_total
         else:
-          subdir_list_total, _, _ = self.__storage_from._list_files_directories_recursive(dir_to_list=dir_from, message2=f"Exists in {_dir_from} but not in {_dir_to}", enforce_size_fetching=ENFORCE_SIZE_FETCHING_WHEN_COMPARING) 
+          subdir_list_total, _, _ = self.__storage_from._list_files_directories_recursive(dir_to_list=dir_from, 
+                                                                                          message2=f"Exists in {_dir_from} but not in {_dir_to}",
+                                                                                          enforce_size_fetching=ENFORCE_SIZE_FETCHING_WHEN_COMPARING) 
           dir_info_total[0] += subdir_list_total
         id_from += 1
       elif (id_from == 0) or ((basename_from is not None) and (basename_to is not None) and (basename_to < basename_from)):
@@ -348,7 +349,9 @@ class StorageAction2(LoggerObj):
           self.__storage_to.delete_(dir_to)
           dir_info_first_level[1] += np.array([math.nan] * 3)
         else:
-          subdir_list_total, _, _ = self.__storage_to._list_files_directories_recursive(dir_to_list=dir_to, message2=f"Exists in {_dir_to} but not in {_dir_from}", enforce_size_fetching=ENFORCE_SIZE_FETCHING_WHEN_COMPARING)
+          subdir_list_total, _, _ = self.__storage_to._list_files_directories_recursive(dir_to_list=dir_to, 
+                                                                                        message2=f"Exists in {_dir_to} but not in {_dir_from}", 
+                                                                                        enforce_size_fetching=ENFORCE_SIZE_FETCHING_WHEN_COMPARING)
           dir_info_total[1] += subdir_list_total
         id_to += 1  
       elif ((basename_from is not None) and (basename_to is not None) and (basename_from == basename_to)):

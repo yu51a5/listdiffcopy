@@ -10,7 +10,7 @@ import uuid
 import os
 import logging
 
-from settings import log_dirname
+from listdiffcopy.settings import log_dirname
 
 if log_dirname and (not os.path.isdir(log_dirname)):
   os.mkdir(log_dirname)

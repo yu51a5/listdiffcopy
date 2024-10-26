@@ -1,11 +1,9 @@
-import math
-
-from utils import partial_with_moving_back
-from StorageWebMedium import StorageWebMedium
-from StorageWeb import StorageWeb
-from StorageAction2 import Compare, Synchronize, Copy, Move
-from StorageBase import StorageBase
-from LoggerObj import LoggerObj
+from listdiffcopy.utils import partial_with_moving_back
+from listdiffcopy.StorageWebMedium import StorageWebMedium
+from listdiffcopy.StorageWeb import StorageWeb
+from listdiffcopy.StorageAction2 import Compare, Synchronize, Copy, Move, CopyInto, MoveInto
+from listdiffcopy.StorageBase import StorageBase
+from listdiffcopy.LoggerObj import LoggerObj
 
 #################################################################################
 def one_storage_func(*args, return_if_error=None, attr_name=None, **kwargs):
@@ -29,14 +27,14 @@ def one_storage_func(*args, return_if_error=None, attr_name=None, **kwargs):
     else:
       _args = [a for a in args if isinstance(a, type_)]
 
+    logger = constr_args['logger'] if 'logger' in constr_args else LoggerObj()
+
     if len(_args) > 1:
-      self.log_critical(f"{an} argument ambiguity: there are {len(_args)} unnamed arguments of type {type_} in the function call")
+      logger.log_critical(f"{an} argument ambiguity: there are {len(_args)} unnamed arguments of type {type_} in the function call")
     elif len(_args) == 1:
       if (type_ is not dict) or ('StorageType' in constr_args):
         constr_args[an] = _args[0]
         args2 = [a for a in args2 if a != _args[0]] 
-        
-  logger = constr_args['logger'] if 'logger' in constr_args else LoggerObj() 
   
   errors = StorageBase._check_storage_or_type(storage=constr_args['storage'] if 'storage' in constr_args else None, 
                                               StorageType=constr_args['StorageType'] if 'StorageType' in constr_args else None, 

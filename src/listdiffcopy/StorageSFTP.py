@@ -3,7 +3,7 @@ import os
 import paramiko
 from stat import S_ISDIR, S_ISREG
 
-from StorageBase import StorageBase
+from listdiffcopy.StorageBase import StorageBase
 
 #################################################################################
 class StorageSFTP(StorageBase):

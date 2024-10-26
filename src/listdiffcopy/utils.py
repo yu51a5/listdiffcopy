@@ -1,11 +1,10 @@
-import typing
+#import typing
 import io
-import pillow_avif
+#import pillow_avif
 from PIL import Image
-from wand.image import Image as ImageWand
-from jpg_quality_pil_magick import get_jpg_quality
+from listdiffcopy.jpg_quality_pil_magick import get_jpg_quality
 
-from settings import DEFAULT_AVIF_QUALITY, DEFAULT_IMAGE_RESIZING_FILTER, wp_images_extensions
+from listdiffcopy.settings import DEFAULT_AVIF_QUALITY, DEFAULT_IMAGE_RESIZING_FILTER, wp_images_extensions
 
 wp_images_extensions_with_dot = tuple([f'.{ext.lower()}' for ext in wp_images_extensions])
 # https://stackoverflow.com/questions/4354543/determining-jpg-quality-in-python-pil

@@ -16,8 +16,8 @@ import bs4
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
-from utils import remove_duplicates
-from StorageBase import StorageBase
+from listdiffcopy.utils import remove_duplicates
+from listdiffcopy.StorageBase import StorageBase
 
 #################################################################################
 class StorageWeb(StorageBase):

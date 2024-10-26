@@ -5,9 +5,9 @@ import numpy as np
 from functools import partialmethod, partial
 from collections.abc import Iterable 
 
-from settings import ENFORCE_SIZE_FETCHING_WHEN_LISTING
-from utils import is_equal_str_bytes
-from LoggerObj import LoggerObj, FDStatus
+from listdiffcopy.settings import DEFAULT_SORT_KEY, ENFORCE_SIZE_FETCHING_WHEN_LISTING
+from listdiffcopy.utils import is_equal_str_bytes
+from listdiffcopy.LoggerObj import FDStatus, LoggerObj
 
 #################################################################################
 class StorageBase(LoggerObj):
@@ -306,10 +306,9 @@ class StorageBase(LoggerObj):
     return files_
   
   ###############################################################################
-  def _get_filenames_and_dirnames(self, path, sort=False, filter_func=[]):
+  def _get_filenames_and_dirnames(self, path, filter_func=[]):
     if (not path) and self._init_path:
       return self._get_filenames_and_dirnames(path=self._init_path, 
-                                              sort=sort, 
                                               filter_func=filter_func)
 
     files_, directories_ = self._get_filenames_and_directories(path=path)
@@ -320,10 +319,6 @@ class StorageBase(LoggerObj):
           files_ = ff(files_)
       else:
         files_ = filter_func(files_)
-
-    if sort:
-      files_.sort(key=lambda x: x.lower())
-      directories_.sort(key=lambda x: x.lower())
 
     return files_, directories_
       
@@ -394,10 +389,15 @@ class StorageBase(LoggerObj):
     )
   
   ###############################################################################
-  def _list_files_directories_recursive(self, path, enforce_size_fetching, message2='', filter_func=[]):
+  def _list_files_directories_recursive(self, path, enforce_size_fetching, 
+                                        sort_key=DEFAULT_SORT_KEY, sort_reverse=False,
+                                        message2='', filter_func=[]):
     self.log_enter_level(dirname=path, message_to_print='Listing', message2=message2)
 
-    files_, dirs_ = self._get_filenames_and_dirnames(path, sort=True, filter_func=filter_func)
+    files_, dirs_ = self._get_filenames_and_dirnames(path, filter_func=filter_func)
+    if True:
+      files_.sort(key=sort_key, reverse=sort_reverse)
+      dirs_.sort(key=sort_key, reverse=sort_reverse)
 
     if enforce_size_fetching:
       df = [[os.path.basename(f), self._get_file_size(f)] for f in files_]
@@ -410,7 +410,10 @@ class StorageBase(LoggerObj):
 
     dirs_dict = {}  
     for dir_ in dirs_:
-      dir_totals, dir_files, dir_dirs_dict = self._list_files_directories_recursive(path=dir_, enforce_size_fetching=enforce_size_fetching, filter_func=filter_func)
+      dir_totals, dir_files, dir_dirs_dict = self._list_files_directories_recursive(path=dir_, 
+                                                                                    enforce_size_fetching=enforce_size_fetching,
+                                                                                    sort_key=sort_key, sort_reverse=sort_reverse, 
+                                                                                    filter_func=filter_func)
       totals += dir_totals
       dirs_dict[dir_] = (dir_files, dir_dirs_dict)
 
@@ -425,7 +428,10 @@ class StorageBase(LoggerObj):
     return totals, files_, dirs_dict
 
   ###############################################################################
-  def _list(self, path, enforce_size_fetching=ENFORCE_SIZE_FETCHING_WHEN_LISTING, filter_func=[]):
+  def _list(self, path, 
+                  enforce_size_fetching=ENFORCE_SIZE_FETCHING_WHEN_LISTING, 
+                  sort_key=DEFAULT_SORT_KEY, sort_reverse=False,
+                  filter_func=[]):
     def mF():
       data =  [[os.path.basename(path)] 
                  + ([self.get_size_(path=path)] if enforce_size_fetching else [])]
@@ -437,9 +443,9 @@ class StorageBase(LoggerObj):
                    mT=partial(self._list_files_directories_recursive,
                               path=path, 
                               enforce_size_fetching=enforce_size_fetching, 
+                              sort_key=sort_key, sort_reverse=sort_reverse,                                              
                               filter_func=filter_func),
-                   mF=mF
-    )
+                   mF=mF)
 
 ###############################################################################
   def _delete(self, path):

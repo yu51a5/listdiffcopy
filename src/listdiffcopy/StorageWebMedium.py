@@ -7,8 +7,8 @@ h.ignore_links = False
 h.body_width = 0
 h.ignore_images = False # DOESN'T WORK
 
-from utils import put_together_framed_message, remove_char_and_after
-from StorageWeb import StorageWeb
+from listdiffcopy.utils import put_together_framed_message, remove_char_and_after
+from listdiffcopy.StorageWeb import StorageWeb
 
 #################################################################################
 class StorageWebMedium(StorageWeb):
