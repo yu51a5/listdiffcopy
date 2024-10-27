@@ -193,7 +193,7 @@ class LoggerObj:
           row_[-1] = self.status_names_complete[row_[-1].value]
       columns = self.__columns_files_df[how_many_columns-int(last_col_is_status)] + (['File Status'] if last_col_is_status else [])
       df_files = pd.DataFrame(_data, columns=columns)
-      df_files.sort_values(by=self.__columns_files_df[1][0], inplace=True)
+      # df_files.sort_values(by=self.__columns_files_df[1][0], inplace=True)
 
     extra_prefix = '║ ' if (isinstance(data, list) and not isinstance(data[0], list)) else '──── '
     df_str = self._df_to_str(df_files, extra_prefix=extra_prefix)

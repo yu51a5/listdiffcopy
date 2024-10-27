@@ -395,14 +395,14 @@ class StorageBase(LoggerObj):
     self.log_enter_level(dirname=path, message_to_print='Listing', message2=message2)
 
     files_, dirs_ = self._get_filenames_and_dirnames(path, filter_func=filter_func)
-    if True:
+    if sort_key:
       files_.sort(key=sort_key, reverse=sort_reverse)
       dirs_.sort(key=sort_key, reverse=sort_reverse)
 
     if enforce_size_fetching:
       df = [[os.path.basename(f), self._get_file_size(f)] for f in files_]
     else:
-      df = [[os.path.basename(f)                         ] for f in files_]
+      df = [[os.path.basename(f)                        ] for f in files_]
     self.print_files_df(data =df)
 
     total_size_first_level = sum([dfr[1] for dfr in df]) if enforce_size_fetching else math.nan

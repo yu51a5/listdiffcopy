@@ -205,7 +205,6 @@ class StorageAction2(LoggerObj):
 
     def _action_existing_file(path, content):
       if self.change_if_both_exist is not None:
-        print(0, path)
         status = self.__storage_to._write_file(path=path, content=content, check_if_contents_is_the_same_before_writing=self.change_if_both_exist) 
       else:
         size_to_current, cont_to_current = self.__storage_to._get_file_size_or_content(path=path)
@@ -265,7 +264,6 @@ class StorageAction2(LoggerObj):
     files_to_matched = {os.path.basename(f) : [] for f in files_to}
     row_header_array = [[], [], []]
     files_data_data = []
-
     files_from.sort(key=self.sort_key, reverse=self.sort_reverse)
     rows_printed_so_far = 0
     columns = (['Result Filename', 'Result Size', 'Status'] 
@@ -339,6 +337,7 @@ class StorageAction2(LoggerObj):
         else:
           subdir_list_total, _, _ = self.__storage_from._list_files_directories_recursive(dir_to_list=dir_from, 
                                                                                           message2=f"Exists in {_dir_from} but not in {_dir_to}",
+                                                                                          sort_key=self.sort_key, sort_reverse=self.sort_reverse,
                                                                                           enforce_size_fetching=ENFORCE_SIZE_FETCHING_WHEN_COMPARING) 
           dir_info_total[0] += subdir_list_total
         id_from += 1
@@ -351,6 +350,7 @@ class StorageAction2(LoggerObj):
         else:
           subdir_list_total, _, _ = self.__storage_to._list_files_directories_recursive(dir_to_list=dir_to, 
                                                                                         message2=f"Exists in {_dir_to} but not in {_dir_from}", 
+                                                                                        sort_key=self.sort_key, sort_reverse=self.sort_reverse,
                                                                                         enforce_size_fetching=ENFORCE_SIZE_FETCHING_WHEN_COMPARING)
           dir_info_total[1] += subdir_list_total
         id_to += 1  
