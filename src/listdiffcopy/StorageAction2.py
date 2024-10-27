@@ -335,7 +335,7 @@ class StorageAction2(LoggerObj):
             common_dir_appendix=os.path.join(common_dir_appendix, basename_from))
           dir_info_total += subdir_info_total
         else:
-          subdir_list_total, _, _ = self.__storage_from._list_files_directories_recursive(dir_to_list=dir_from, 
+          subdir_list_total, _, _ = self.__storage_from._list_files_directories_recursive(path=dir_from, 
                                                                                           message2=f"Exists in {_dir_from} but not in {_dir_to}",
                                                                                           sort_key=self.sort_key, sort_reverse=self.sort_reverse,
                                                                                           enforce_size_fetching=ENFORCE_SIZE_FETCHING_WHEN_COMPARING) 
@@ -348,7 +348,7 @@ class StorageAction2(LoggerObj):
           self.__storage_to.delete_(dir_to)
           dir_info_first_level[1] += np.array([math.nan] * 3)
         else:
-          subdir_list_total, _, _ = self.__storage_to._list_files_directories_recursive(dir_to_list=dir_to, 
+          subdir_list_total, _, _ = self.__storage_to._list_files_directories_recursive(path=dir_to, 
                                                                                         message2=f"Exists in {_dir_to} but not in {_dir_from}", 
                                                                                         sort_key=self.sort_key, sort_reverse=self.sort_reverse,
                                                                                         enforce_size_fetching=ENFORCE_SIZE_FETCHING_WHEN_COMPARING)
