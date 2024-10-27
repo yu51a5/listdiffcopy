@@ -8,7 +8,7 @@ list_directories_that_exist_in_one_storage_only = True
 list_identical_files = True
 ENFORCE_SIZE_FETCHING_WHEN_LISTING = True
 ENFORCE_SIZE_FETCHING_WHEN_COMPARING = False
-DEFAULT_SORT_KEY = lambda x : x
+DEFAULT_SORT_KEY = lambda x : x.lower()
 
 # https://codelabs.developers.google.com/codelabs/avif#3
 # there should be two dashes before `min` and `max`
