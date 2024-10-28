@@ -164,10 +164,10 @@ class StorageAction2(LoggerObj):
           try:
             bn = os.path.basename(self.root_path_from)
             self.root_path_to = os.path.join(self.root_path_to, bn)
-            self.__storage_to._create_directory_only(self.root_path_to)
           except Exception as e:
-            self.log_error(f'Cannot join {self.root_path_to} and the basename of {self.root_path_from}', e)
-          
+            self.log_error(f'Cannot join `{self.root_path_to}` and `{bn}`, the basename of `{self.root_path_from}`', e)
+            return
+          self.__storage_to._create_directory_only(self.root_path_to)
         self.__storage_to._create_directory_only(self.root_path_to)
 
       self._action_files_directories_recursive(common_dir_appendix='')
