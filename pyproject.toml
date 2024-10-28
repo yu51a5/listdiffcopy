@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "listdiffcopy"
-version = "0.05558"
+version = "0.055591"
 authors = [
   { name="Yulia V", email="yu51a5@proton.me" },
 ]
@@ -19,10 +19,6 @@ classifiers = [
 ]
 
 keywords = ["list", "diff", "copy"]
-dependencies = [
-    "pandas>=2.2.3",
-    "paramiko>=3.5.0",
-]
 
 [project.urls]
 Repository = "https://github.com/yu51a5/listdiffcopy.git"
