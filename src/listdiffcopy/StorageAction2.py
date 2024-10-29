@@ -169,7 +169,7 @@ class StorageAction2(LoggerObj):
             return
           self.__storage_to._create_directory(self.root_path_to)
         else:
-          self.__storage_to._create_directory_only(self.root_path_to)
+          self.__storage_to._create_directory(self.root_path_to)
 
       self._action_files_directories_recursive(common_dir_appendix='')
     else:
@@ -253,10 +253,9 @@ class StorageAction2(LoggerObj):
     self.log_enter_level(common_dir_appendix, self.enter_123[0])
 
     _dir_from = os.path.join(self.root_path_from, common_dir_appendix) if common_dir_appendix else self.root_path_from
-    files_from, dirs_from = self.__storage_from._get_filenames_and_dirnames(_dir_from, filter_func=self.filenames_filter)
+    files_from, dirs_from = self.__storage_from._get_filenames_and_dirnames(_dir_from, filenames_filter=self.filenames_filter)
     _dir_to = os.path.join(self.root_path_to, common_dir_appendix) if common_dir_appendix else self.root_path_to
-    
-    files_to, dirs_to   = self.__storage_to._get_filenames_and_dirnames(  _dir_to, filter_func=self.filenames_filter)
+    files_to, dirs_to   = self.__storage_to._get_filenames_and_dirnames(  _dir_to, filenames_filter=self.filenames_filter)
   
     dir_info_first_level = np.zeros((5, 3), float)
     dir_info_total = np.zeros((5, 3), float)

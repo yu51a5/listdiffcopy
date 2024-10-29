@@ -1,6 +1,6 @@
 #import typing
 import io
-#import pillow_avif
+import pillow_avif # https://pypi.org/project/pillow-avif-plugin/
 from PIL import Image
 from listdiffcopy.jpg_quality_pil_magick import get_jpg_quality
 
@@ -121,6 +121,7 @@ def batch_resize_images(path, content, max_pixel_ratio=.99, min_avif_compression
     print('image quality', get_jpg_quality(c))
   
   filenames_contents = []
+  failed_to_convert = []
   for w, h in sizes_for_wp:
     appendix = '.w' + str(w) if w else '.h' + str(h) if h else ''
     img_content_resized = content if not appendix else resize_image(content, [w, h], max_ratio=max_pixel_ratio)
@@ -132,13 +133,18 @@ def batch_resize_images(path, content, max_pixel_ratio=.99, min_avif_compression
     kwargs_ = dict(quality=avif_quality)  if ext.lower() == 'avif' else {}
     converted_img_original_ext = convert_image(img_content_resized, target_extention=ext, **kwargs_)
     if ext.lower() != 'avif':
-      converted_img_avif = convert_image(img_content_resized, target_extention='avif', quality=avif_quality)
+      try:
+        converted_img_avif = convert_image(img_content_resized, target_extention='avif', quality=avif_quality)
+      except Exception as e:
+        failed_to_convert.append([path, 'avif', e])
+        converted_img_avif = []
       print( len(converted_img_original_ext), len(converted_img_avif), init_fn)
-      if len(converted_img_avif) < min_avif_compression * len(converted_img_original_ext):
+      if (converted_img_avif) and len(converted_img_avif) < min_avif_compression * len(converted_img_original_ext):
         filenames_contents.append([init_fn + 'avif', converted_img_avif])
     
     filenames_contents.append([init_fn + ext, converted_img_original_ext])
-
+  if failed_to_convert:
+    print('failed_to_convert', failed_to_convert)
   return filenames_contents
 
 ###############################################################################
