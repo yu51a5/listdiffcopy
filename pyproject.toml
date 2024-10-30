@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "listdiffcopy"
-version = "0.055591"
+version = "0.055592"
 authors = [
   { name="Yulia V", email="yu51a5@proton.me" },
 ]
