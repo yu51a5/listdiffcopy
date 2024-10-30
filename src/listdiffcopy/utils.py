@@ -33,7 +33,32 @@ def is_an_image(filename):
   return result
 
 ###############################################################################
-def filter_out_extra_wp_images(files_):
+def __get_presumed_original_x(this_file_name):
+  pos = {c : this_file_name.rfind(c) for c in ('.', 'x', '-')}
+  if (min(pos.values())) < 0 or not ((pos['-'] + 4) <= (pos['x'] + 2) <= pos['.']):
+    return None
+  maybe_numbers = this_file_name[pos['-'] + 1:pos['x']] + this_file_name[pos['x'] + 1:pos['.']]
+  not_numbers = [c for c in maybe_numbers if not ('0' <= c <= '9')]
+  if not_numbers:
+    return None
+  presumed_original = this_file_name[:pos['-']] + this_file_name[pos['.']:]
+  return presumed_original
+
+def __get_presumed_original_wh(this_file_name):
+  dot0 = this_file_name.rfind('.')
+  if dot0 < 0:
+    return None
+  dot1 = this_file_name.rfind('.', 0, dot0)
+  if (dot1 < 0) or (dot1+2 >= dot0) or this_file_name[dot1+1] not in ['h', 'w']:
+    return None
+  
+  not_numbers = [c for c in this_file_name[dot1+2:dot0] if not ('0' <= c <= '9')]
+  if not_numbers:
+    return None
+  presumed_original = this_file_name[:dot1] + this_file_name[dot0:]
+  return presumed_original
+  
+def filter_out_extra_wp_images(files_, is_hw_style=None):
   files_.sort()
   qty_files = len(files_)
   i = 0
@@ -42,22 +67,21 @@ def filter_out_extra_wp_images(files_):
     i += 1 # as if it's already the next iteration
     if not is_an_image(this_file_name.lower()):
       continue
-    pos = {c : this_file_name.rfind(c) for c in ('.', 'x', '-')}
-    if (min(pos.values())) < 0 or not ((pos['-'] + 4) <= (pos['x'] + 2) <= pos['.']):
+    presumed_originals = []
+    if is_hw_style is not True:
+      presumed_originals.append(__get_presumed_original_x(this_file_name))
+    if is_hw_style is not False:
+      presumed_originals.append(__get_presumed_original_wh(this_file_name))
+    presumed_originals = [po for po in presumed_originals if po is not None]
+    if not presumed_originals:
       continue
-    maybe_numbers = this_file_name[pos['-'] + 1:pos['x']] + this_file_name[pos['x'] + 1:pos['.']]
-    not_numbers = [c for c in maybe_numbers if not ('0' <= c <= '9')]
-    if not_numbers:
-      continue
-
-    presumed_original = this_file_name[:pos['-']] + this_file_name[pos['.']:]
     for j in range(i, qty_files):
-      if files_[j] == presumed_original:
+      if files_[j] in presumed_originals:
         qty_files -= 1
         i -= 1 #rolling back
         files_.pop(i)
         break
-      if files_[j] > presumed_original:
+      if files_[j] > max(presumed_originals):
         break
 
   return files_
