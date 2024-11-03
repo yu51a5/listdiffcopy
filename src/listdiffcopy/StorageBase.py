@@ -5,7 +5,7 @@ import numpy as np
 from functools import partialmethod, partial
 from collections.abc import Iterable 
 
-from listdiffcopy.settings import DEFAULT_SORT_KEY, ENFORCE_SIZE_FETCHING_WHEN_LISTING
+from listdiffcopy.settings import DEFAULT_SORT_KEY, ENFORCE_SIZE_FETCHING_WHEN_LISTING, PATH_FOR_RESUMING
 from listdiffcopy.utils import is_equal_str_bytes
 from listdiffcopy.LoggerObj import FDStatus, LoggerObj
 
@@ -306,12 +306,13 @@ class StorageBase(LoggerObj):
     return files_
   
   ###############################################################################
-  def _get_filenames_and_dirnames(self, path, filenames_filter=[]):
+  def _get_filenames_and_dirnames(self, path, filenames_filter=[], sort_key=DEFAULT_SORT_KEY, sort_reverse=False, sort_resume=False):
     if (not path) and self._init_path:
       return self._get_filenames_and_dirnames(path=self._init_path, 
-                                              filenames_filter=filenames_filter)
+                                              filenames_filter=filenames_filter, 
+                                              sort_key=sort_key, sort_reverse=sort_reverse, resume=resume)
 
-    files_, directories_ = self._get_filenames_and_directories(path=path)
+    files_, dirs_ = self._get_filenames_and_directories(path=path)
 
     if filenames_filter:
       if isinstance(filenames_filter, Iterable):
@@ -320,7 +321,22 @@ class StorageBase(LoggerObj):
       else:
         files_ = filenames_filter(files_)
 
-    return files_, directories_
+    if sort_key:
+      files_.sort(key=sort_key, reverse=sort_reverse)
+      dirs_.sort(key=sort_key, reverse=sort_reverse)
+
+    if sort_resume:
+      resume_path = PATH_FOR_RESUMING if sort_resume is True else resume
+      with open(resume_path, "r") as fi:
+        resume_from_path = os.path.join(path, fi.read())
+      if sort_reverse:
+        files_ = [f for f in files_ if sort_key(f) <= sort_key(resume_from_path)]
+        dirs_  = [d for d in dirs_  if sort_key(d) <= sort_key(resume_from_path)]
+      else:
+        files_ = [f for f in files_ if sort_key(f) >= sort_key(resume_from_path)]
+        dirs_  = [d for d in dirs_  if sort_key(d) >= sort_key(resume_from_path)]
+
+    return files_, dirs_
       
   ###############################################################################
   def file_contents_is_text(self, path):
@@ -390,20 +406,18 @@ class StorageBase(LoggerObj):
   
   ###############################################################################
   def _list_files_directories_recursive(self, path, enforce_size_fetching, 
-                                        sort_key=DEFAULT_SORT_KEY, sort_reverse=False,
+                                        sort_key=DEFAULT_SORT_KEY, sort_reverse=False, resume=False,
                                         message2='', filenames_filter=[]):
     self.log_enter_level(dirname=path, message_to_print='Listing', message2=message2)
 
-    files_, dirs_ = self._get_filenames_and_dirnames(path, filenames_filter=filenames_filter)
-    if sort_key:
-      files_.sort(key=sort_key, reverse=sort_reverse)
-      dirs_.sort(key=sort_key, reverse=sort_reverse)
+    files_, dirs_ = self._get_filenames_and_dirnames(path, filenames_filter=filenames_filter,
+                                                     sort_key=sort_key, sort_reverse=sort_reverse, resume=resume)
 
     if enforce_size_fetching:
       df = [[os.path.basename(f), self._get_file_size(f)] for f in files_]
     else:
       df = [[os.path.basename(f)                        ] for f in files_]
-    self.print_files_df(data =df)
+    self.print_files_df(data =df, path=os.path.dirname(f), resume=resume)
 
     total_size_first_level = sum([dfr[1] for dfr in df]) if enforce_size_fetching else math.nan
     totals = np.array([total_size_first_level, len(files_), len(dirs_)])
@@ -412,7 +426,7 @@ class StorageBase(LoggerObj):
     for dir_ in dirs_:
       dir_totals, dir_files, dir_dirs_dict = self._list_files_directories_recursive(path=dir_, 
                                                                                     enforce_size_fetching=enforce_size_fetching,
-                                                                                    sort_key=sort_key, sort_reverse=sort_reverse, 
+                                                                                    sort_key=sort_key, sort_reverse=sort_reverse, resume=resume, 
                                                                                     filenames_filter=filenames_filter)
       totals += dir_totals
       dirs_dict[dir_] = (dir_files, dir_dirs_dict)
@@ -430,12 +444,12 @@ class StorageBase(LoggerObj):
   ###############################################################################
   def _list(self, path, 
                   enforce_size_fetching=ENFORCE_SIZE_FETCHING_WHEN_LISTING, 
-                  sort_key=DEFAULT_SORT_KEY, sort_reverse=False,
+                  sort_key=DEFAULT_SORT_KEY, sort_reverse=False, resume=False,
                   filenames_filter=[]):
     def mF():
       data =  [[os.path.basename(path)] 
                  + ([self.get_size_(path=path)] if enforce_size_fetching else [])]
-      self.print_files_df(data=data)
+      self.print_files_df(data=data, path=os.path.dirname(path), resume=resume)
       return data, [path], {}
       
     return self._method_with_check_path_exist_is_dir_not_file(
@@ -443,7 +457,7 @@ class StorageBase(LoggerObj):
                    mT=partial(self._list_files_directories_recursive,
                               path=path, 
                               enforce_size_fetching=enforce_size_fetching, 
-                              sort_key=sort_key, sort_reverse=sort_reverse,                                              
+                              sort_key=sort_key, sort_reverse=sort_reverse, resume=resume,                                              
                               filenames_filter=filenames_filter),
                    mF=mF)
 

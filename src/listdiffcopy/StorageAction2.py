@@ -30,13 +30,12 @@ class StorageAction2(LoggerObj):
 
     for fn_name, default_fn in [['filename_contents_transform', filename_contents_transform_default], 
                                 ['sort_key', DEFAULT_SORT_KEY], 
-                                ['sort_reverse', False],                             
-                                ['filenames_filter', []]]:
+                                ['sort_reverse', False],    
+                                ['sort_resume', False],
+                                ['filenames_filter', []],
+                                ['change_if_both_exist', None]]:
       setattr(self, fn_name, kwargs[fn_name] if (fn_name in kwargs) else default_fn)
-    if 'change_if_both_exist' in kwargs:
-      self.change_if_both_exist = kwargs['change_if_both_exist']
-    for k in ['filename_contents_transform', 'filenames_filter', 'change_if_both_exist']:
-      kwargs.pop(k, None)
+      kwargs.pop(fn_name, None)
       
     super().__init__()
     self.clear_errors_count()
@@ -51,6 +50,12 @@ class StorageAction2(LoggerObj):
     for type_, arg_name in args_inputs:
       arg_names = arg_name if type_ is None else [f'{arg_name}_{prefix}' for prefix in ('from', 'to')]
       constr_args.update({an : kwargs[an] for an in arg_names if ((an in kwargs) and (kwargs[an] is not None))})
+      for an in arg_names:
+        kwargs.pop(an, None)
+        
+    if kwargs:
+      self.log_error(f'{kwargs} are unrecognised arguments for {self.__class__.__name__}')
+      return FDStatus.Error
 
     for type_, arg_name in args_inputs:
       if type_ is None:
@@ -253,10 +258,13 @@ class StorageAction2(LoggerObj):
     self.log_enter_level(common_dir_appendix, self.enter_123[0])
 
     _dir_from = os.path.join(self.root_path_from, common_dir_appendix) if common_dir_appendix else self.root_path_from
-    files_from, dirs_from = self.__storage_from._get_filenames_and_dirnames(_dir_from, filenames_filter=self.filenames_filter)
+    files_from, dirs_from = self.__storage_from._get_filenames_and_dirnames(_dir_from, filenames_filter=self.filenames_filter, sort_key=self.sort_key, sort_reverse=self.sort_reverse, sort_resume=self.sort_resume)
     _dir_to = os.path.join(self.root_path_to, common_dir_appendix) if common_dir_appendix else self.root_path_to
-    files_to, dirs_to   = self.__storage_to._get_filenames_and_dirnames(  _dir_to, filenames_filter=self.filenames_filter)
-  
+    files_to, dirs_to   = self.__storage_to._get_filenames_and_dirnames(  _dir_to, filenames_filter=self.filenames_filter, sort_key=self.sort_key, sort_reverse=self.sort_reverse, sort_resume=self.sort_resume)
+
+    max_fn_length = max([len(os.path.basename(f)) for f in files_from + files_to]) if (files_from or files_to) else 0
+    max_files =  [os.path.basename(f) for f in (files_from + files_to) if len(os.path.basename(f)) == max_fn_length]
+    max_files2 = [os.path.basename(f) for f in (files_from + files_to) if os.path.basename(f)[:100] == max_files[0][:100]]
     dir_info_first_level = np.zeros((5, 3), float)
     dir_info_total = np.zeros((5, 3), float)
     # dir_info_first_level[3][0] = math.nan # no information about deleted files' size 
@@ -272,7 +280,7 @@ class StorageAction2(LoggerObj):
                       if self.filename_contents_transform == filename_contents_transform_default
                                            else ['Initial Filename', 'Initial Size', ''])
 
-    def to_df_and_print(fn, fsize, fdata, files_data_data, rows_printed_so_far):
+    def to_df_and_print(fn, fsize, fdata, files_data_data, rows_printed_so_far, max_fn_length):
       row_header_array[0] += [fn] * len(fdata)
       row_header_array[1] += [fsize] * len(fdata)
       row_header_array[2] += range(1, len(fdata) + 1)
@@ -290,7 +298,7 @@ class StorageAction2(LoggerObj):
         columns=columns) 
 
       files_df.index.names = index_names
-      rows_printed_so_far = self.print_files_df(data=files_df, rows_printed_so_far=rows_printed_so_far)
+      rows_printed_so_far = self.print_files_df(data=files_df, rows_printed_so_far=rows_printed_so_far, resume=self.sort_resume, path=common_dir_appendix, max_fn_length=max_fn_length)
       return rows_printed_so_far
       
     
@@ -303,12 +311,12 @@ class StorageAction2(LoggerObj):
         else:
           files_to_matched[os.path.basename(this_file_result[0])].append(os.path.basename(f))
       
-      rows_printed_so_far = to_df_and_print(fn, fsize, fdata, files_data_data, rows_printed_so_far)
+      rows_printed_so_far = to_df_and_print(fn, fsize, fdata, files_data_data, rows_printed_so_far, max_fn_length=max_fn_length)
       
     for f, v in files_to_matched.items():
       if not v:
         this_file_result = self._action_right_only_file(os.path.join(_dir_to, f))
-        rows_printed_so_far = to_df_and_print(None, math.nan, [this_file_result], files_data_data, rows_printed_so_far)
+        rows_printed_so_far = to_df_and_print(None, math.nan, [this_file_result], files_data_data, rows_printed_so_far, max_fn_length=max_fn_length)
 
     dirs_from.sort(key=self.sort_key, reverse=self.sort_reverse)
     dirs_to.sort(  key=self.sort_key, reverse=self.sort_reverse)

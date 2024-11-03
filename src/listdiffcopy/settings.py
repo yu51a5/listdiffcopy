@@ -17,3 +17,4 @@ recommended_avifenc_parameters = f"--min 0 --max {DEFAULT_AVIF_QUALITY} -a end-u
 DEFAULT_IMAGE_RESIZING_FILTER = Image.Resampling.LANCZOS
 
 log_dirname = 'logs'
+PATH_FOR_RESUMING = "filename_started.txt"

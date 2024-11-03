@@ -1,6 +1,6 @@
 #import typing
 import io
-import pillow_avif # https://pypi.org/project/pillow-avif-plugin/
+import pillow_avif # https://pypi.org/project/pillow-avif-plugin/, pip install pillow-avif-plugin
 from PIL import Image
 from listdiffcopy.jpg_quality_pil_magick import get_jpg_quality
 
@@ -57,7 +57,8 @@ def __get_presumed_original_wh(this_file_name):
     return None
   presumed_original = this_file_name[:dot1] + this_file_name[dot0:]
   return presumed_original
-  
+
+
 def filter_out_extra_wp_images(files_, is_hw_style=None):
   files_.sort()
   qty_files = len(files_)
@@ -75,13 +76,25 @@ def filter_out_extra_wp_images(files_, is_hw_style=None):
     presumed_originals = [po for po in presumed_originals if po is not None]
     if not presumed_originals:
       continue
+    found = False
     for j in range(i, qty_files):
       if files_[j] in presumed_originals:
         qty_files -= 1
         i -= 1 #rolling back
         files_.pop(i)
+        found = True
         break
       if files_[j] > max(presumed_originals):
+        break
+    if found:
+      continue
+    for j in range(i-1, -1, -1):
+      if files_[j] in presumed_originals:
+        qty_files -= 1
+        i -= 1 #rolling back
+        files_.pop(i)
+        break
+      if files_[j] < min(presumed_originals):
         break
 
   return files_

@@ -1,9 +1,10 @@
 import pandas as pd
 from enum import Enum
+import os
 
 from listdiffcopy.utils import put_together_framed_message
+from listdiffcopy.settings import PATH_FOR_RESUMING
 from listdiffcopy.logging_config import get_logger, LoggerExtra
-
 
 #################################################################################
 class FDStatus(Enum):
@@ -177,7 +178,7 @@ class LoggerObj:
     self.__log_print(f'Completed {at_now_str}, time elapsed {at_now - when_started}')
 
   ###############################################################################
-  def print_files_df(self, data, rows_printed_so_far=0):
+  def print_files_df(self, data, rows_printed_so_far=0, resume=False, path=None, max_fn_length=0):
     if isinstance(data, pd.DataFrame):
       if len(data.index) == 0:
         return
@@ -196,6 +197,10 @@ class LoggerObj:
       # df_files.sort_values(by=self.__columns_files_df[1][0], inplace=True)
 
     extra_prefix = '║ ' if (isinstance(data, list) and not isinstance(data[0], list)) else '──── '
+    old_value = df_files.index[0][0]
+    new_value = old_value + ' ' * (max_fn_length - len(df_files.index[0][0]))
+    df_files.rename(index = {old_value : new_value})
+
     df_str = self._df_to_str(df_files, extra_prefix=extra_prefix)
     
     df_str_arr = df_str.split('\n')
@@ -203,5 +208,10 @@ class LoggerObj:
       self.log_info(df_str)
     else:
       self.log_info('\n'.join(df_str_arr[rows_printed_so_far:]))
+
+    if resume:
+      resume_path = PATH_FOR_RESUMING if resume is True else resume
+      with open(resume_path, "w") as fi:
+        fi.write(os.path.join(path, str(df_files.index[-1][0]))) # the filename in the last row
     
     return len(df_str_arr)

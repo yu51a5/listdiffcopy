@@ -3,6 +3,7 @@ import pandas
 import sys
 import os
 sys.path.append('src')
+
 #import listdiffcopy
 # https://docs.pytest.org/en/stable/explanation/goodpractices.html#choosing-an-import-mode
 from listdiffcopy import StorageBase, StorageSFTP, StorageLocal
@@ -10,9 +11,12 @@ from listdiffcopy.StorageAction2 import CopyAndTransform
 from listdiffcopy.storage_actions import list, copy_into, create_directory, compare
 from listdiffcopy.utils import batch_resize_images, filter_out_extra_wp_images
 
-compare(StorageSFTP.StorageSFTP, "domains/yu51a.org/public_html/wp-content/uploads/horsemen",
+CopyAndTransform(StorageSFTP.StorageSFTP, "domains/yu51a.org/public_html/wp-content/uploads/horsemen",
         StorageSFTP.StorageSFTP, "domains/yu51a.org/public_html/wp-content/uploads/art",
-        filenames_filter=filter_out_extra_wp_images)
+        sort_resume=True, sort_reverse=True, sort_key=lambda x: x,
+        filenames_filter=filter_out_extra_wp_images,
+        filename_contents_transform=batch_resize_images,
+        change_if_both_exist='pass')
 
 quit()
 
