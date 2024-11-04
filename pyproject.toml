@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "listdiffcopy"
-version = "0.055593"
+version = "0.055595"
 authors = [
   { name="Yulia V", email="yu51a5@proton.me" },
 ]
@@ -22,6 +22,12 @@ keywords = ["list", "diff", "copy"]
 dependencies = [
     "pandas>=2.2.3",
     "paramiko>=3.5.0",
+    "pillow>=11.0.0",
+    "pillow-avif-plugin>=1.4.6",
+    "html2text>=2024.2.26",
+    "requests>=2.32.3",
+    "selenium>=4.26.1",
+    "beautifulsoup4>=4.12.3"
 ]
 
 [project.urls]
