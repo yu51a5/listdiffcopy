@@ -5,8 +5,8 @@ import requests.packages.urllib3.contrib
 # https://stackoverflow.com/questions/76175487
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 
-from listdiffcopy.StorageBase import StorageBase
-from listdiffcopy.settings import pcloud_urls_are_eapi
+from .StorageBase import StorageBase
+from .settings import pcloud_urls_are_eapi
 
 #################################################################################
 # pCloud

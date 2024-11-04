@@ -2,7 +2,7 @@ import requests
 import os
 from requests.structures import CaseInsensitiveDict
 
-from listdiffcopy.StorageBase import StorageBase
+from .StorageBase import StorageBase
 
 #################################################################################
 class StorageGitHub(StorageBase):

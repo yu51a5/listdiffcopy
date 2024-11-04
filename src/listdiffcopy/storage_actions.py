@@ -1,9 +1,9 @@
-from listdiffcopy.utils import partial_with_moving_back
-from listdiffcopy.StorageWebMedium import StorageWebMedium
-from listdiffcopy.StorageWeb import StorageWeb
-from listdiffcopy.StorageAction2 import Compare, Synchronize, Copy, Move, CopyInto, MoveInto, CopyAndTransform
-from listdiffcopy.StorageBase import StorageBase
-from listdiffcopy.LoggerObj import LoggerObj
+from .utils import partial_with_moving_back
+from .StorageWebMedium import StorageWebMedium
+from .StorageWeb import StorageWeb
+from .StorageAction2 import Compare, Synchronize, Copy, Move, CopyInto, MoveInto, CopyAndTransform
+from .StorageBase import StorageBase
+from .LoggerObj import LoggerObj
 
 #################################################################################
 def one_storage_func(*args, return_if_error=None, attr_name=None, **kwargs):

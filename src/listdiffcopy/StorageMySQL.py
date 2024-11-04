@@ -1,6 +1,6 @@
 import mysql.connector
 
-from listdiffcopy.StorageBase import StorageBase
+from .StorageBase import StorageBase
 
 #################################################################################
 class StorageMySQL(StorageBase):

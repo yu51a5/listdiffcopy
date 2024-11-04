@@ -4,10 +4,10 @@ import pandas as pd
 import numpy as np
 from functools import partial
 
-from listdiffcopy.settings import ENFORCE_SIZE_FETCHING_WHEN_COMPARING, DEFAULT_SORT_KEY
-from listdiffcopy.utils import creates_multi_index, idem
-from listdiffcopy.LoggerObj import FDStatus, LoggerObj
-from listdiffcopy.StorageBase import StorageBase
+from .settings import ENFORCE_SIZE_FETCHING_WHEN_COMPARING, DEFAULT_SORT_KEY
+from .utils import creates_multi_index, idem
+from .LoggerObj import FDStatus, LoggerObj
+from .StorageBase import StorageBase
 
 def filename_contents_transform_default(path, content, *args, **kwargs):
   return [path, content]

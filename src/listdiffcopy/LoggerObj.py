@@ -2,9 +2,9 @@ import pandas as pd
 from enum import Enum
 import os
 
-from listdiffcopy.utils import put_together_framed_message
-from listdiffcopy.settings import PATH_FOR_RESUMING
-from listdiffcopy.logging_config import get_logger, LoggerExtra
+from .utils import put_together_framed_message
+from .settings import PATH_FOR_RESUMING
+from .logging_config import get_logger, LoggerExtra
 
 #################################################################################
 class FDStatus(Enum):

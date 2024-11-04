@@ -5,9 +5,9 @@ import numpy as np
 from functools import partialmethod, partial
 from collections.abc import Iterable 
 
-from listdiffcopy.settings import DEFAULT_SORT_KEY, ENFORCE_SIZE_FETCHING_WHEN_LISTING, PATH_FOR_RESUMING
-from listdiffcopy.utils import is_equal_str_bytes
-from listdiffcopy.LoggerObj import FDStatus, LoggerObj
+from .settings import DEFAULT_SORT_KEY, ENFORCE_SIZE_FETCHING_WHEN_LISTING, PATH_FOR_RESUMING
+from .utils import is_equal_str_bytes
+from .LoggerObj import FDStatus, LoggerObj
 
 #################################################################################
 class StorageBase(LoggerObj):
