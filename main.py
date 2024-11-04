@@ -7,12 +7,11 @@ sys.path.append('src')
 #import listdiffcopy
 # https://docs.pytest.org/en/stable/explanation/goodpractices.html#choosing-an-import-mode
 from listdiffcopy import StorageBase, StorageSFTP, StorageLocal
-from listdiffcopy.StorageAction2 import CopyAndTransform
-from listdiffcopy.storage_actions import list, copy_into, create_directory, compare
+from listdiffcopy import list, copy_into, create_directory, compare, copy_and_transform
 from listdiffcopy.utils import batch_resize_images, filter_out_extra_wp_images
 
-CopyAndTransform(StorageSFTP.StorageSFTP, "domains/yu51a.org/public_html/wp-content/uploads/horsemen",
-        StorageSFTP.StorageSFTP, "domains/yu51a.org/public_html/wp-content/uploads/art",
+copy_and_transform(StorageSFTP, "domains/yu51a.org/public_html/wp-content/uploads/horsemen",
+        StorageSFTP, "domains/yu51a.org/public_html/wp-content/uploads/art",
         sort_resume=True, sort_reverse=True, sort_key=lambda x: x,
         filenames_filter=filter_out_extra_wp_images,
         filename_contents_transform=batch_resize_images,

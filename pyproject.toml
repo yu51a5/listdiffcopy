@@ -26,6 +26,7 @@ dependencies = [
     "pillow-avif-plugin>=1.4.6",
     "html2text>=2024.2.26",
     "requests>=2.32.3",
+    "requests-toolbelt>=1.0.0",
     "selenium>=4.26.1",
     "beautifulsoup4>=4.12.3"
 ]

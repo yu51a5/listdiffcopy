@@ -1,7 +1,7 @@
 from listdiffcopy.utils import partial_with_moving_back
 from listdiffcopy.StorageWebMedium import StorageWebMedium
 from listdiffcopy.StorageWeb import StorageWeb
-from listdiffcopy.StorageAction2 import Compare, Synchronize, Copy, Move, CopyInto, MoveInto
+from listdiffcopy.StorageAction2 import Compare, Synchronize, Copy, Move, CopyInto, MoveInto, CopyAndTransform
 from listdiffcopy.StorageBase import StorageBase
 from listdiffcopy.LoggerObj import LoggerObj
 
@@ -107,6 +107,7 @@ def generate_medium_toc(url):
   with StorageWebMedium() as swm:
     return swm.generate_toc(url=url)
 
+
 #################################################################################
 def compare(*args, **kwargs):
   c = Compare(*args, **kwargs)
@@ -125,7 +126,7 @@ def copy(*args, **kwargs):
 def copy_into(*args, **kwargs):
   result = CopyInto(*args, **kwargs)
   return result
-  
+
 def move(*args, **kwargs):
   result = Move(*args, **kwargs)
   return result
@@ -137,4 +138,7 @@ def rename(*args, **kwargs):
 def move_into(*args, **kwargs):
   result = MoveInto(*args, **kwargs)
   return result
- 
+
+def copy_and_transform(*args, **kwargs):
+ result = CopyAndTransform(*args, **kwargs)
+ return result
