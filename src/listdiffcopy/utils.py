@@ -8,7 +8,11 @@ from .settings import DEFAULT_AVIF_QUALITY, DEFAULT_IMAGE_RESIZING_FILTER, wp_im
 
 wp_images_extensions_with_dot = tuple([f'.{ext.lower()}' for ext in wp_images_extensions])
 # https://stackoverflow.com/questions/4354543/determining-jpg-quality-in-python-pil
-jpeg_saving_settings = dict(optimize=True, progressive=True) # quality='keep', 
+# https://stackoverflow.com/questions/19303621/why-is-the-quality-of-jpeg-images-produced-by-pil-so-poor
+# https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#jpeg
+# https://jdhao.github.io/2019/07/20/pil_jpeg_image_quality/
+# https://github.com/python-pillow/Pillow/blob/main/src/PIL/JpegPresets.py#L71
+jpeg_saving_settings = dict(optimize=True, progressive=True, subsampling=0, quality=100) # quality='keep', , 
 sizes_for_wp = [[None, h] for h in [150, 180, 200, 220, 250, 300, 400]] + [[w, None] for w in [500, 700]] + [[None, None]]
 
 ###############################################################################
