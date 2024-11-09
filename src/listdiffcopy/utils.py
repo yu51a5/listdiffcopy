@@ -12,7 +12,7 @@ wp_images_extensions_with_dot = tuple([f'.{ext.lower()}' for ext in wp_images_ex
 # https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#jpeg
 # https://jdhao.github.io/2019/07/20/pil_jpeg_image_quality/
 # https://github.com/python-pillow/Pillow/blob/main/src/PIL/JpegPresets.py#L71
-jpeg_saving_settings = dict(optimize=True, progressive=True, subsampling=0, quality=100) # quality='keep', , 
+jpeg_saving_settings = dict(optimize=True, progressive=True, subsampling=0) # quality=, , 
 sizes_for_wp = [[None, h] for h in [150, 180, 200, 220, 250, 300, 400]] + [[w, None] for w in [500, 700]] + [[None, None]]
 
 ###############################################################################
@@ -116,6 +116,7 @@ def convert_image(image_bytes, target_extention, **kwargs):
   result_img_stream = io.BytesIO()
   ext = target_extention.upper() if target_extention.lower() != "jpg" else "JPEG"
   kwargs_ = jpeg_saving_settings if (ext == "JPEG") and (not kwargs) else kwargs
+  print(ext, kwargs_)
   from_img.save(result_img_stream, ext, **kwargs_)
   result = result_img_stream.getvalue()
   return result
@@ -159,7 +160,8 @@ def batch_resize_images(path, content, max_pixel_ratio=.99, min_avif_compression
 
   if ext.upper() in ("JPG", "JPEG"):
     c = _to_image_image(content)
-    print('image quality', get_jpg_quality(c))
+    quality = get_jpg_quality(c)
+    print('image quality', quality)
   
   filenames_contents = []
   failed_to_convert = []
@@ -172,7 +174,10 @@ def batch_resize_images(path, content, max_pixel_ratio=.99, min_avif_compression
 
     init_fn = path[:path.rfind('.')] + appendix + '.'
     kwargs_ = dict(quality=avif_quality)  if ext.lower() == 'avif' else {}
-    converted_img_original_ext = convert_image(img_content_resized, target_extention=ext, **kwargs_)
+    if ext.lower() in ['jpg', 'jpeg']:
+      kwargs_ = {k : v for k, v in jpeg_saving_settings.items()}
+      kwargs_['quality'] = quality
+    converted_img_original_ext = content if not appendix else convert_image(img_content_resized, target_extention=ext, **kwargs_)
     if ext.lower() != 'avif':
       try:
         converted_img_avif = convert_image(img_content_resized, target_extention='avif', quality=avif_quality)
