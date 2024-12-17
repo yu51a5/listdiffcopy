@@ -101,13 +101,13 @@ class StorageWeb(StorageBase):
   ###############################################################################
   def _read_file(self, path, length=None, use_content_not_text=None): # filename is url
     if path in self.__fake_files:
-      return self.__fake_files[filename]
+      return self.__fake_files[path]
     with self._get_connection_var().get(path) as response:
       if response.status_code == 200:
-        use_content = use_content_not_text if use_content_not_text is not None else self.__name_content_type_is_content[filename] if filename in self.__name_content_type_is_content else True
+        use_content = use_content_not_text if use_content_not_text is not None else self.__name_content_type_is_content[path] if path in self.__name_content_type_is_content else True
         return response.content if use_content else (response.text[:length] if length else response.text)
       else:
-        self.log_error(f'Downloading of {filename} failed, code {response.status_code}') 
+        self.log_error(f'Downloading of {path} failed, code {response.status_code}') 
 
   ###############################################################################
   def _get_filenames_and_directories(self, path : str):

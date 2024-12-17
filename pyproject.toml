@@ -28,7 +28,11 @@ dependencies = [
     "requests>=2.32.3",
     "requests-toolbelt>=1.0.0",
     "selenium>=4.26.1",
-    "beautifulsoup4>=4.12.3"
+    "beautifulsoup4>=4.12.3",
+    "pandas-gbq>=0.20.0",
+    "mysql-connector-python>=9.1.0",
+    "google-cloud-bigquery>=3.27.0",
+    "google-cloud-core>=2.4.1"
 ]
 
 [project.urls]

@@ -1,6 +1,6 @@
 import os
 import requests
-import requests.packages.urllib3.contrib
+# import requests.packages.urllib3.contrib
 # installed using pip install urllib3==1.26.15 requests-toolbelt==0.10.1
 # https://stackoverflow.com/questions/76175487
 from requests_toolbelt.multipart.encoder import MultipartEncoder

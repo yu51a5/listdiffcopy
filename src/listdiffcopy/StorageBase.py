@@ -306,11 +306,15 @@ class StorageBase(LoggerObj):
     return files_
   
   ###############################################################################
-  def _get_filenames_and_dirnames(self, path, filenames_filter=[], sort_key=DEFAULT_SORT_KEY, sort_reverse=False, sort_resume=False):
+  def _get_filenames_and_dirnames(self, path, filenames_filter=[], 
+                                  sort_key=DEFAULT_SORT_KEY, 
+                                  sort_reverse=False, 
+                                  sort_resume=False):
     if (not path) and self._init_path:
       return self._get_filenames_and_dirnames(path=self._init_path, 
                                               filenames_filter=filenames_filter, 
-                                              sort_key=sort_key, sort_reverse=sort_reverse, resume=resume)
+                                              sort_key=sort_key, sort_reverse=sort_reverse, 
+                                              resume=sort_resume)
 
     files_, dirs_ = self._get_filenames_and_directories(path=path)
 
@@ -417,7 +421,7 @@ class StorageBase(LoggerObj):
       df = [[os.path.basename(f), self._get_file_size(f)] for f in files_]
     else:
       df = [[os.path.basename(f)                        ] for f in files_]
-    self.print_files_df(data =df, path=os.path.dirname(f), resume=resume)
+    self.print_files_df(data =df, path=os.path.dirname(path), resume=resume)
 
     total_size_first_level = sum([dfr[1] for dfr in df]) if enforce_size_fetching else math.nan
     totals = np.array([total_size_first_level, len(files_), len(dirs_)])
