@@ -5,4 +5,5 @@ from .StorageLocal import StorageLocal
 from .StoragePCloud import StoragePCloud
 from .StorageWeb import StorageWeb
 from .StorageWebMedium import StorageWebMedium
+from .StorageGCloudSQL import StorageGCloudSQL
 from .storage_actions import *

@@ -362,12 +362,13 @@ class StorageBase(LoggerObj):
     return my_file_size, my_contents
 
   ###############################################################################
-  def _write_file(self, path, content, check_if_contents_is_the_same_before_writing=True):
-    assert isinstance(content, (str, bytes)), f'Type of contents is {type(content)}'
+  def _write_file(self, path, content, check_if_contents_is_the_same_before_writing=True, **kwargs):
+    if not isinstance(content, (str, bytes, pd.DataFrame)):
+      self.log_error(f'Type of contents is {type(content)}')
 
     def mN():
       self._create_directory(path=os.path.dirname(path))
-      self._create_file_given_content(path=path, content=content)
+      self._create_file_given_content(path=path, content=content, **kwargs)
       return FDStatus.LeftOnly_or_New
 
     def mF():
@@ -382,7 +383,7 @@ class StorageBase(LoggerObj):
         if current_size == len(content) or is_equal_str_bytes(content, current_content):
           return FDStatus.Identical
 
-      self._update_file_given_content(path=path, content=content)
+      self._update_file_given_content(path=path, content=content, **kwargs)
       return FDStatus.Different_or_Updated
 
     return self._method_with_check_path_exist_is_dir_not_file(
@@ -415,7 +416,7 @@ class StorageBase(LoggerObj):
     self.log_enter_level(dirname=path, message_to_print='Listing', message2=message2)
 
     files_, dirs_ = self._get_filenames_and_dirnames(path, filenames_filter=filenames_filter,
-                                                     sort_key=sort_key, sort_reverse=sort_reverse, resume=resume)
+                                                     sort_key=sort_key, sort_reverse=sort_reverse, sort_resume=resume)
 
     if enforce_size_fetching:
       df = [[os.path.basename(f), self._get_file_size(f)] for f in files_]
@@ -499,59 +500,62 @@ def add_StorageBase_method(name, return_if_error, title=None):
         path = strs[0]
       else:
         raise Exception(f"No path argument is given, and {len(strs)} nameless string arguments are given")
-    try:
-      should_be_dir_not_file = True if name in ("get_filenames_and_dirnames", "create_directory") \
-                                 else (False if name in ("read_file", "write_file") else self._check_path_exist_is_dir_not_file(path))
+    
+    should_be_dir_not_file = True if name in ("get_filenames_and_dirnames", "create_directory") \
+                               else (False if name in ("read_file", "write_file") else self._check_path_exist_is_dir_not_file(path))
 
-      if should_be_dir_not_file is None:
-        self.log_error(f"{self.str(path)} does not exist")
-        return FDStatus.Error
-      if should_be_dir_not_file == "both":
-        self.log_error(f"{self.str(path)} is both a file and a directory")
-        return FDStatus.Error
-      title_ += " " + self.str(path)
-      if add_print_title:
-        if should_be_dir_not_file:
-          self.log_title(title=title_)
-          if name != "list":
-            self.log_enter_level(dirname=path, message_to_print=name)
-        else:
-          when_started = self.start_file(path=path, 
-             message_to_print=name, 
-             message2="")
-      
+    if should_be_dir_not_file is None:
+      self.log_error(f"{self.str(path)} does not exist")
+      return FDStatus.Error
+    if should_be_dir_not_file == "both":
+      self.log_error(f"{self.str(path)} is both a file and a directory")
+      return FDStatus.Error
+    title_ += " " + self.str(path)
+    if add_print_title:
+      if should_be_dir_not_file:
+        self.log_title(title=title_)
+        if name != "list":
+          self.log_enter_level(dirname=path, message_to_print=name)
+      else:
+        when_started = self.start_file(path=path, 
+           message_to_print=name, 
+           message2="")
+        
+    try:
       result = getattr(self, "_"+name)( *args, **kwargs)
-      
-      if add_print_title:
-        if should_be_dir_not_file:
-          if name != "list":
-            self.log_exit_level()
-        else:
-          this_file_status = result if isinstance(result, FDStatus) else FDStatus.Success
-          size = math.nan
-          if name == "read_file": 
-            size = len(result)
-          if name == "get_size":
-            size = result
-          if name == "write_file":
-            if 'content' in kwargs:
-              size = len(kwargs['content'])
-            else:
-              bytes_args = [arg for arg in args if isinstance(arg, bytes)]
-              if len(bytes_args) == 1:
-                size = len(bytes_args[0])
-              else:
-                str_args = [arg for arg in args if isinstance(arg, str)]
-                if len(str_args) == 2:
-                  size = len(bytes_args[-1])
-          data = [os.path.basename(path), size, this_file_status]
-          self.print_complete_file(data=data, when_started=when_started)
-  
-      return result
-      
     except Exception as e:
-      raise e # self.log_error(f'{title_} failed', e)
-      return return_if_error
+      self.log_error(f'{title_} failed', e)
+      result = FDStatus.Error
+      # raise e
+      
+    if add_print_title:
+      if should_be_dir_not_file:
+        if name != "list":
+          self.log_exit_level()
+      else:
+        this_file_status = result if (isinstance(result, FDStatus) and (result == FDStatus.Error)) else FDStatus.Success
+        size = math.nan
+        if name == "read_file": 
+          if not isinstance(result, FDStatus):
+            size = len(result)
+        if name == "get_size":
+          size = result
+        if name == "write_file":
+          if 'content' in kwargs:
+            size = len(kwargs['content'])
+          else:
+            bytes_args = [arg for arg in args if isinstance(arg, bytes)]
+            if len(bytes_args) == 1:
+              size = len(bytes_args[0])
+            else:
+              str_args = [arg for arg in args if isinstance(arg, str)]
+              if len(str_args) == 2:
+                size = len(bytes_args[-1])
+        data = [os.path.basename(path), size, this_file_status]
+        self.print_complete_file(data=data, when_started=when_started)
+
+    return return_if_error if (isinstance(result, FDStatus) and (result == FDStatus.Error)) else result
+
       
   setattr(StorageBase, name    , partialmethod(_inner_add_method, add_print_title=True))
   setattr(StorageBase, name+"_", partialmethod(_inner_add_method, add_print_title=False))

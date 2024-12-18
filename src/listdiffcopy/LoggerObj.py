@@ -197,8 +197,9 @@ class LoggerObj:
       # df_files.sort_values(by=self.__columns_files_df[1][0], inplace=True)
 
     extra_prefix = '║ ' if (isinstance(data, list) and not isinstance(data[0], list)) else '──── '
-    old_value = df_files.index[0][0]
-    new_value = old_value + ' ' * (max_fn_length - len(df_files.index[0][0]))
+    first_index = df_files.index[0] if isinstance(df_files.index[0], int) else df_files.index[0][0]
+    old_value = str(first_index)
+    new_value = old_value + ' ' * (max_fn_length - len(old_value))
     df_files.rename(index = {old_value : new_value})
 
     df_str = self._df_to_str(df_files, extra_prefix=extra_prefix)

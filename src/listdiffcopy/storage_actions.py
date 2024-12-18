@@ -34,7 +34,7 @@ def one_storage_func(*args, return_if_error=None, attr_name=None, **kwargs):
     elif len(_args) == 1:
       if (type_ is not dict) or ('StorageType' in constr_args):
         constr_args[an] = _args[0]
-        args2 = [a for a in args2 if a != _args[0]] 
+        args2 = [a for a in args2 if not(isinstance(a, type(_args[0])) and (a == _args[0]))] 
   
   errors = StorageBase._check_storage_or_type(storage=constr_args['storage'] if 'storage' in constr_args else None, 
                                               StorageType=constr_args['StorageType'] if 'StorageType' in constr_args else None, 
